@@ -8,7 +8,7 @@ namespace mt2 {
 
 
 // Respawn health lookup table
-    FLASHMEM unsigned short heath_lookup(respawn_health health) {
+    short heath_lookup(respawn_health health) {
         switch (health) {
             case HP_1:
                 return 1;
@@ -159,5 +159,96 @@ namespace mt2 {
         }
     }
 
+    short hit_delay_to_micros(hit_delays delay_setting){
+        switch (delay_setting){
+            case NO_DELAY:
+                return 0;
+            case ONE_QUARTER_SECOND:
+                return 250;
+            case HALF_SECOND:
+                return 500;
+            case THREE_QUARTER_SECOND:
+                return 750;
+            case ONE_SECOND:
+                return 1000;
+            case TWO_SECONDS:
+                return 2000;
+            case THREE_SECONDS:
+                return 3000;
+            case FOUR_SECONDS:
+                return 4000;
+            case FIVE_SECONDS:
+                return 5000;
+            case SIX_SECONDS:
+                return 6000;
+            case SEVEN_SECONDS:
+                return 7000;
+            case EIGHT_SECONDS:
+                return 8000;
+            case NINE_SECONDS:
+                return 9000;
+            case TEN_SECONDS:
+                return 10000;
+            case ELEVEN_SECONDS:
+                return 11000;
+            case TWELVE_SECONDS:
+                return 12000;
+            case THIRTEEN_SECONDS:
+                return 13000;
+            case FOURTEEN_SECONDS:
+                return 14000;
+            case FIFTEEN_SECONDS:
+                return 15000;
+            case SIXTEEN_SECONDS:
+                return 16000;
+            case SEVENTEEN_SECONDS:
+                return 17000;
+            case EIGHTEEN_SECONDS:
+                return 18000;
+            case NINETEEN_SECONDS:
+                return 19000;
+            case TWENTY_SECONDS:
+                return 20000;
+            default:
+                return 0;
+        }
+    }
 
+    short damage_table_lookup(damage_table damage){
+        switch (damage) {
+
+            case DAMAGE_1:
+                return 1;
+            case DAMAGE_2:
+                return 2;
+            case DAMAGE_4:
+                return 4;
+            case DAMAGE_5:
+                return 5;
+            case DAMAGE_7:
+                return 7;
+            case DAMAGE_10:
+                return 10;
+            case DAMAGE_15:
+                return 15;
+            case DAMAGE_17:
+                return 17;
+            case DAMAGE_20:
+                return 20;
+            case DAMAGE_25:
+                return 25;
+            case DAMAGE_30:
+                return 30;
+            case DAMAGE_35:
+                return 35;
+            case DAMAGE_40:
+                return 40;
+            case DAMAGE_50:
+                return 50;
+            case DAMAGE_75:
+                return 75;
+            case DAMAGE_100:
+                return 100;
+        }
+    };
 }

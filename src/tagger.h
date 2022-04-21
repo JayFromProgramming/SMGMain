@@ -30,15 +30,24 @@ struct tagger_state {
     mt2::clone *currentConfig = nullptr;
     uint32_t last_shot = 0;
     uint32_t last_hit = 0;
+    unsigned int hit_delay_ms = 0;
     long shot_interval = 0;
-    unsigned short max_health = 0;
-    volatile unsigned short health = 0;
+    short max_health = 0;
+    volatile short health = 0;
     unsigned char player_id = 0;
     volatile unsigned char ammo_count = 0;
     unsigned char clip_count = 0;
     unsigned char current_burst_count = 0;
     volatile bool reloading = false;
     volatile unsigned long reload_time = 0.0;
+};
+
+struct score_data {
+    unsigned short  rounds_fired = 0;
+    unsigned short  total_hits = 0;
+    unsigned int    game_time = 0; // In seconds
+    unsigned char   respawn_count = 0;
+    unsigned short* hits_from_players = nullptr;
 };
 
 void tagger_init();

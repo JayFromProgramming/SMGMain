@@ -226,7 +226,12 @@ namespace mt2 {
         // -1 is invalid, 0 is unchecked, 1 is checked and valid
     } clone;
 
-    unsigned short heath_lookup(respawn_health health);
+    short heath_lookup(respawn_health health);
+
+    short hit_delay_to_micros(hit_delays delay);
+
+    short damage_table_lookup(damage_table damage);
+
 }
 
 #endif //TLTPROJECT1_MT2_PROTOCOL_H

@@ -40,6 +40,7 @@ struct tagger_state {
     unsigned char current_burst_count = 0;
     volatile bool reloading = false;
     volatile unsigned long reload_time = 0.0;
+    volatile unsigned char killed_by = 0;
 };
 
 struct score_data {

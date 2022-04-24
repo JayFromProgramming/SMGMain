@@ -164,7 +164,8 @@ void on_respawn(){
 }
 
 void on_admin_kill(){
-
+    game_state->health = 0;
+    
 }
 
 

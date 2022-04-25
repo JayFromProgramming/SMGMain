@@ -51,7 +51,7 @@ void shot_check(){
     if (trigger_state == TRIGGER_PIN_ACTIVE) {
         if (trigger_down == 0) {
             trigger_down = 1; // Just pulled
-        }
+        } else trigger_down = -1; // Held
     } else {
         trigger_down = 0; // Reset the trigger_down flag
     }
@@ -62,7 +62,6 @@ void shot_check(){
             switch (game_state->currentConfig->fire_selector) {
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
                     if (trigger_down == 1) {
-                        trigger_down = -1;
                         sounds::audio_interface::play_sound(sounds::SOUND_SHOOT);
                         shoot();
                         game_state->last_shot = millis();
@@ -71,7 +70,6 @@ void shot_check(){
                 case mt2::FIRE_MODE_BURST:
                     if (trigger_down == 1) {
                         game_state->current_burst_count = game_state->currentConfig->burst_size;
-                        trigger_down = -1;
                         sounds::audio_interface::play_sound(sounds::SOUND_SHOOT);
                         shoot();
                         game_state->last_shot = millis();
@@ -86,7 +84,6 @@ void shot_check(){
                     break;
                 case mt2::FIRE_MODE_AUTO:
                     if (trigger_down != 0) {
-                        trigger_down = -1;
                         sounds::audio_interface::play_sound(sounds::SOUND_SHOOT);
                         shoot();
                         game_state->last_shot = millis();
@@ -94,7 +91,6 @@ void shot_check(){
                     break;
             }
         } else if (trigger_down == 1) {
-            trigger_down = -1;
             sounds::audio_interface::play_sound(sounds::SOUND_EMPTY);
         }
     }
@@ -105,6 +101,55 @@ void trigger_interrupt(){
     shot_check();
     sei();
 }
+
+// This section contains the event handlers for the game
+
+void on_clone(mt2::clone* clone){
+    save_preset(0, clone);
+    configure_from_clone(clone);
+}
+
+// Called when the player is hit
+void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
+
+    // Check if we are currently still in the hit delay period and if so, ignore the hit
+    if (millis() - game_state->last_hit < game_state->hit_delay_ms) {
+        return;
+    }
+
+    // Check if friendly fire is enabled, if so check if the hit was on a friendly team and if so ignore the hit
+    if (game_state->currentConfig->game_bool_flags_1 & GAME_FRIENDLY_FIRE || teamID != game_state->currentConfig->team_id) {
+        game_state->health = min(game_state->health - mt2::damage_table_lookup(static_cast<damage_table>(dmg)), 0);
+        game_state->last_hit = millis(); // Set the last hit time
+        score_data_ptr->hits_from_players_game[playerID]++;
+        score_data_ptr->hits_from_players_life[playerID]++;
+        score_data_ptr->total_hits++;
+    }
+
+    // Check if we are dead
+    if (game_state->health <= 0){
+        score_data_ptr->kills_by[playerID]++; // Increment the kills by player
+        score_data_ptr->killed_by = playerID; // Set the killed by player
+        sounds::audio_interface::play_sound(sounds::SOUND_DEATH); // Make a scream of death
+    } else {
+        sounds::audio_interface::play_sound(sounds::SOUND_HIT); // Make a hit sound
+    }
+}
+
+void on_respawn(){ // Called when a player respawns
+    // Called when a player respawns
+    game_state->health = mt2::heath_lookup(game_state->currentConfig->respawn_health);
+    score_data_ptr->respawn_count++;
+    score_data_ptr->killed_by = 0;
+}
+
+void on_admin_kill(){ // Called when an admin kills a player
+    game_state->health = 0;
+    score_data_ptr->killed_by = GAME_ADMIN_ID;
+}
+
+
+// End event handlers
 
 void tagger_loop(){
     // Called by loop() this is where main code logic goes
@@ -127,49 +172,9 @@ void tagger_loop(){
 
     shot_check(); // Check if user wants to shoot
 
-
     // Check for IR input
     signalScan();
 }
-
-void perish(){
-    // Called when the player dies
-
-}
-
-// This section contains the event handlers for the game
-
-void on_clone(mt2::clone* clone){
-    save_preset(0, clone);
-    configure_from_clone(clone);
-}
-
-void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
-
-    // Check if we are currently still in the hit delay period and if so, ignore the hit
-    if (millis() - game_state->last_hit < game_state->hit_delay_ms) {
-        return;
-    }
-
-    // Called when a player is hit
-    if (game_state->currentConfig->game_bool_flags_1 & GAME_FRIENDLY_FIRE || teamID != game_state->currentConfig->team_id) {
-        game_state->health = min(game_state->health - mt2::damage_table_lookup(static_cast<damage_table>(dmg)), 0);
-        game_state->last_hit = millis();
-        score_data_ptr->hits_from_players[playerID]++;
-    }
-}
-
-void on_respawn(){
-
-}
-
-void on_admin_kill(){
-    game_state->health = 0;
-    
-}
-
-
-// End event handlers
 
 FLASHMEM tagger_state* get_tagger_data_ptr(){
     return game_state;
@@ -180,7 +185,7 @@ FLASHMEM void tagger_init(){
     IR_init();
     game_state = new tagger_state();
     score_data_ptr = new score_data();
-    score_data_ptr->hits_from_players = static_cast<unsigned short *>(malloc(sizeof(unsigned short) * 128));
+    score_data_ptr->hits_from_players_game = static_cast<unsigned short *>(malloc(sizeof(unsigned short) * 128));
     event_handlers* handles = get_handlers();
 
     handles->on_hit = on_hit;

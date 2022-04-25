@@ -40,15 +40,17 @@ struct tagger_state {
     unsigned char current_burst_count = 0;
     volatile bool reloading = false;
     volatile unsigned long reload_time = 0.0;
-    volatile unsigned char killed_by = 0;
 };
 
 struct score_data {
-    unsigned short  rounds_fired = 0;
-    unsigned short  total_hits = 0;
-    unsigned int    game_time = 0; // In seconds
-    unsigned char   respawn_count = 0;
-    unsigned short* hits_from_players = nullptr;
+    volatile unsigned short  rounds_fired = 0;
+    volatile unsigned short  total_hits = 0;
+    volatile unsigned int    game_time = 0; // Time of game start in ms
+    volatile unsigned char   respawn_count = 0;
+    volatile unsigned char   killed_by = 0; // Which player killed this player during this life
+    volatile unsigned short* kills_by = nullptr; // Which players killed this player during the game
+    volatile unsigned short* hits_from_players_game = nullptr; // How many times this player was hit by each player during the game
+    volatile unsigned short* hits_from_players_life = nullptr; // How many times this player was hit by each player during this life
 };
 
 void tagger_init();

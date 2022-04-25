@@ -33,9 +33,12 @@
 
 #define SYSTEM_PLAYER_ID 0x31 // Player ID for the system "Dozer"
 
+#define GAME_ADMIN_ID 0xFF // Player ID for the system "Admin"
+
 #include <Arduino.h>
 
 namespace mt2 {
+
     enum teams {
         RED = 0x00,
         BLUE = 0x01,

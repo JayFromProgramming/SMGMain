@@ -8,7 +8,7 @@ namespace mt2 {
 
 
 // Respawn health lookup table
-    short heath_lookup(respawn_health health) {
+    volatile short health_lookup(respawn_health health) {
         switch (health) {
             case HP_1:
                 return 1;

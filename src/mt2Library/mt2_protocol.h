@@ -15,6 +15,8 @@
 
 #define SYSTEM_PLAYER 0x31 // Player ID for the system "Dozer"
 
+#define MT2_MAX_PLAYERS 105 // Maximum number of players
+
 // Game flags first byte
 #define GAME_HIT_LED_ENABLE 0x02 // Game Flag to enable the hit LED
 #define GAME_FRIENDLY_FIRE 0x04 // Game Flag to enable friendly fire
@@ -229,7 +231,7 @@ namespace mt2 {
         // -1 is invalid, 0 is unchecked, 1 is checked and valid
     } clone;
 
-    short heath_lookup(respawn_health health);
+    volatile short health_lookup(respawn_health health);
 
     short hit_delay_to_micros(hit_delays delay);
 

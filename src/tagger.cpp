@@ -21,7 +21,7 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
 
     game_state->hit_delay_ms = mt2::hit_delay_to_micros(game_state->currentConfig->hit_delay);
 
-    game_state->max_health = mt2::heath_lookup(game_state->currentConfig->respawn_health);
+    game_state->max_health = mt2::health_lookup(game_state->currentConfig->respawn_health);
     game_state->health = game_state->max_health;
 }
 
@@ -136,9 +136,36 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     }
 }
 
+
+void clear_scores(){
+    for (uint_least8_t i = 0; i < MT2_MAX_PLAYERS; i++) {
+        score_data_ptr->kills_by[i] = 0;
+        score_data_ptr->hits_from_players_game[i] = 0;
+        score_data_ptr->hits_from_players_life[i] = 0;
+    }
+    score_data_ptr->total_hits = 0;
+    score_data_ptr->killed_by = 0;
+    sounds::audio_interface::play_sound(sounds::SOUND_BEEP);
+}
+
+void start_game(){
+    score_data_ptr->game_start_time = micros();
+    score_data_ptr->game_time = 0;
+    clear_scores();
+    game_state->health = game_state->max_health;
+    game_state->last_shot = 0;
+    game_state->last_hit = 0;
+
+}
+
+void on_full_health(){
+    sounds::audio_interface::play_sound(sounds::SOUND_HEAL);
+    game_state->health = game_state->max_health;
+}
+
 void on_respawn(){ // Called when a player respawns
     // Called when a player respawns
-    game_state->health = mt2::heath_lookup(game_state->currentConfig->respawn_health);
+    game_state->health = game_state->max_health;
     score_data_ptr->respawn_count++;
     score_data_ptr->killed_by = 0;
 }
@@ -184,22 +211,34 @@ FLASHMEM tagger_state* get_tagger_data_ptr(){
 FLASHMEM void tagger_init(){
     IR_init();
     game_state = new tagger_state();
+
     score_data_ptr = new score_data();
-    score_data_ptr->hits_from_players_game = static_cast<unsigned short *>(malloc(sizeof(unsigned short) * 128));
+    score_data_ptr->hits_from_players_game = new volatile unsigned short [MT2_MAX_PLAYERS];
+    score_data_ptr->hits_from_players_life = new volatile unsigned short [MT2_MAX_PLAYERS];
+    score_data_ptr->kills_by               = new volatile unsigned short [MT2_MAX_PLAYERS];
+
     event_handlers* handles = get_handlers();
 
+    // Provide the method pointers of the event handlers, so they can get called by tag_communicator
     handles->on_hit = on_hit;
     handles->on_clone = on_clone;
     handles->on_respawn = on_respawn;
     handles->on_admin_kill = on_admin_kill;
+    handles->on_full_health = on_full_health;
+    handles->on_clear_scores = clear_scores;
+    handles->on_start_game = start_game;
 
     pinMode(TRIGGER_PIN_NUMBER, TRIGGER_PIN_MODE);
     pinMode(RELOAD_PIN_NUMBER, RELOAD_PIN_MODE);
 
+    pinMode(HIT_LED_PIN_NUMBER, HIT_LED_PIN_MODE);
+
     // Attach interrupts on the trigger and reload pins
     attachInterrupt(digitalPinToInterrupt(RELOAD_PIN_NUMBER), reload_interrupt, RELOAD_INTERRUPT_MODE);
 
+    #ifdef USE_INTERRUPT_ON_TRIGGER
     attachInterrupt(digitalPinToInterrupt(TRIGGER_PIN_NUMBER), trigger_interrupt, TRIGGER_INTERRUPT_MODE);
+    #endif
 
     // Load the current configuration
     configure_from_clone(load_preset(0));

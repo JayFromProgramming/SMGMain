@@ -11,6 +11,7 @@ display::lcdDriver hud = display::lcdDriver();
 
 uint16_t next_loop_time = 0;
 
+//#define DEBUG_MODE
 
 void setup() {
     sounds::audio_interface::init(); // Initialize the audio interface
@@ -30,5 +31,10 @@ void loop() {
     while (millis() < next_loop_time) {
         // Wait for the next loop
         // Interrupts will still run while waiting
+        #ifdef DEBUG_MODE
+        if (millis() > next_loop_time + 2) {
+            Serial.printf("Loop took longer than 20ms %f\n", (millis() - next_loop_time) / 20.0);
+        }
+        #endif
     }
 }

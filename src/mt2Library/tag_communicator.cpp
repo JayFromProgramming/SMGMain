@@ -13,6 +13,7 @@ event_handlers* handlers;
 unsigned char preShot[2];
 
 void IR_init(){
+    handlers = new event_handlers();
     transmitter_init();
 }
 
@@ -64,18 +65,20 @@ FLASHMEM void printClone(clone *clone){
     print_clone_values(clone);
 }
 
-
+// Processes system commands and executes their assigned handler if one exists
 void process_sys_command(const unsigned char command) {
     switch (command) {
         case ADMIN_KILL:
             if (handlers->on_admin_kill != nullptr) handlers->on_admin_kill();
             break;
         case PAUSE_UNPAUSE:
+            if (handlers->on_pause_unpause != nullptr) handlers->on_pause_unpause();
             break;
         case START_GAME:
             if (handlers->on_start_game != nullptr) handlers->on_start_game();
             break;
         case RESTORE_DEFAULTS:
+            if (handlers->on_restore_defaults != nullptr) handlers->on_restore_defaults();
             break;
         case RESPAWN:
             if (handlers->on_respawn != nullptr) handlers->on_respawn();
@@ -84,13 +87,16 @@ void process_sys_command(const unsigned char command) {
             if (handlers->on_new_game != nullptr) handlers->on_new_game();
             break;
         case FULL_AMMO:
+            if (handlers->on_full_ammo != nullptr) handlers->on_full_ammo();
             break;
         case END_GAME:
             if (handlers->on_end_game != nullptr) handlers->on_end_game();
             break;
         case RESET_CLOCK:
+            if (handlers->on_reset_clock != nullptr) handlers->on_reset_clock();
             break;
         case INIT_PLAYER:
+            if (handlers->on_init_player != nullptr) handlers->on_init_player();
             break;
         case EXPLODE_PLAYER:
             if (handlers->on_explode != nullptr) handlers->on_explode();
@@ -102,15 +108,19 @@ void process_sys_command(const unsigned char command) {
             if (handlers->on_full_health != nullptr) handlers->on_full_health();
             break;
         case FULL_ARMOR:
+            if (handlers->on_full_armor != nullptr) handlers->on_full_armor();
             break;
         case CLEAR_SCORES:
+            if (handlers->on_clear_scores != nullptr) handlers->on_clear_scores();
             break;
         case TEST_SENSORS:
+            if (handlers->on_test_sensors != nullptr) handlers->on_test_sensors();
             break;
         case STUN_PLAYER:
             if (handlers->on_stun != nullptr) handlers->on_stun();
             break;
         case DISARM_PLAYER:
+            if (handlers->on_disarm_player != nullptr) handlers->on_disarm_player();
             break;
         default:
             break;
@@ -132,10 +142,10 @@ void decodeMT2Data(unsigned char* data){
     } else { // This is where system packets are processed
         switch (messageByte){
             case ADD_HEALTH:
-
+                if (handlers->on_add_health != nullptr) handlers->on_add_health();
                 break;
             case ADD_ROUNDS:
-
+                if (handlers->on_add_rounds != nullptr) handlers->on_add_rounds();
                 break;
             case SYSTEM_DATA:
                 switch(data[1]){
@@ -152,16 +162,15 @@ void decodeMT2Data(unsigned char* data){
                 process_sys_command(data[1]);
                 break;
             case CLIP_PICKUP:
-
+                if (handlers->on_clip_pickup != nullptr) handlers->on_clip_pickup();
                 break;
             case HEALTH_PICKUP:
-
+                if (handlers->on_health_pickup != nullptr) handlers->on_health_pickup();
                 break;
             case FLAG_PICKUP:
-
+                if (handlers->on_flag_pickup != nullptr) handlers->on_flag_pickup();
                 break;
             default:
-
                 break;
         }
     }

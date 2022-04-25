@@ -22,7 +22,8 @@ namespace sounds {
         SOUND_PICKUP = 4,
         SOUND_HEAL = 5,
         SOUND_RELOAD = 6,
-        SOUND_EMPTY = 7
+        SOUND_EMPTY = 7,
+        SOUND_BEEP = 8,
     };
 
     enum actions{

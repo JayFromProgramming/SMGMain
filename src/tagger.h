@@ -32,7 +32,7 @@ struct tagger_state {
     uint32_t last_hit = 0;
     unsigned int hit_delay_ms = 0;
     long shot_interval = 0;
-    short max_health = 0;
+    volatile short max_health = 0;
     volatile short health = 0;
     unsigned char player_id = 0;
     volatile unsigned char ammo_count = 0;
@@ -45,7 +45,8 @@ struct tagger_state {
 struct score_data {
     volatile unsigned short  rounds_fired = 0;
     volatile unsigned short  total_hits = 0;
-    volatile unsigned int    game_time = 0; // Time of game start in ms
+    volatile unsigned int    game_start_time = 0; // Time of game start in ms
+    volatile unsigned int    game_time = 0; // Time of game as of game end in ms
     volatile unsigned char   respawn_count = 0;
     volatile unsigned char   killed_by = 0; // Which player killed this player during this life
     volatile unsigned short* kills_by = nullptr; // Which players killed this player during the game

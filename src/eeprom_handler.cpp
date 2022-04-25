@@ -6,12 +6,12 @@
 
 #include <EEPROM.h>
 
-#define PRESET_START_ADDRESS 0xF0
+#define PRESET_START_ADDRESS 0x1F // EEPROM address where presets start ( 0x1F = 31 )
 #define TOTAL_PRESETS 12
 
 typedef struct eeprom_preset {
     char name[14]{"Unnamed Clone"}; // Preset name used for display, max 14 characters
-    teams team_id;
+    teams team_id = mt2::NONE; // Team ID
     unsigned char clips_from_ammo_box = 0x00;
     unsigned char health_from_medic_box = 0x00;
     unsigned char hit_led_timout_seconds = 0xFF;

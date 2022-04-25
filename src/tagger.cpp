@@ -2,13 +2,15 @@
 // Created by Jay on 4/18/2022.
 //
 #include <tagger.h>
-#include <audio_interface.h>
+#include "audio/audio_interface.h"
 #include "mt2Library/tag_communicator.h"
 #include <eeprom_handler.h>
 
 tagger_state *game_state = nullptr;
 
 score_data *score_data_ptr = nullptr;
+
+audio_interface::audio_interface *audio_ptr = nullptr;
 
 // 1 = Just pulled, 0 = Released, -1 = Not released but is being held
 short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has been called
@@ -37,7 +39,7 @@ void reload_interrupt(){
         game_state->reloading = true;
         // Set the reload_time to the current time + the reload_time (in seconds)
         game_state->reload_time = millis() + game_state->currentConfig->reload_time * 1000;
-        sounds::audio_interface::play_sound(sounds::SOUND_RELOAD);
+        audio_ptr->play_sound(audio_interface::SOUND_RELOAD);
     }
 
     // Re-enable interrupts
@@ -62,7 +64,7 @@ void shot_check(){
             switch (game_state->currentConfig->fire_selector) {
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
                     if (trigger_down == 1) {
-                        sounds::audio_interface::play_sound(sounds::SOUND_SHOOT);
+                        audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                         shoot();
                         game_state->last_shot = millis();
                     }
@@ -70,13 +72,13 @@ void shot_check(){
                 case mt2::FIRE_MODE_BURST:
                     if (trigger_down == 1) {
                         game_state->current_burst_count = game_state->currentConfig->burst_size;
-                        sounds::audio_interface::play_sound(sounds::SOUND_SHOOT);
+                        audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                         shoot();
                         game_state->last_shot = millis();
                     } else if (trigger_down == -1) {
                         if (game_state->current_burst_count > 0) {
                             game_state->current_burst_count--;
-                            sounds::audio_interface::play_sound(sounds::SOUND_SHOOT);
+                            audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                             shoot();
                             game_state->last_shot = millis();
                         }
@@ -84,14 +86,14 @@ void shot_check(){
                     break;
                 case mt2::FIRE_MODE_AUTO:
                     if (trigger_down != 0) {
-                        sounds::audio_interface::play_sound(sounds::SOUND_SHOOT);
+                        audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                         shoot();
                         game_state->last_shot = millis();
                     }
                     break;
             }
         } else if (trigger_down == 1) {
-            sounds::audio_interface::play_sound(sounds::SOUND_EMPTY);
+            audio_ptr->play_sound(audio_interface::SOUND_EMPTY);
         }
     }
 }
@@ -130,9 +132,9 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     if (game_state->health <= 0){
         score_data_ptr->kills_by[playerID]++; // Increment the kills by player
         score_data_ptr->killed_by = playerID; // Set the killed by player
-        sounds::audio_interface::play_sound(sounds::SOUND_DEATH); // Make a scream of death
+        audio_ptr->play_sound(audio_interface::SOUND_DEATH); // Make a scream of death
     } else {
-        sounds::audio_interface::play_sound(sounds::SOUND_HIT); // Make a hit sound
+        audio_ptr->play_sound(audio_interface::SOUND_HIT); // Make a hit sound
     }
 }
 
@@ -145,7 +147,7 @@ void clear_scores(){
     }
     score_data_ptr->total_hits = 0;
     score_data_ptr->killed_by = 0;
-    sounds::audio_interface::play_sound(sounds::SOUND_BEEP);
+    audio_ptr->play_sound(audio_interface::SOUND_BEEP);
 }
 
 void start_game(){
@@ -159,7 +161,7 @@ void start_game(){
 }
 
 void on_full_health(){
-    sounds::audio_interface::play_sound(sounds::SOUND_HEAL);
+    audio_ptr->play_sound(audio_interface::SOUND_HEAL);
     game_state->health = game_state->max_health;
 }
 
@@ -208,8 +210,10 @@ FLASHMEM tagger_state* get_tagger_data_ptr(){
 }
 
 
-FLASHMEM void tagger_init(){
+FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     IR_init();
+    init_eeprom();
+    audio_ptr = audioPtr;
     game_state = new tagger_state();
 
     score_data_ptr = new score_data();

@@ -6,8 +6,21 @@
 
 #include <EEPROM.h>
 
+#define EEPROM_RESET_FLAG 0xFF // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
+
 #define PRESET_START_ADDRESS 0x1F // EEPROM address where presets start ( 0x1F = 31 )
 #define TOTAL_PRESETS 12
+
+typedef struct device_configs {
+    unsigned char device_type; // Will be used by the radio library once it's implemented
+    unsigned char device_id;
+
+    unsigned char current_preset;
+    teams current_team;
+
+} device_configs;
+
+device_configs* device_config = nullptr;
 
 typedef struct eeprom_preset {
     char name[14]{"Unnamed Clone"}; // Preset name used for display, max 14 characters
@@ -189,4 +202,26 @@ FLASHMEM int get_remaining_space(){
     return EEPROM.length() - used_space;
 }
 
+FLASHMEM void init_eeprom(){
+    EEPROM.begin();
+    if (EEPROM.read(calcAddress(0)) == EEPROM_RESET_FLAG) { // If the first byte is 0xFF,
+        // then the EEPROM has not been initialized on this board
+        set_defaults();
+        EEPROM.write(calcAddress(0), EEPROM_RESET_FLAG);
+    }
+
+    device_config = new device_configs();
+    EEPROM.get(calcAddress(1), *device_config);
+
+    if (sizeof (device_configs) + 1 > PRESET_START_ADDRESS){
+        #ifdef DEBUG
+            Serial.println("EEPROM config collision");
+        #endif
+
+    }
+
+    #ifdef DEBUG
+    Serial.println("EEPROM initialized");
+    #endif
+}
 

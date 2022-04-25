@@ -10,9 +10,10 @@
 
 #define AUDIO_EOC 0xFF
 
-#include <Arduino.h>
 
-namespace sounds {
+#include "audio_player.h"
+
+namespace audio_interface {
 
     enum sound_samples{
         SOUND_NONE = 0,
@@ -43,18 +44,18 @@ namespace sounds {
 
     class audio_interface {
 
+    private:
+        audio_player::AudioPlayer *player;
+
     public:
 
-        static void init(){
-            AUDIO.begin(9600);
-            AUDIO.write(ACTION_STOP);
-            AUDIO.write(AUDIO_EOC);
+        void init(){
+            player = new audio_player::AudioPlayer();
+
         }
 
-        static void play_sound(sound_samples sound){
-            AUDIO.write(ACTION_PLAY_SOUND);
-            AUDIO.write(sound);
-            AUDIO.write(AUDIO_EOC);
+        void play_sound(sound_samples sound){
+            player->play(sound);
         }
 
         FLASHMEM static void change_sound_set(sound_sets sound_set){

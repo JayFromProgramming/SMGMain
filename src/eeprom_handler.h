@@ -21,4 +21,6 @@ void set_defaults();
 
 int get_remaining_space();
 
+void init_eeprom();
+
 #endif //TLTPROJECT1_EEPROM_HANDLER_H

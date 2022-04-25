@@ -4,20 +4,28 @@
 #include <Arduino.h>
 #include <tagger.h>
 #include <Wire.h>
-#include "audio_interface.h"
+#include "audio/audio_interface.h"
 #include <lcdDisplay/lcdDriver.h>
 
 display::lcdDriver hud = display::lcdDriver();
+audio_interface::audio_interface audio = audio_interface::audio_interface();
 
 uint16_t next_loop_time = 0;
 
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 void setup() {
-    sounds::audio_interface::init(); // Initialize the audio interface
-    tagger_init(); // Initialize the tagger
-    display::lcdDriver::displayInit(); // Initialize the LCD display
+#ifdef DEBUG_MODE
+    Serial.begin(9600);
+    Serial.println("Starting...");
+#endif
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWriteFast(LED_BUILTIN, HIGH);
+    audio.init();
+    tagger_init(&audio); // Initialize the tagger
+//    display::lcdDriver::displayInit(); // Initialize the LCD display
     hud.pass_data_ptr(get_tagger_data_ptr()); // pass the tagger data pointer to the lcd driver
+    digitalWriteFast(LED_BUILTIN, LOW);
 }
 
 

@@ -25,6 +25,7 @@
 #include <Arduino.h>
 
 #include <mt2Library/mt2_protocol.h>
+#include <audio/audio_interface.h>
 
 struct tagger_state {
     mt2::clone *currentConfig = nullptr;
@@ -54,7 +55,7 @@ struct score_data {
     volatile unsigned short* hits_from_players_life = nullptr; // How many times this player was hit by each player during this life
 };
 
-void tagger_init();
+void tagger_init(audio_interface::audio_interface* audio_interface);
 
 void tagger_loop();
 

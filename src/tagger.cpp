@@ -224,13 +224,13 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     event_handlers* handles = get_handlers();
 
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
-    handles->on_hit = on_hit;
-    handles->on_clone = on_clone;
-    handles->on_respawn = on_respawn;
-    handles->on_admin_kill = on_admin_kill;
-    handles->on_full_health = on_full_health;
+    handles->on_hit =          on_hit;
+    handles->on_clone =        on_clone;
+    handles->on_respawn =      on_respawn;
+    handles->on_admin_kill =   on_admin_kill;
+    handles->on_full_health =  on_full_health;
     handles->on_clear_scores = clear_scores;
-    handles->on_start_game = start_game;
+    handles->on_start_game =   start_game;
 
     pinMode(TRIGGER_PIN_NUMBER, TRIGGER_PIN_MODE);
     pinMode(RELOAD_PIN_NUMBER, RELOAD_PIN_MODE);

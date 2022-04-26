@@ -163,5 +163,13 @@ namespace display {
         lcd.fillRect(x1, y1, w, h, ST77XX_BLACK);
     }
 
+//    void lcdDriver::override_text(String* text) {
+//        lcd.fillScreen(ST77XX_BLACK);
+//        lcd.setCursor(0, 0);
+//        lcd.setTextSize(11);
+//        lcd.setTextColor(ST77XX_WHITE);
+//        lcd.print(text);
+//    }
+
 
 } // display

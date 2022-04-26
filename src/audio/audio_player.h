@@ -13,6 +13,7 @@ namespace audio_player {
 
     private:
         unsigned int* sample_locations;
+        bool* in_memory; // An array of booleans that indicate whether the sample is in memory
 
         void load_sample_to_memory(u_int8_t index);
 

@@ -24,14 +24,20 @@ namespace audio_player {
     void AudioPlayer::init() {
         AudioStopUsingSPI();
         AudioMemory(16);
-        sample_locations = static_cast<unsigned int *>(malloc(sizeof samples));
-        for (int i = 0; i < sizeof samples; i++) {
+        sample_locations = static_cast<unsigned int *>
+                (malloc(sizeof (unsigned int*) * total_samples));
+        in_memory = static_cast<bool *>
+                (malloc(sizeof(bool *) * total_samples));
+        for (int i = 0; i < total_samples; i++) {
             sample_locations[i] = i;
         }
-        load_sample_to_memory(0);
+//        load_sample_to_memory(0);
     }
 
-    void AudioPlayer::play(unsigned char index) {
+    void AudioPlayer::play(uint8_t index) {
+        if (index >= total_samples) {
+            return;
+        }
         if (memPlayer.isPlaying()) {
             memPlayer.stop();
         }
@@ -39,9 +45,11 @@ namespace audio_player {
     }
 
     void AudioPlayer::load_sample_to_memory(u_int8_t sample_index) {
-        auto* sample = static_cast<unsigned int *>(malloc(sizeof samples[sample_index]));
-        memcpy(sample, samples[sample_index], sizeof *samples[sample_index]);
+        auto* sample = static_cast<unsigned int *>
+                (malloc(sample_sizes[sample_index] * sizeof(unsigned int)));
+        memcpy(sample, samples[sample_index], sample_sizes[sample_index]);
         sample_locations[sample_index] = *sample;
+        in_memory[sample_index] = sample;
     }
 
 } // audio_player

@@ -3,14 +3,24 @@
 
 #include <Arduino.h>
 #include <tagger.h>
-#include <Wire.h>
+
 #include "audio/audio_interface.h"
+#include "InternalTemperature.h"
 #include <lcdDisplay/lcdDriver.h>
+
+extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
 
 display::lcdDriver hud = display::lcdDriver();
 audio_interface::audio_interface audio = audio_interface::audio_interface();
-
 uint16_t next_loop_time = 0;
+
+//void overheat_method() {
+//    // In the event of the main cpu overheating we reduce the system clock to .75MHz and stop the main loop.
+//    // We will also attach a low temp interrupt to the main cpu to restart the system clock once the cpu has cooled down.
+//    set_arm_clock(750000);
+//    hud.override_text((String *) "Main CPU Overheating\nShutting Down");
+//
+//}
 
 #define DEBUG_MODE
 
@@ -20,29 +30,36 @@ void setup() {
     Serial.println("Starting...");
 #endif
     pinMode(LED_BUILTIN, OUTPUT);
-    digitalWriteFast(LED_BUILTIN, HIGH);
+    digitalWrite(LED_BUILTIN, HIGH);
+//    InternalTemperatureClass::attachHighTempInterruptCelsius(80, &overheat_method);
     audio.init();
     tagger_init(&audio); // Initialize the tagger
 //    display::lcdDriver::displayInit(); // Initialize the LCD display
     hud.pass_data_ptr(get_tagger_data_ptr()); // pass the tagger data pointer to the lcd driver
-    digitalWriteFast(LED_BUILTIN, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
 }
 
+bool led_state = false;
 
 // Main loop this runs once every 20ms or 50Hz while the tagger and hud updates run audio interrupts are disabled
 void loop() {
-    next_loop_time = millis() + 20;
+    next_loop_time = micros() + (20 * 1000);
 //    AudioNoInterrupts(); // Disable audio interrupts while running main loop
     tagger_loop(); // Run all main tagger functions
-    hud.update_hud(); // Update the HUD
+//    hud.update_hud(); // Update the HUD
 //    AudioInterrupts(); // Re-enable audio interrupts
-    while (millis() < next_loop_time) {
+    do {
         // Wait for the next loop
         // Interrupts will still run while waiting
-        #ifdef DEBUG_MODE
-        if (millis() > next_loop_time + 2) {
-            Serial.printf("Loop took longer than 20ms %f\n", (millis() - next_loop_time) / 20.0);
-        }
-        #endif
+        Serial.printf("Waiting for next loop %d %d\n", micros(), next_loop_time);
+    } while (micros() < next_loop_time);
+
+#ifdef DEBUG_MODE
+    digitalWriteFast(LED_BUILTIN, led_state);
+    led_state = !led_state;
+    if (micros() > next_loop_time) {
+        Serial.printf("Loop took longer than 20ms %f\n", (micros() - next_loop_time) / 1000.0);
     }
+    Serial.printf("Loop took %f\n", (micros() - next_loop_time) / 1000.0);
+#endif
 }

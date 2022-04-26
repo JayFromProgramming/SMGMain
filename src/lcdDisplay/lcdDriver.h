@@ -45,7 +45,9 @@ namespace display {
 
         void pass_data_ptr(tagger_state *data);
 
-        void update_hud();
+        void update_hud(); // Runs the update checks for the display
+
+//        void override_text(String* text);
 
     };
 

@@ -21,11 +21,14 @@ AudioConnection          patchCord2(memPlayer, 0, board_out, 1);
 
 namespace audio_player {
 
-
     void AudioPlayer::init() {
         AudioStopUsingSPI();
         AudioMemory(16);
-
+        sample_locations = static_cast<unsigned int *>(malloc(sizeof samples));
+        for (int i = 0; i < sizeof samples; i++) {
+            sample_locations[i] = i;
+        }
+        load_sample_to_memory(0);
     }
 
     void AudioPlayer::play(unsigned char index) {
@@ -33,6 +36,12 @@ namespace audio_player {
             memPlayer.stop();
         }
         memPlayer.play(samples[index - 1]);
+    }
+
+    void AudioPlayer::load_sample_to_memory(u_int8_t sample_index) {
+        auto* sample = static_cast<unsigned int *>(malloc(sizeof samples[sample_index]));
+        memcpy(sample, samples[sample_index], sizeof *samples[sample_index]);
+        sample_locations[sample_index] = *sample;
     }
 
 } // audio_player

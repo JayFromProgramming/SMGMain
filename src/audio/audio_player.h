@@ -5,13 +5,19 @@
 #ifndef SMGMAIN_AUDIO_PLAYER_H
 #define SMGMAIN_AUDIO_PLAYER_H
 
+#include <cstdio>
+
 namespace audio_player {
 
     class AudioPlayer {
 
-        void init();
+    private:
+        unsigned int* sample_locations;
+
+        void load_sample_to_memory(u_int8_t index);
 
     public:
+        void init();
         void play(unsigned char index);
     };
 

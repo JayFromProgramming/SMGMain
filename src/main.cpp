@@ -22,7 +22,7 @@ uint16_t next_loop_time = 0;
 //
 //}
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 void setup() {
 #ifdef DEBUG_MODE
@@ -39,27 +39,14 @@ void setup() {
     digitalWrite(LED_BUILTIN, LOW);
 }
 
-bool led_state = false;
-
 // Main loop this runs once every 20ms or 50Hz while the tagger and hud updates run audio interrupts are disabled
 void loop() {
     next_loop_time = micros() + (20 * 1000);
+    digitalWriteFast(LED_BUILTIN, HIGH);
 //    AudioNoInterrupts(); // Disable audio interrupts while running main loop
     tagger_loop(); // Run all main tagger functions
 //    hud.update_hud(); // Update the HUD
 //    AudioInterrupts(); // Re-enable audio interrupts
-    do {
-        // Wait for the next loop
-        // Interrupts will still run while waiting
-        Serial.printf("Waiting for next loop %d %d\n", micros(), next_loop_time);
-    } while (micros() < next_loop_time);
+    while (micros() < next_loop_time) digitalWriteFast(LED_BUILTIN, LOW); // Set LED off while waiting for next loop
 
-#ifdef DEBUG_MODE
-    digitalWriteFast(LED_BUILTIN, led_state);
-    led_state = !led_state;
-    if (micros() > next_loop_time) {
-        Serial.printf("Loop took longer than 20ms %f\n", (micros() - next_loop_time) / 1000.0);
-    }
-    Serial.printf("Loop took %f\n", (micros() - next_loop_time) / 1000.0);
-#endif
 }

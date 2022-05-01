@@ -24,11 +24,11 @@ struct event_handlers {
     void (*on_end_game)() = nullptr;
     void (*on_stun)() = nullptr;
     void (*on_explode)() = nullptr;
-    void (*on_clip_pickup)() = nullptr;
-    void (*on_health_pickup)() = nullptr;
+    void (*on_clip_pickup)(u_int8_t) = nullptr;
+    void (*on_health_pickup)(u_int8_t) = nullptr;
     void (*on_flag_pickup)() = nullptr;
-    void (*on_add_health)() = nullptr;
-    void (*on_add_rounds)() = nullptr;
+    void (*on_add_health)(u_int8_t) = nullptr;
+    void (*on_add_rounds)(u_int8_t) = nullptr;
     void (*on_restore_defaults)() = nullptr;
     void (*on_reset_clock)() = nullptr;
     void (*on_init_player)() = nullptr;

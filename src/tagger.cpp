@@ -12,6 +12,8 @@ score_data *score_data_ptr = nullptr;
 
 audio_interface::audio_interface *audio_ptr = nullptr;
 
+IntervalTimer hit_led_timer;
+
 // 1 = Just pulled, 0 = Released, -1 = Not released but is being held
 short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has been called
 
@@ -104,6 +106,11 @@ void trigger_interrupt(){
     sei();
 }
 
+void hit_led_off(){
+    digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
+    hit_led_timer.end(); // End the timer
+}
+
 // This section contains the event handlers for the game
 
 void on_clone(mt2::clone* clone){
@@ -150,6 +157,21 @@ void clear_scores(){
     audio_ptr->play_sound(audio_interface::SOUND_BEEP);
 }
 
+void new_game(){
+    game_state->health = game_state->max_health;
+    game_state->last_shot = 0;
+    game_state->last_hit = 0;
+    clear_scores();
+    audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+}
+
+void end_game(){
+    game_state->health = 0;
+    game_state->last_shot = 0;
+    game_state->last_hit = 0;
+    audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+}
+
 void start_game(){
     score_data_ptr->game_start_time = micros();
     score_data_ptr->game_time = 0;
@@ -160,23 +182,47 @@ void start_game(){
 
 }
 
-void on_full_health(){
+void full_health(){
     audio_ptr->play_sound(audio_interface::SOUND_HEAL);
     game_state->health = game_state->max_health;
 }
 
-void on_respawn(){ // Called when a player respawns
+void respawn(){ // Called when a player respawns
     // Called when a player respawns
     game_state->health = game_state->max_health;
     score_data_ptr->respawn_count++;
     score_data_ptr->killed_by = 0;
 }
 
-void on_admin_kill(){ // Called when an admin kills a player
+void admin_kill(){ // Called when an admin kills a player
     game_state->health = 0;
     score_data_ptr->killed_by = GAME_ADMIN_ID;
 }
 
+void pause_unpause(){
+    if (game_state->paused){
+        game_state->paused = false;
+        audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+    } else {
+        game_state->paused = true;
+        audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+    }
+}
+
+void stunned(){
+    game_state->last_shot = millis() + 3000; // Set the last shot time to 3 seconds in the future to prevent shooting
+}
+
+void test_sensors(){
+    digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE);
+    hit_led_timer.begin(hit_led_off, 250000); // Turn the hit led off after 250 microseconds
+}
+
+void restart_gun(){
+    // Because I can't find a way to force a restart of the teensy, I'm just going to crash the program
+    score_data_ptr->hits_from_players_game[INT64_MAX] = INT16_MAX;
+    // Basically writing well past the end of memory
+}
 
 // End event handlers
 
@@ -223,14 +269,22 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
 
     event_handlers* handles = get_handlers();
 
+    hit_led_timer.priority(255); // Set the timer to the lowest priority
+
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
-    handles->on_hit =          on_hit;
-    handles->on_clone =        on_clone;
-    handles->on_respawn =      on_respawn;
-    handles->on_admin_kill =   on_admin_kill;
-    handles->on_full_health =  on_full_health;
-    handles->on_clear_scores = clear_scores;
-    handles->on_start_game =   start_game;
+    handles->on_hit =           on_hit;
+    handles->on_clone =         on_clone;
+    handles->on_respawn =       respawn;
+    handles->on_admin_kill =    admin_kill;
+    handles->on_full_health =   full_health;
+    handles->on_clear_scores =  clear_scores;
+    handles->on_start_game =    start_game;
+    handles->on_new_game =      new_game;
+    handles->on_end_game =      end_game;
+    handles->on_pause_unpause = pause_unpause;
+    handles->on_stun =          stunned;
+    handles->on_init_player =   restart_gun; // Crashes the program and forces a restart of the teensy
+    handles->on_test_sensors =  test_sensors;
 
     pinMode(TRIGGER_PIN_NUMBER, TRIGGER_PIN_MODE);
     pinMode(RELOAD_PIN_NUMBER, RELOAD_PIN_MODE);

@@ -18,7 +18,7 @@
 #define HIT_LED_PIN_NUMBER 4
 #define HIT_LED_PIN_MODE OUTPUT
 #define HIT_LED_PIN_ACTIVE HIGH
-#define HIT_LED_PIN_RELEASED LOW
+#define HIT_LED_PIN_INACTIVE LOW
 
 #define IR_RECEIVER_PIN_NUMBER 5
 
@@ -41,6 +41,7 @@ struct tagger_state {
     unsigned char current_burst_count = 0;
     volatile bool reloading = false;
     volatile unsigned long reload_time = 0.0;
+    volatile bool paused = false;
 };
 
 struct score_data {

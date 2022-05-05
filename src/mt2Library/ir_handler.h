@@ -16,4 +16,6 @@ void send(const unsigned char *data, unsigned short bytes);
 
 char IRScan();
 
+void transmitter_test();
+
 #endif //TLTPROJECT1_IR_HANDLER_H

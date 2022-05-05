@@ -5,7 +5,7 @@
 #ifndef SMGMAIN_MT2_PROTOCOL_H
 #define SMGMAIN_MT2_PROTOCOL_H
 
-#define MT2_HEADER_LENGTH 2400 // Length of the MT2 header in microseconds
+#define MT2_HEADER_LENGTH 1200 // Length of the MT2 header in microseconds
 #define MT2_ONE_LENGTH 1200 // Length of a 1 in microseconds
 #define MT2_ZERO_LENGTH 600 // Length of a 0 in microseconds
 #define MT2_SPACE_LENGTH 600 // Length of a space in microseconds

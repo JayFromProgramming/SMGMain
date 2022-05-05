@@ -4,7 +4,7 @@
 
 #include "tag_communicator.h"
 
-#include <utility>
+//#include <utility>
 #include "clone_preset_builder.h"
 
 using namespace mt2;
@@ -142,10 +142,10 @@ void decodeMT2Data(unsigned char* data){
     } else { // This is where system packets are processed
         switch (messageByte){
             case ADD_HEALTH:
-                if (handlers->on_add_health != nullptr) handlers->on_add_health(data[1]);
+                if (handlers->on_add_health != nullptr) handlers->on_add_health();
                 break;
             case ADD_ROUNDS:
-                if (handlers->on_add_rounds != nullptr) handlers->on_add_rounds(data[1]);
+                if (handlers->on_add_rounds != nullptr) handlers->on_add_rounds();
                 break;
             case SYSTEM_DATA:
                 switch(data[1]){
@@ -162,10 +162,10 @@ void decodeMT2Data(unsigned char* data){
                 process_sys_command(data[1]);
                 break;
             case CLIP_PICKUP:
-                if (handlers->on_clip_pickup != nullptr) handlers->on_clip_pickup(data[1]);
+                if (handlers->on_clip_pickup != nullptr) handlers->on_clip_pickup();
                 break;
             case HEALTH_PICKUP:
-                if (handlers->on_health_pickup != nullptr) handlers->on_health_pickup(data[1]);
+                if (handlers->on_health_pickup != nullptr) handlers->on_health_pickup();
                 break;
             case FLAG_PICKUP:
                 if (handlers->on_flag_pickup != nullptr) handlers->on_flag_pickup();

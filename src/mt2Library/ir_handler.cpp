@@ -7,7 +7,9 @@
 #include "mt2_protocol.h"
 #include <IRremote.h>
 
-#define IR_PIN 3
+#define IR_PIN 8
+#define IR_FREQ 56000
+#define IR_DUTY_CYCLE 128
 
 uint16_t transmission_buffer[1024];
 unsigned char received_bytes[1024];
@@ -16,8 +18,16 @@ IRsend irsend;
 IRrecv irrecv(16);
 
 int received_length;
-int transmission_length;
 
+
+IntervalTimer transmission_timer; // Timer for sending IR signals
+volatile uint_fast16_t  transmission_position = 0; // Used to count where in the buffer we are
+volatile uint_fast16_t  transmission_length;
+bool transmission_in_progress = false; // Used to determine if we are currently sending IR signals
+void (*on_transmission_complete)() = nullptr;
+
+
+void transmit_start();
 
 unsigned char * get_buffer(){
     return received_bytes;
@@ -27,7 +37,7 @@ unsigned char * get_buffer(){
 FLASHMEM void transmitter_init() {
 //    pinMode(LED_BUILTIN, OUTPUT);
 //    digitalWrite(LED_BUILTIN, HIGH);
-    irsend.begin(IR_PIN, false);
+//    irsend.begin(8, false);
     irrecv.enableIRIn();
 
 }
@@ -113,7 +123,6 @@ FASTRUN void decodeRawSignal(const uint16_t *Signal, int SignalLength) {
 }
 
 
-
 /*
  * This function is used to encode the binary data into IR pulse timings for the IR transmitter.
  */
@@ -145,6 +154,7 @@ void send(const unsigned char *data, unsigned short bytes){
     send(data, (unsigned int) bytes*8);
 }
 
+
 // Send data in a bit count
 void send(const unsigned char *data, unsigned int bits){
     // Flush the transmission buffer
@@ -156,13 +166,71 @@ void send(const unsigned char *data, unsigned int bits){
 //    analogWriteFrequency(IR_PIN, MT2_FREQUENCY);
     unsigned long expected_trans_time = 0;
     for (int i = 0; i < trans_length; i++){
+        if (!(i % 2)) Serial.printf("%d ", transmission_buffer[i]);
         expected_trans_time += transmission_buffer[i];
     }
-    irsend.sendRaw(transmission_buffer, transmission_length,
-                   56);
-    // Compare the time it took to send the message to the time is should have taken
-//    pinMode(IR_PIN, OUTPUT);
-    digitalWrite(IR_PIN, HIGH);
+    Serial.printf("\nExpected time in microseconds %d\n", expected_trans_time);
+    Serial.printf("Total length is %d\n", transmission_length);
+//    irsend.sendRaw(transmission_buffer, transmission_length,
+//                   56);
+    transmit_start();
+}
+
+void transmit_finished(){
+    analogWrite(IR_PIN, 0);
+    transmission_in_progress = false;
+    if (on_transmission_complete != nullptr) on_transmission_complete();
+}
+
+// Custom IR transmitter method using interval timer
+FASTRUN void transmit_method(){
+    noInterrupts(); // Prevent interrupts while we are changing output state of the IR transmitter
+    if (transmission_position % 2){
+        // Connect the IR pin to the PWM generator
+        tone(IR_PIN, IR_FREQ);
+    } else {
+        noTone(IR_PIN);
+    }
+    if (transmission_position >= transmission_length){
+        transmission_timer.end();
+        transmit_finished();
+    }
+    transmission_timer.update(transmission_buffer[transmission_position]);
+    transmission_position++;
+    interrupts(); // Re-enable interrupts
+}
+
+void transmit_start(){
+    // Set IR_PIN to generate a PWM frequency modulated to IR_FREQ
+//    analogWriteFrequency(IR_PIN, IR_FREQ * 9);
+//    analogWriteResolution(8);
+//    analogWrite(IR_PIN, IR_DUTY_CYCLE);
+    tone(IR_PIN, IR_FREQ);
+    // Set the IR_PIN to output a high voltage
+    transmission_timer.priority(1); // Set the timer to the highest priority
+    transmission_in_progress = true;
+    transmission_position = 1;
+    transmission_timer.begin(transmit_method, transmission_buffer[0]);
+}
+
+void transmitter_test(){
+    // Send a 56khz carrier signal for 5ms
+
+    // Flush the transmission buffer
+    for (unsigned short & i : transmission_buffer){
+        i = 0;
+    }
+
+    transmission_buffer[0] = MT2_HEADER_LENGTH;
+    transmission_buffer[1] = MT2_HEADER_LENGTH;
+    transmission_buffer[2] = MT2_ONE_LENGTH;
+    transmission_buffer[3] = MT2_ONE_LENGTH;
+    transmission_buffer[4] = MT2_ZERO_LENGTH;
+    transmission_buffer[5] = MT2_ZERO_LENGTH;
+    transmission_buffer[6] = MT2_SPACE_LENGTH;
+    transmission_buffer[7] = MT2_SPACE_LENGTH;
+    transmission_length = 8;
+    transmit_start();
 }
 
 FASTRUN char IRScan(){

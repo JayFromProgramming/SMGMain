@@ -7,12 +7,18 @@
 #include "audio/audio_interface.h"
 #include "InternalTemperature.h"
 #include <lcdDisplay/lcdDriver.h>
+#include <radio/radioInterface.h>
+
+#define DEVICE_ID 0x01
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
 
 display::lcdDriver hud = display::lcdDriver();
+wireless::radioInterface radio = wireless::radioInterface();
 audio_interface::audio_interface audio = audio_interface::audio_interface();
 uint16_t next_loop_time = 0;
+
+bool status_LED = false;
 
 //void overheat_method() {
 //    // In the event of the main cpu overheating we reduce the system clock to .75MHz and stop the main loop.
@@ -33,6 +39,7 @@ void setup() {
     digitalWrite(LED_BUILTIN, HIGH);
 //    InternalTemperatureClass::attachHighTempInterruptCelsius(80, &overheat_method);
     audio.init();
+    radio.init(DEVICE_ID);
     tagger_init(&audio); // Initialize the tagger
 //    display::lcdDriver::displayInit(); // Initialize the LCD display
     hud.pass_data_ptr(get_tagger_data_ptr()); // pass the tagger data pointer to the lcd driver
@@ -43,10 +50,14 @@ void setup() {
 void loop() {
     next_loop_time = micros() + (20 * 1000);
     digitalWriteFast(LED_BUILTIN, HIGH);
-//    AudioNoInterrupts(); // Disable audio interrupts while running main loop
+    status_LED = true;
     tagger_loop(); // Run all main tagger functions
 //    hud.update_hud(); // Update the HUD
-//    AudioInterrupts(); // Re-enable audio interrupts
-    while (micros() < next_loop_time) digitalWriteFast(LED_BUILTIN, LOW); // Set LED off while waiting for next loop
+    while (micros() < next_loop_time) {
+        if (status_LED) {
+            digitalWriteFast(LED_BUILTIN, LOW); // Set LED off while waiting for next loop
+            status_LED = false;
+        }
+    }
 
 }

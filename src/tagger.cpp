@@ -12,7 +12,7 @@ score_data *score_data_ptr = nullptr;
 
 audio_interface::audio_interface *audio_ptr = nullptr;
 
-IntervalTimer hit_led_timer;
+uint32_t hit_led_timer = 0;
 
 // 1 = Just pulled, 0 = Released, -1 = Not released but is being held
 short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has been called
@@ -106,11 +106,6 @@ void trigger_interrupt(){
     sei();
 }
 
-void hit_led_off(){
-    digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
-    hit_led_timer.end(); // End the timer
-}
-
 // This section contains the event handlers for the game
 
 void on_clone(mt2::clone* clone){
@@ -143,6 +138,9 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     } else {
         audio_ptr->play_sound(audio_interface::SOUND_HIT); // Make a hit sound
     }
+
+    digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE); // Turn on the hit led
+    hit_led_timer = millis() + 250; // Set the hit led timer
 }
 
 
@@ -215,7 +213,7 @@ void stunned(){
 
 void test_sensors(){
     digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE);
-    hit_led_timer.begin(hit_led_off, 250000); // Turn the hit led off after 250 microseconds
+    hit_led_timer = millis() + 2000;
 }
 
 void restart_gun(){
@@ -245,6 +243,11 @@ void tagger_loop(){
         }
     }
 
+    if (hit_led_timer > millis() && hit_led_timer != 0) {
+        digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
+        hit_led_timer = 0;
+    }
+
     shot_check(); // Check if user wants to shoot
 
     // Check for IR input
@@ -268,8 +271,6 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     score_data_ptr->kills_by               = new volatile unsigned short [MT2_MAX_PLAYERS];
 
     event_handlers* handles = get_handlers();
-
-    hit_led_timer.priority(255); // Set the timer to the lowest priority
 
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
     handles->on_hit =           on_hit;

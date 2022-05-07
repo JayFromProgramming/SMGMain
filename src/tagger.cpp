@@ -3,10 +3,12 @@
 //
 #include <tagger.h>
 #include "audio/audio_interface.h"
-#include "mt2Library/tag_communicator.h"
+//#include "mt2Library/tag_communicator.h"
 #include <eeprom_handler.h>
 
 tagger_state *game_state = nullptr;
+
+event_handlers* handles = nullptr;
 
 score_data *score_data_ptr = nullptr;
 
@@ -258,6 +260,9 @@ FLASHMEM tagger_state* get_tagger_data_ptr(){
     return game_state;
 }
 
+FLASHMEM event_handlers* get_event_handler_ptr(){
+    return handles;
+}
 
 FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     IR_init();
@@ -270,7 +275,7 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     score_data_ptr->hits_from_players_life = new volatile unsigned short [MT2_MAX_PLAYERS];
     score_data_ptr->kills_by               = new volatile unsigned short [MT2_MAX_PLAYERS];
 
-    event_handlers* handles = get_handlers();
+    handles = get_handlers();
 
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
     handles->on_hit =           on_hit;

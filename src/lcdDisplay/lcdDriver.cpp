@@ -12,13 +12,13 @@
 #include "../../.pio/libdeps/teensylc/Adafruit GFX Library/Adafruit_GFX.h"
 
 #include <Adafruit-ST7735-Library-master/Adafruit_ST7789.h>    // Core graphics library
-#include <Adafruit_GFX.h>
+//#include <Adafruit_GFX.h>
 #include <SPI.h>
 #include <gfxfont.h>
 
 #define TFT_CS        10
-#define TFT_RST        9 // Or set to -1 and connect to Arduino RESET pin
-#define TFT_DC         8
+#define TFT_RST       9 // Or set to -1 and connect to Arduino RESET pin
+#define TFT_DC        14
 
 #define HEALTH_BAR_START_X  7
 #define HEALTH_BAR_START_Y  10
@@ -29,9 +29,9 @@
 #define CLIP_TEXT_START_Y   30
 #define CLIP_TEXT_SIZE      12
 
-#define AMMO_TEXT_START_X   7
-#define AMMO_TEXT_START_Y   50
-#define AMMO_TEXT_SIZE      12
+#define AMMO_TEXT_START_X   0
+#define AMMO_TEXT_START_Y   0
+#define AMMO_TEXT_SIZE      4
 
 #define RELOAD_CENTER_X     160
 #define RELOAD_CENTER_Y     120
@@ -39,15 +39,19 @@
 #define RELOAD_INNER_RADIUS 20
 
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
-GFXcanvas1 canvas(128, 32);
-GFXfont* font = new GFXfont();
 
 namespace display {
 
-
     void lcdDriver::displayInit() {
-        lcd.init(240, 240);
-        lcd.setRotation(3);
+        lcd.init(240, 240, SPI_MODE3);
+        lcd.setRotation(2);
+        lcd.fillScreen(ST77XX_RED);
+        lcd.fillScreen(ST77XX_GREEN);
+        lcd.fillScreen(ST77XX_BLUE);
+        lcd.fillScreen(ST77XX_WHITE);
+        lcd.fillScreen(ST77XX_BLACK);
+        lcd.setTextSize(7);
+        lcd.print("Hello World!");
     }
 
     void lcdDriver::pass_data_ptr(tagger_state *data) {
@@ -88,14 +92,17 @@ namespace display {
         } else {
             if (this->game_state->health != this->last_health) {
                 this->draw_health_bar();
+                this->last_health = this->game_state->health;
             }
             if (this->game_state->clip_count != this->last_clip_count) {
                 this->clear_clip_count();
                 this->draw_clip_count();
+                this->last_clip_count = this->game_state->clip_count;
             }
             if (this->game_state->ammo_count != this->last_ammo_count) {
                 this->clear_ammo_count();
                 this->draw_ammo_count();
+                this->last_ammo_count = this->game_state->ammo_count;
             }
         }
     }
@@ -161,6 +168,10 @@ namespace display {
         lcd.setTextSize(AMMO_TEXT_SIZE);
         lcd.getTextBounds(clips_str, CLIP_TEXT_START_X, CLIP_TEXT_START_Y, &x1, &y1, &w, &h);
         lcd.fillRect(x1, y1, w, h, ST77XX_BLACK);
+    }
+
+    void lcdDriver::clear() {
+        this->clear_screen();
     }
 
 //    void lcdDriver::override_text(String* text) {

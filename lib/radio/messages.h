@@ -84,6 +84,15 @@ namespace wireless {
 
     };
 
+    // When this message type is received an ack is sent back
+    struct keep_alive_message {
+        MessageTypes message_type = MessageTypes::keep_alive;
+        DeviceTypes recipient_type = DeviceTypes::all_devices;
+        uint8_t recipient_id = 0;
+        DeviceTypes sender_type = 0;
+        uint8_t sender_id = 0;
+        uint8_t ack_id = 1; // The id of this message
+    };
 
     struct acknowledgement_message {
         MessageTypes message_type = MessageTypes::acknowledgement;

@@ -34,6 +34,7 @@
 
 #include <mt2Library/mt2_protocol.h>
 #include <audio/audio_interface.h>
+#include <mt2Library/tag_communicator.h>
 
 struct tagger_state {
     mt2::clone *currentConfig = nullptr;
@@ -69,5 +70,7 @@ void tagger_init(audio_interface::audio_interface* audio_interface);
 void tagger_loop();
 
 tagger_state* get_tagger_data_ptr();
+
+event_handlers* get_event_handler_ptr();
 
 #endif //SMGMAIN_TAGGER_H

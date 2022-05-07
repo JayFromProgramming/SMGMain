@@ -13,16 +13,16 @@ namespace display {
     class lcdDriver {
 
     private:
-        tagger_state* game_state;
-        unsigned short last_health;
-        unsigned char last_ammo_count;
-        unsigned char last_clip_count;
-        double last_angle;
-        bool already_reloading;
+        tagger_state* game_state = nullptr;
+        unsigned short last_health = -1;
+        unsigned char last_ammo_count = -1;
+        unsigned char last_clip_count = -1;
+        double last_angle = -1;
+        bool already_reloading = false;
 
         // String holders
-        char* clips_str;
-        char* ammo_str;
+        char* clips_str = nullptr;
+        char* ammo_str = nullptr;
 
         // Methods for selective updates of the display
         void draw_health_bar();
@@ -46,6 +46,8 @@ namespace display {
         void pass_data_ptr(tagger_state *data);
 
         void update_hud(); // Runs the update checks for the display
+
+        void clear(); // Clears the display
 
 //        void override_text(String* text);
 

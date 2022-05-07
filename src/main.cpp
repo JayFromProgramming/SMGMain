@@ -82,7 +82,15 @@ void loop() {
         int command_array_length = split(command, command_array, 0, ' ', 4);
 
         if (command_array[0] == "hit") {
-            tagger_events->on_hit(0, 1, 4);
+
+            tagger_events->on_hit(0, 1, 1);
+            Serial.printf("hit! Remaining health: %d\n", get_tagger_data_ptr()->health);
+        } else if (command_array[0] == "shoot") {
+            Serial.println("SHOOT");
+
+        } else if (command_array[0] == "respawn") {
+            Serial.println("RESPAWN");
+            tagger_events->on_respawn();
         }
     }
 

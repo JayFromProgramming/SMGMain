@@ -5,17 +5,17 @@
 #ifndef SMGMAIN_TAGGER_H
 #define SMGMAIN_TAGGER_H
 
-#define TRIGGER_PIN_NUMBER 2
+#define TRIGGER_PIN_NUMBER 3
 #define TRIGGER_PIN_MODE INPUT_PULLUP
 #define TRIGGER_PIN_ACTIVE LOW
 #define TRIGGER_PIN_RELEASED HIGH
-#define TRIGGER_INTERRUPT_MODE RISING
+#define TRIGGER_INTERRUPT_MODE FALLING
 
-#define RELOAD_PIN_NUMBER 3
+#define RELOAD_PIN_NUMBER 2
 #define RELOAD_PIN_MODE INPUT_PULLUP
 #define RELOAD_PIN_ACTIVE LOW
 #define RELOAD_PIN_RELEASED HIGH
-#define RELOAD_INTERRUPT_MODE RISING
+#define RELOAD_INTERRUPT_MODE FALLING
 
 #define SELECT_PIN_NUMBER 6
 #define SELECT_PIN_MODE INPUT_PULLUP
@@ -47,6 +47,7 @@ struct tagger_state {
     unsigned char player_id = 0;
     volatile unsigned char ammo_count = 0;
     volatile unsigned char clip_count = 0;
+    volatile unsigned char clip_size = 0;
     unsigned char current_burst_count = 0;
     volatile bool reloading = false;
     volatile unsigned long reload_time = 0.0;

@@ -29,6 +29,9 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
 
     game_state->max_health = mt2::health_lookup(game_state->currentConfig->respawn_health);
     game_state->health = game_state->max_health;
+    game_state->clip_size = game_state->currentConfig->clip_size;
+    game_state->clip_count = game_state->currentConfig->number_of_clips;
+    game_state->ammo_count = game_state->clip_size;
 }
 
 void reload_interrupt(){
@@ -42,7 +45,7 @@ void reload_interrupt(){
     if (game_state->clip_count >= 1){
         game_state->reloading = true;
         // Set the reload_time to the current time + the reload_time (in seconds)
-        game_state->reload_time = millis() + game_state->currentConfig->reload_time * 1000;
+        game_state->reload_time = millis() + (game_state->currentConfig->reload_time * 1000);
         audio_ptr->play_sound(audio_interface::SOUND_RELOAD);
     }
 
@@ -69,30 +72,34 @@ void shot_check(){
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
                     if (trigger_down == 1) {
                         audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                        shoot();
+//                        shoot();
                         game_state->last_shot = millis();
+                        game_state->ammo_count--;
                     }
                     break;
                 case mt2::FIRE_MODE_BURST:
                     if (trigger_down == 1) {
                         game_state->current_burst_count = game_state->currentConfig->burst_size;
                         audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                        shoot();
+//                        shoot();
                         game_state->last_shot = millis();
+                        game_state->ammo_count--;
                     } else if (trigger_down == -1) {
                         if (game_state->current_burst_count > 0) {
                             game_state->current_burst_count--;
                             audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                            shoot();
+//                            shoot();
                             game_state->last_shot = millis();
+                            game_state->ammo_count--;
                         }
                     }
                     break;
                 case mt2::FIRE_MODE_AUTO:
                     if (trigger_down != 0) {
                         audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                        shoot();
+//                        shoot();
                         game_state->last_shot = millis();
+                        game_state->ammo_count--;
                     }
                     break;
             }
@@ -192,6 +199,12 @@ void respawn(){ // Called when a player respawns
     game_state->health = game_state->max_health;
     score_data_ptr->respawn_count++;
     score_data_ptr->killed_by = 0;
+    game_state->clip_count = game_state->currentConfig->number_of_clips;
+    game_state->last_shot = 0;
+    game_state->last_hit = 0;
+    game_state->ammo_count = game_state->clip_size;
+    game_state->reloading = false;
+    game_state->reload_time = 0;
 }
 
 void admin_kill(){ // Called when an admin kills a player
@@ -276,6 +289,7 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     score_data_ptr->kills_by               = new volatile unsigned short [MT2_MAX_PLAYERS];
 
     handles = get_handlers();
+    trigger_down = 0;
 
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
     handles->on_hit =           on_hit;
@@ -306,6 +320,7 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
 
     // Load the current configuration
     configure_from_clone(load_preset(0));
+
 
 }
 

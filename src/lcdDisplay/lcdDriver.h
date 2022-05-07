@@ -17,7 +17,7 @@ namespace display {
         unsigned short last_health = -1;
         unsigned char last_ammo_count = -1;
         unsigned char last_clip_count = -1;
-        float last_angle = -1;
+        float last_angle = -90.0f;
         unsigned short last_reload_time = -1;
         bool already_reloading = false;
 
@@ -26,6 +26,7 @@ namespace display {
         char* ammo_str = nullptr;
         char* health_str = nullptr;
         char* reload_str = nullptr;
+        char* old_reload_str = nullptr;
 
         // Methods for selective updates of the display
         void draw_health_bar();

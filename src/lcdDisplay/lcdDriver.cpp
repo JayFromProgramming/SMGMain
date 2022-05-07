@@ -33,13 +33,13 @@
 #define AMMO_TEXT_START_Y   76
 #define AMMO_TEXT_SIZE      14
 
-#define RELOAD_CENTER_X      160
-#define RELOAD_CENTER_Y      160
-#define RELOAD_RADIUS        75
-#define RELOAD_INNER_RADIUS  35
-#define RELOAD_TEXT_X_OFFSET -10
-#define RELOAD_TEXT_Y_OFFSET -10
-#define RELOAD_TEXT_SIZE     5
+#define RELOAD_CENTER_X      128
+#define RELOAD_CENTER_Y      128
+#define RELOAD_RADIUS        100
+#define RELOAD_INNER_RADIUS  50
+#define RELOAD_TEXT_X_OFFSET -35
+#define RELOAD_TEXT_Y_OFFSET -20
+#define RELOAD_TEXT_SIZE     4
 
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
@@ -61,6 +61,7 @@ namespace display {
         clips_str = static_cast<char *>(malloc(sizeof(char) * 10));
         ammo_str  = static_cast<char *>(malloc(sizeof(char) * 10));
         reload_str = static_cast<char *>(malloc(sizeof(char) * 10));
+        old_reload_str = static_cast<char *>(malloc(sizeof(char) * 10));
         health_str = static_cast<char *>(malloc(sizeof(char) * 10));
         this->game_state = data;
     }
@@ -77,10 +78,10 @@ namespace display {
                 float remaining_reload = ((float) this->game_state->reload_time - (float) millis()) / 1000;
                 float remaining_reload_percent = (float) remaining_reload /
                         (float) this->game_state->currentConfig->reload_time;
-                float reload_angle = (1 - remaining_reload_percent) * 360.0f;
+                float reload_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
                 // Sweep the circle with a line based on the remaining reload time to make a full circle
                 // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle
-                for (float angle = last_angle; angle < reload_angle; angle += 0.5) {
+                for (float angle = last_angle; angle < reload_angle; angle += 0.25f) {
                     int x = RELOAD_CENTER_X + RELOAD_RADIUS * cos(angle * M_PI / 180);
                     int y = RELOAD_CENTER_Y + RELOAD_RADIUS * sin(angle * M_PI / 180);
                     int x2 = RELOAD_CENTER_X + RELOAD_INNER_RADIUS * cos(angle * M_PI / 180);
@@ -88,15 +89,23 @@ namespace display {
                     lcd.drawLine(x, y, x2, y2, ST77XX_GREEN);
                 }
                 last_angle = reload_angle;
-                if ((unsigned short) remaining_reload != last_reload_time) {
-                    this->clear_reload_str();
+
+                // Print the remaining reload time in seconds
+                if (remaining_reload < 10) {
+                    sprintf(reload_str, "%.1f", remaining_reload);
+                } else if (remaining_reload < 99) {
+                    sprintf(reload_str, "99");
+                }else sprintf(reload_str, "%d", (unsigned short)  remaining_reload);
+
+                last_reload_time = (unsigned short) remaining_reload;
+
+                if (strcmp(reload_str, old_reload_str) != 0) {
                     lcd.setCursor(RELOAD_CENTER_X + RELOAD_TEXT_X_OFFSET, RELOAD_CENTER_Y + RELOAD_TEXT_Y_OFFSET);
                     lcd.setTextSize(RELOAD_TEXT_SIZE);
                     lcd.setTextColor(ST77XX_GREEN);
-                    // Print the remaining reload time in seconds
-                    sprintf(reload_str, "%2d", (unsigned short) remaining_reload);
+                    this->clear_reload_str();
                     lcd.print(reload_str);
-                    last_reload_time = (unsigned short) remaining_reload;
+                    strcpy(old_reload_str, reload_str);
                 }
 
             } else { // Start reloading animation
@@ -109,7 +118,7 @@ namespace display {
         } else {
             if (already_reloading) { // Stop reloading animation
                 already_reloading = false;
-                last_angle = 0;
+                last_angle = -90.0f;
                 lcdDriver::clear_screen();
                 this->last_health = -1;
                 this->last_clip_count = -1;

@@ -166,11 +166,11 @@ void send(const unsigned char *data, unsigned int bits){
 //    analogWriteFrequency(IR_PIN, MT2_FREQUENCY);
     unsigned long expected_trans_time = 0;
     for (int i = 0; i < trans_length; i++){
-        if (!(i % 2)) Serial.printf("%d ", transmission_buffer[i]);
+//        if (!(i % 2)) Serial.printf("%d ", transmission_buffer[i]);
         expected_trans_time += transmission_buffer[i];
     }
-    Serial.printf("\nExpected time in microseconds %d\n", expected_trans_time);
-    Serial.printf("Total length is %d\n", transmission_length);
+//    Serial.printf("\nExpected time in microseconds %d\n", expected_trans_time);
+//    Serial.printf("Total length is %d\n", transmission_length);
 //    irsend.sendRaw(transmission_buffer, transmission_length,
 //                   56);
     transmit_start();

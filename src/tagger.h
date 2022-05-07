@@ -30,6 +30,11 @@
 
 #define IR_RECEIVER_PIN_NUMBER 5
 
+#define MUZZLE_RED_FLASH_PIN_NUMBER 7
+#define MUZZLE_BLUE_FLASH_PIN_NUMBER 8
+#define MUZZLE_FLASH_ACTIVE HIGH
+#define MUZZLE_FLASH_INACTIVE LOW
+
 #include <Arduino.h>
 
 #include <mt2Library/mt2_protocol.h>
@@ -60,11 +65,16 @@ struct score_data {
     volatile unsigned int    game_start_time = 0; // Time of game start in ms
     volatile unsigned int    game_time = 0; // Time of game as of game end in ms
     volatile unsigned char   respawn_count = 0;
+    volatile unsigned long   respawn_time = 0; // Time of last respawn in ms
     volatile unsigned char   killed_by = 0; // Which player killed this player during this life
     volatile unsigned short* kills_by = nullptr; // Which players killed this player during the game
     volatile unsigned short* hits_from_players_game = nullptr; // How many times this player was hit by each player during the game
     volatile unsigned short* hits_from_players_life = nullptr; // How many times this player was hit by each player during this life
 };
+
+void shot_check(bool trigger_state);
+
+void on_reload();
 
 void tagger_init(audio_interface::audio_interface* audio_interface);
 
@@ -73,5 +83,7 @@ void tagger_loop();
 tagger_state* get_tagger_data_ptr();
 
 event_handlers* get_event_handler_ptr();
+
+score_data* get_score_data_ptr();
 
 #endif //SMGMAIN_TAGGER_H

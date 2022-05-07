@@ -20,6 +20,8 @@
 #define TFT_RST       9 // Or set to -1 and connect to Arduino RESET pin
 #define TFT_DC        14
 
+#define BACKLIGHT_PIN 13
+
 #define HEALTH_BAR_START_X  7
 #define HEALTH_BAR_START_Y  10
 #define HEALTH_BAR_WIDTH    233
@@ -41,7 +43,14 @@
 #define RELOAD_TEXT_Y_OFFSET -20
 #define RELOAD_TEXT_SIZE     4
 
+
+#define DEATH_TEXT_START_X   24
+#define DEATH_TEXT_START_Y   10
+#define DEATH_TEXT_SIZE      3
+
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
+
+bool backlight = true;
 
 namespace display {
 
@@ -57,15 +66,17 @@ namespace display {
         lcd.print("Hello World!");
     }
 
-    void lcdDriver::pass_data_ptr(tagger_state *data) {
+    void lcdDriver::pass_data_ptr(tagger_state *data, score_data *score_t) {
         clips_str = static_cast<char *>(malloc(sizeof(char) * 10));
         ammo_str  = static_cast<char *>(malloc(sizeof(char) * 10));
         reload_str = static_cast<char *>(malloc(sizeof(char) * 10));
         old_reload_str = static_cast<char *>(malloc(sizeof(char) * 10));
         health_str = static_cast<char *>(malloc(sizeof(char) * 10));
+        death_str = static_cast<char *>(malloc(sizeof(char) * 64));
+        time_alive_str = static_cast<char *>(malloc(sizeof(char) * 14));
         this->game_state = data;
+        this->score = score_t;
     }
-
 
 
     // Runs a hud update check to see if the hud needs to be updated if so it will update the hud
@@ -81,7 +92,7 @@ namespace display {
                 float reload_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
                 // Sweep the circle with a line based on the remaining reload time to make a full circle
                 // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle
-                for (float angle = last_angle; angle < reload_angle; angle += 0.25f) {
+                for (float angle = last_angle; angle < reload_angle; angle += 0.1f) {
                     int x = RELOAD_CENTER_X + RELOAD_RADIUS * cos(angle * M_PI / 180);
                     int y = RELOAD_CENTER_Y + RELOAD_RADIUS * sin(angle * M_PI / 180);
                     int x2 = RELOAD_CENTER_X + RELOAD_INNER_RADIUS * cos(angle * M_PI / 180);
@@ -124,6 +135,11 @@ namespace display {
                 this->last_clip_count = -1;
                 this->last_ammo_count = -1;
             }
+            if (this->game_state->health != this->last_health && this->last_health == 0) {
+                clear_screen();
+                this->draw_clip_count();
+                this->draw_ammo_count();
+            }
             if (this->game_state->health != this->last_health) {
                 this->draw_health_bar();
                 this->last_health = this->game_state->health;
@@ -149,9 +165,26 @@ namespace display {
         lcd.fillScreen(ST77XX_BLACK);
     }
 
+    void lcdDriver::draw_death_screen() {
+        clear_screen();
+        lcd.fillScreen(ST77XX_RED);
+        lcd.setCursor(DEATH_TEXT_START_X, DEATH_TEXT_START_Y);
+        lcd.setTextSize(DEATH_TEXT_SIZE);
+        lcd.setTextColor(ST77XX_WHITE);
+        unsigned long time_alive = millis() - this->score->respawn_time;
+        unsigned long time_alive_seconds = time_alive / 1000;
+        unsigned long time_alive_minutes = time_alive_seconds / 60;
+        sprintf(time_alive_str, "%lu:%02lu", time_alive_minutes, time_alive_seconds % 60);
+        sprintf(death_str, "You died!\n"
+                           "Shots fired:\n%d\n"
+                           "Time alive:\n%13s\n"
+                           "Killed by:\n%d", score->rounds_fired, time_alive_str, score->killed_by);
+        lcd.print(death_str);
+    }
+
     void lcdDriver::draw_health_bar() {
         if (this->game_state->health <= 0) {
-            lcd.fillRect(7, 10, 233, 10, ST77XX_RED);
+            draw_death_screen();
         } else if (this->game_state->health == this->game_state->max_health) {
             lcd.fillRect(7, 10, 233, 10, ST77XX_GREEN);
         } else {
@@ -221,6 +254,16 @@ namespace display {
 
     void lcdDriver::clear() {
         this->clear_screen();
+    }
+
+    void lcdDriver::toggle_backlight() {
+        if (backlight) {
+            digitalWriteFast(BACKLIGHT_PIN, LOW);
+            backlight = false;
+        } else {
+            digitalWriteFast(BACKLIGHT_PIN, HIGH);
+            backlight = true;
+        }
     }
 
 //    void lcdDriver::override_text(String* text) {

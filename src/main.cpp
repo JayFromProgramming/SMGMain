@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <tagger.h>
+#include <Bounce.h>
 
 #include "audio/audio_interface.h"
 #include "InternalTemperature.h"
@@ -10,9 +11,55 @@
 #include <lcdDisplay/lcdDriver.h>
 //#include <radio/radioInterface.h>
 
+#define TRIGGER_PIN_NUMBER 3
+#define RELOAD_PIN_NUMBER 2
+#define SELECT_PIN_NUMBER 6
+
 #define DEVICE_ID 0x01
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
+
+
+IntervalTimer io_refresh_timer;
+
+Bounce trigger_button = Bounce(TRIGGER_PIN_NUMBER, 5);
+Bounce reload_button = Bounce(RELOAD_PIN_NUMBER, 5);
+Bounce select_button = Bounce(SELECT_PIN_NUMBER, 5);
+
+struct button_methods {
+  void (*trigger_method)(bool state) = nullptr;
+  void (*reload_method)()  = nullptr;
+  void (*select_method)()  = nullptr;
+};
+
+button_methods io_actions;
+
+void io_refresh(){ // Called every .25 ms
+  trigger_button.update();
+  reload_button.update();
+  select_button.update();
+  if (trigger_button.fallingEdge()){
+      if (io_actions.trigger_method != nullptr){
+        io_actions.trigger_method(true);
+      }
+  }
+  if (trigger_button.risingEdge()){
+      if (io_actions.trigger_method != nullptr){
+        io_actions.trigger_method(false);
+      }
+  }
+  if (reload_button.fallingEdge()){
+      if (io_actions.reload_method != nullptr){
+        io_actions.reload_method();
+      }
+  }
+  if (select_button.fallingEdge()){
+      if (io_actions.select_method != nullptr){
+        io_actions.select_method();
+      }
+  }
+}
+
 
 display::lcdDriver hud = display::lcdDriver();
 //wireless::radioInterface radio = wireless::radioInterface();
@@ -38,17 +85,20 @@ void setup() {
     Serial.begin(9600);
     Serial.println("Starting...");
 #endif
-//    pinMode(LED_BUILTIN, OUTPUT);
-//    digitalWrite(LED_BUILTIN, HIGH);
-//    InternalTemperatureClass::attachHighTempInterruptCelsius(80, &overheat_method);
-//    audio.init();
-//    radio.init(DEVICE_ID);
+
     tagger_init(&audio); // Initialize the tagger
+
+    // Initialize all debounced IO methods
+    io_actions.trigger_method = &shot_check;
+    io_actions.reload_method =  &on_reload;
+    io_actions.select_method =  &display::lcdDriver::toggle_backlight;
+
     display::lcdDriver::displayInit(); // Initialize the LCD display
-    hud.pass_data_ptr(get_tagger_data_ptr()); // pass the tagger data pointer to the lcd driver
+    hud.pass_data_ptr(get_tagger_data_ptr(), get_score_data_ptr()); // pass the tagger data pointer to the lcd driver
     tagger_events = get_event_handler_ptr() ; // get the tagger event pointer
 //    digitalWrite(LED_BUILTIN, LOW);
     hud.clear();
+    io_refresh_timer.begin(io_refresh, 250);
 }
 
 int split(const String& command, String pString[4], int i, char delimiter, int max_length) {
@@ -69,10 +119,8 @@ int split(const String& command, String pString[4], int i, char delimiter, int m
 // Main loop this runs once every 20ms or 50Hz while the tagger and hud updates run audio interrupts are disabled
 void loop() {
     next_loop_time = micros() + (20 * 1000);
-//    digitalWriteFast(LED_BUILTIN, HIGH);
-    status_LED = true;
+
     tagger_loop(); // Run all main tagger functions
-//    hud.clear();
     hud.update_hud(); // Update the HUD
 
     if (Serial.available()) {
@@ -95,10 +143,6 @@ void loop() {
     }
 
     while (micros() < next_loop_time) {
-        if (status_LED) {
-//            digitalWriteFast(LED_BUILTIN, LOW); // Set LED off while waiting for next loop
-            status_LED = false;
-        }
     }
 
 }

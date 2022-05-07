@@ -15,6 +15,9 @@ score_data *score_data_ptr = nullptr;
 audio_interface::audio_interface *audio_ptr = nullptr;
 
 uint32_t hit_led_timer = 0;
+uint32_t muzzle_flash_timer = 0;
+
+uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH_PIN_NUMBER;
 
 // 1 = Just pulled, 0 = Released, -1 = Not released but is being held
 short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has been called
@@ -23,7 +26,7 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
     game_state->currentConfig = newClone;
 
     // The config firerate is stored as Rounds per minute, so we need to calculate the interval in milliseconds
-    game_state->shot_interval = (60 / game_state->currentConfig->cyclic_rpm) * 1000;
+    game_state->shot_interval = (game_state->currentConfig->cyclic_rpm / 60) * 1000;
 
     game_state->hit_delay_ms = mt2::hit_delay_to_micros(game_state->currentConfig->hit_delay);
 
@@ -34,11 +37,9 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
     game_state->ammo_count = game_state->clip_size;
 }
 
-void reload_interrupt(){
+void on_reload(){
     // Clear the interrupt flag
-    cli();
     if (game_state->reloading) {
-        sei();
         return;
     }
 
@@ -48,16 +49,11 @@ void reload_interrupt(){
         game_state->reload_time = millis() + (game_state->currentConfig->reload_time * 1000);
         audio_ptr->play_sound(audio_interface::SOUND_RELOAD);
     }
-
-    // Re-enable interrupts
-    sei();
 }
 
-void shot_check(){
+void shot_check(bool trigger_state){
 
-    uint8_t trigger_state = digitalReadFast(TRIGGER_PIN_NUMBER);
-
-    if (trigger_state == TRIGGER_PIN_ACTIVE) {
+    if (trigger_state) {
         if (trigger_down == 0) {
             trigger_down = 1; // Just pulled
         } else trigger_down = -1; // Held
@@ -72,34 +68,42 @@ void shot_check(){
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
                     if (trigger_down == 1) {
                         audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-//                        shoot();
+                        shoot();
                         game_state->last_shot = millis();
                         game_state->ammo_count--;
+                        digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+                        muzzle_flash_timer = millis() + 250;
                     }
                     break;
                 case mt2::FIRE_MODE_BURST:
                     if (trigger_down == 1) {
                         game_state->current_burst_count = game_state->currentConfig->burst_size;
                         audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-//                        shoot();
+                        shoot();
                         game_state->last_shot = millis();
                         game_state->ammo_count--;
+                        digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+                        muzzle_flash_timer = millis() + 250;
                     } else if (trigger_down == -1) {
                         if (game_state->current_burst_count > 0) {
                             game_state->current_burst_count--;
                             audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-//                            shoot();
+                            shoot();
                             game_state->last_shot = millis();
                             game_state->ammo_count--;
+                            digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+                            muzzle_flash_timer = millis() + 250;
                         }
                     }
                     break;
                 case mt2::FIRE_MODE_AUTO:
                     if (trigger_down != 0) {
                         audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-//                        shoot();
+                        shoot();
                         game_state->last_shot = millis();
                         game_state->ammo_count--;
+                        digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+                        muzzle_flash_timer = millis() + 250;
                     }
                     break;
             }
@@ -107,12 +111,6 @@ void shot_check(){
             audio_ptr->play_sound(audio_interface::SOUND_EMPTY);
         }
     }
-}
-
-void trigger_interrupt(){
-    cli();
-    shot_check();
-    sei();
 }
 
 // This section contains the event handlers for the game
@@ -205,6 +203,7 @@ void respawn(){ // Called when a player respawns
     game_state->ammo_count = game_state->clip_size;
     game_state->reloading = false;
     game_state->reload_time = 0;
+    score_data_ptr->respawn_time = millis();
 }
 
 void admin_kill(){ // Called when an admin kills a player
@@ -258,12 +257,15 @@ void tagger_loop(){
         }
     }
 
-    if (hit_led_timer > millis() && hit_led_timer != 0) {
+    if (hit_led_timer < millis() && hit_led_timer != 0) {
         digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
         hit_led_timer = 0;
     }
 
-    shot_check(); // Check if user wants to shoot
+    if (muzzle_flash_timer < millis() && muzzle_flash_timer != 0) {
+        digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_INACTIVE);
+        muzzle_flash_timer = 0;
+    }
 
     // Check for IR input
     signalScan();
@@ -275,6 +277,10 @@ FLASHMEM tagger_state* get_tagger_data_ptr(){
 
 FLASHMEM event_handlers* get_event_handler_ptr(){
     return handles;
+}
+
+FLASHMEM score_data* get_score_data_ptr(){
+    return score_data_ptr;
 }
 
 FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){

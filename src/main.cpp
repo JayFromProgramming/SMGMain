@@ -13,7 +13,7 @@
 
 #define TRIGGER_PIN_NUMBER 3
 #define RELOAD_PIN_NUMBER 2
-#define SELECT_PIN_NUMBER 6
+#define SELECT_PIN_NUMBER 20
 
 #define DEVICE_ID 0x01
 
@@ -80,12 +80,7 @@ bool status_LED = false;
 
 //#define DEBUG_MODE
 
-void setup() {
-#ifdef DEBUG_MODE
-    Serial.begin(9600);
-    Serial.println("Starting...");
-#endif
-
+void boot_mode_game(){
     tagger_init(&audio); // Initialize the tagger
 
     // Initialize all debounced IO methods
@@ -93,12 +88,70 @@ void setup() {
     io_actions.reload_method =  &on_reload;
     io_actions.select_method =  &display::lcdDriver::toggle_backlight;
 
-    display::lcdDriver::displayInit(); // Initialize the LCD display
     hud.pass_data_ptr(get_tagger_data_ptr(), get_score_data_ptr()); // pass the tagger data pointer to the lcd driver
     tagger_events = get_event_handler_ptr() ; // get the tagger event pointer
 //    digitalWrite(LED_BUILTIN, LOW);
     hud.clear();
+}
+
+void boot_mode_ref(){
+
+}
+
+void boot_mode_clone(){
+
+}
+
+void boot_mode_options(){
+
+}
+
+void setup() {
+#ifdef DEBUG_MODE
+    Serial.begin(9600);
+    Serial.println("Starting...");
+#endif
+
+    pinMode(TRIGGER_PIN_NUMBER, INPUT_PULLUP);
+    pinMode(RELOAD_PIN_NUMBER, INPUT_PULLUP);
+    pinMode(SELECT_PIN_NUMBER, INPUT_PULLUP);
+
+    display::lcdDriver::displayInit(); // Initialize the LCD display
     io_refresh_timer.begin(io_refresh, 250);
+
+    // If the trigger is held down on startup, display the boot menu
+    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW) {
+        auto* boot_menu = display::lcdDriver::make_menu("Select Boot Mode");
+        display::lcdDriver::add_menu_item(boot_menu, "Game", &boot_mode_game);
+        display::lcdDriver::add_menu_item(boot_menu, "Referee", &boot_mode_ref);
+        display::lcdDriver::add_menu_item(boot_menu, "Clone Mode", &boot_mode_clone);
+        display::lcdDriver::add_menu_item(boot_menu, "Gun Options", &boot_mode_options);
+        hud.load_and_display_menu(boot_menu);
+        io_actions.trigger_method = display::lcdDriver::menu_select;
+        io_actions.reload_method = display::lcdDriver::menu_increment;
+        io_actions.select_method = display::lcdDriver::menu_decrement;
+        return; // Exit the setup function and wait for the user to select a boot mode which will run an interrupt
+        // to start the main loop
+    }
+
+    // Else check the eeprom to see what the last boot mode was and run the appropriate boot mode
+    uint8_t boot_mode = eeprom_read_byte((uint8_t *) 0);
+    switch (boot_mode) {
+        case 0:
+            boot_mode_game();
+            break;
+        case 1:
+            boot_mode_ref();
+            break;
+        case 2:
+            boot_mode_clone();
+            break;
+        case 3:
+            boot_mode_options();
+            break;
+        default:
+            boot_mode_game();
+    }
 }
 
 int split(const String& command, String pString[4], int i, char delimiter, int max_length) {
@@ -139,6 +192,8 @@ void loop() {
         } else if (command_array[0] == "respawn") {
             Serial.println("RESPAWN");
             tagger_events->on_respawn();
+        } else if (command_array[0] == "backlight") {
+            display::lcdDriver::toggle_backlight();
         }
     }
 

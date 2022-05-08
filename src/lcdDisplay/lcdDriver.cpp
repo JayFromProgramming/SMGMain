@@ -20,7 +20,7 @@
 #define TFT_RST       9 // Or set to -1 and connect to Arduino RESET pin
 #define TFT_DC        14
 
-#define BACKLIGHT_PIN 13
+#define BACKLIGHT_PIN 15
 
 #define HEALTH_BAR_START_X  7
 #define HEALTH_BAR_START_Y  10
@@ -48,14 +48,20 @@
 #define DEATH_TEXT_START_Y   10
 #define DEATH_TEXT_SIZE      3
 
+#define MAX_MENU_ITEMS       6
+
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
 bool backlight = true;
+
+display::menu_holder current_menu;
 
 namespace display {
 
     void lcdDriver::displayInit() {
         lcd.init(240, 240, SPI_MODE3);
+        pinMode(BACKLIGHT_PIN, OUTPUT);
+        digitalWriteFast(BACKLIGHT_PIN, HIGH);
         lcd.setRotation(2);
         lcd.fillScreen(ST77XX_RED);
         lcd.fillScreen(ST77XX_GREEN);
@@ -64,6 +70,7 @@ namespace display {
         lcd.fillScreen(ST77XX_BLACK);
         lcd.setTextSize(7);
         lcd.print("Hello World!");
+//        digitalWriteFast(BACKLIGHT_PIN, LOW);
     }
 
     void lcdDriver::pass_data_ptr(tagger_state *data, score_data *score_t) {
@@ -194,7 +201,7 @@ namespace display {
     }
 
     void lcdDriver::draw_ammo_count() {
-        sprintf(ammo_str, "%2d", game_state->ammo_count);
+        sprintf(ammo_str, "%02d", game_state->ammo_count);
         lcd.setCursor(AMMO_TEXT_START_X, AMMO_TEXT_START_Y);
         lcd.setTextSize(AMMO_TEXT_SIZE);
         if (game_state->ammo_count > 5) { // If ammo count is above 5 ammo count is green
@@ -257,22 +264,83 @@ namespace display {
     }
 
     void lcdDriver::toggle_backlight() {
-        if (backlight) {
-            digitalWriteFast(BACKLIGHT_PIN, LOW);
-            backlight = false;
-        } else {
-            digitalWriteFast(BACKLIGHT_PIN, HIGH);
-            backlight = true;
+        digitalToggleFast(BACKLIGHT_PIN);
+    }
+
+    void lcdDriver::draw_menu(){ // Draws the currently loaded menu
+        clear_screen();
+        lcd.fillScreen(current_menu.background_color);
+        lcd.setCursor(5, 0);
+        lcd.setTextSize(4);
+        lcd.setTextColor(current_menu.text_color);
+        lcd.print(current_menu.name);
+        lcd.setCursor(5, 20);
+        lcd.setTextSize(2);
+        for (int i = 0; i < current_menu.num_items; i++) {
+            if (current_menu.selected_item == i) {
+                // If this item is selected, draw a triangle pointing to it and indent it
+                lcd.print("> ");
+                lcd.setCursor(10, 20 + i * 10);
+                lcd.print(current_menu.items[i].name);
+                lcd.setCursor(10 + current_menu.num_items, 20 + i * 10);
+            } else {
+                lcd.print(current_menu.items[i].name);
+                lcd.print("\n");
+            }
         }
     }
 
-//    void lcdDriver::override_text(String* text) {
-//        lcd.fillScreen(ST77XX_BLACK);
-//        lcd.setCursor(0, 0);
-//        lcd.setTextSize(11);
-//        lcd.setTextColor(ST77XX_WHITE);
-//        lcd.print(text);
-//    }
+    void lcdDriver::load_and_display_menu(menu_holder *menu) {
+        this->clear_screen();
+        this->draw_menu();
+        current_menu = *menu;
+    }
 
+    menu_holder *lcdDriver::make_menu(const char *name, uint16_t text_color, uint16_t background_color) {
+        auto *menu = new menu_holder;
+        menu->name = name;
+        menu->text_color = text_color;
+        menu->background_color = background_color;
+        menu->num_items = 0;
+        menu->selected_item = 0;
+        menu->items = static_cast<menu_item *>(malloc(sizeof(menu_item) * MAX_MENU_ITEMS));
+        return menu;
+    }
+
+    menu_holder *lcdDriver::make_menu(const char *name) {
+        return lcdDriver::make_menu(name, ST77XX_WHITE, ST77XX_BLACK);
+    }
+
+    void lcdDriver::add_menu_item(menu_holder *menu, const char *name, void (*func)()) {
+        menu->items[menu->num_items].name = name;
+        menu->items[menu->num_items].func = func;
+        menu->num_items++;
+    }
+
+    void lcdDriver::add_menu_item(menu_holder *menu, const char *name) {
+        menu->items[menu->num_items].name = name;
+        menu->items[menu->num_items].func = nullptr;
+        menu->num_items++;
+    }
+
+    void lcdDriver::menu_increment() {
+        current_menu.selected_item++;
+        clear_screen();
+        draw_menu();
+    }
+
+    void lcdDriver::menu_decrement() {
+        current_menu.selected_item--;
+        clear_screen();
+        draw_menu();
+    }
+
+    void lcdDriver::menu_select(bool select) {
+        if (select) {
+            if (current_menu.items[current_menu.selected_item].func != nullptr) {
+                current_menu.items[current_menu.selected_item].func();
+            }
+        }
+    }
 
 } // display

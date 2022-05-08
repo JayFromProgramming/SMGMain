@@ -8,13 +8,30 @@
 
 #include "tagger.h"
 
+
+
 namespace display {
+
+    struct menu_item {
+        const char *name;
+        void (*func)();
+    };
+
+    struct menu_holder {
+        const char* name;
+        menu_item* items;
+        int num_items;
+        int selected_item;
+        uint16_t background_color;
+        uint16_t text_color;
+    };
 
     class lcdDriver {
 
     private:
         tagger_state* game_state = nullptr;
         score_data* score = nullptr;
+
         unsigned short last_health = -1;
         unsigned char last_ammo_count = -1;
         unsigned char last_clip_count = -1;
@@ -65,6 +82,26 @@ namespace display {
         static void toggle_backlight();
 
         void clear_reload_str();
+
+        static void draw_menu();
+
+        void load_and_display_menu(menu_holder* menu);
+
+        static menu_holder* make_menu(const char* name);
+
+        static menu_holder* make_menu(const char* name, uint16_t text_color, uint16_t background_color);
+
+        static void add_menu_item(menu_holder* menu, const char* name, void (*func)());
+
+        static void add_menu_item(menu_holder* menu, const char* name);
+
+
+        static void menu_increment();
+
+        static void menu_decrement();
+
+        static void menu_select(bool select);
+
     };
 
 } // display

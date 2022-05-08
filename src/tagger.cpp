@@ -312,13 +312,13 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     handles->on_init_player =   restart_gun; // Crashes the program and forces a restart of the teensy
     handles->on_test_sensors =  test_sensors;
 
-    pinMode(TRIGGER_PIN_NUMBER, TRIGGER_PIN_MODE);
-    pinMode(RELOAD_PIN_NUMBER, RELOAD_PIN_MODE);
+//    pinMode(TRIGGER_PIN_NUMBER, TRIGGER_PIN_MODE);
+//    pinMode(RELOAD_PIN_NUMBER, RELOAD_PIN_MODE);
 
     pinMode(HIT_LED_PIN_NUMBER, HIT_LED_PIN_MODE);
 
     // Attach interrupts on the trigger and reload pins
-    attachInterrupt(digitalPinToInterrupt(RELOAD_PIN_NUMBER), reload_interrupt, RELOAD_INTERRUPT_MODE);
+//    attachInterrupt(digitalPinToInterrupt(RELOAD_PIN_NUMBER), reload_interrupt, RELOAD_INTERRUPT_MODE);
 
     #ifdef USE_INTERRUPT_ON_TRIGGER
     attachInterrupt(digitalPinToInterrupt(TRIGGER_PIN_NUMBER), trigger_interrupt, TRIGGER_INTERRUPT_MODE);

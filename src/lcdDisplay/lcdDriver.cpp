@@ -325,12 +325,18 @@ namespace display {
 
     void lcdDriver::menu_increment() {
         current_menu.selected_item++;
+        if (current_menu.selected_item >= current_menu.num_items) {
+            current_menu.selected_item = 0;
+        }
         clear_screen();
         draw_menu();
     }
 
     void lcdDriver::menu_decrement() {
         current_menu.selected_item--;
+        if (current_menu.selected_item < 0) {
+            current_menu.selected_item = current_menu.num_items - 1;
+        }
         clear_screen();
         draw_menu();
     }

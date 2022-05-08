@@ -185,7 +185,7 @@ FLASHMEM clone** load_presets(int* length){
     return presets;
 }
 
-FLASHMEM void set_defaults(){
+FLASHMEM void set_defaults(){ // Set all memory settings to default values and restart
     auto* default_preset = new clone();
 
     for (int i = 0; i < TOTAL_PRESETS; i++) {
@@ -195,6 +195,14 @@ FLASHMEM void set_defaults(){
         save_preset(i, default_preset);
     }
     delete default_preset;
+
+    device_config->boot_mode = 0;
+    device_config->current_preset = 0;
+    device_config->current_team = mt2::RED;
+
+    EEPROM.put(calcAddress(1), *device_config);
+
+    SCB_AIRCR = 0x05FA0004;
 }
 
 FLASHMEM int get_remaining_space(){

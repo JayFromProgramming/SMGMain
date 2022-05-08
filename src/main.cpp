@@ -37,13 +37,13 @@ button_methods io_actions;
 
 
 enum boot_modes: uint8_t {
-    BOOT_MODE_UNKNOWN,
-    BOOT_MODE_GAME,
-    BOOT_MODE_REF,
-    BOOT_MODE_CLONE_CONFIG,
-    BOOT_MODE_CLONE_GUN,
-    BOOT_MODE_GUN_CONFIG,
-    BOOT_MODE_SET_DEFAULTS
+    BOOT_MODE_UNKNOWN = 0,
+    BOOT_MODE_GAME = 1,
+    BOOT_MODE_REF = 2,
+    BOOT_MODE_CLONE_CONFIG = 3,
+    BOOT_MODE_CLONE_GUN = 4,
+    BOOT_MODE_GUN_CONFIG = 5,
+    BOOT_MODE_SET_DEFAULTS = 6
 };
 
 boot_modes boot_mode;
@@ -108,11 +108,18 @@ void boot_mode_game(){
     hud.clear();
 }
 
-void boot_mode_ref(){
+void boot_mode_clone(){
 
 }
 
-void boot_mode_clone(){
+void boot_mode_ref(){
+    // Build the ref option menu
+    auto* ref_menu = display::lcdDriver::make_menu("Ref Menu");
+    display::lcdDriver::add_menu_item(ref_menu, "Kill");
+    display::lcdDriver::add_menu_item(ref_menu, "Respawn");
+    display::lcdDriver::add_menu_item(ref_menu, "Reset");
+    display::lcdDriver::add_menu_item(ref_menu, "Explode");
+    display::lcdDriver::add_menu_item(ref_menu, "Enter Clone Mode", &boot_mode_clone);
 
 }
 
@@ -125,6 +132,15 @@ void boot_mode_options(){
 }
 
 void boot_mode_set_defaults(){
+    auto* confirmation_menu = display::lcdDriver::make_menu("Are you sure you want to set all"
+                                                            " values to default?");
+    display::lcdDriver::add_menu_item(confirmation_menu, "Yes", &set_defaults);
+    display::lcdDriver::add_menu_item(confirmation_menu, "No", &boot_mode_options);
+    display::lcdDriver::add_menu_item(confirmation_menu, "Cancel", &boot_mode_options);
+    hud.load_and_display_menu(confirmation_menu);
+    io_actions.trigger_method = display::lcdDriver::menu_select;
+    io_actions.reload_method = display::lcdDriver::menu_increment;
+    io_actions.select_method = display::lcdDriver::menu_decrement;
 
 }
 
@@ -144,7 +160,7 @@ void setup() {
     boot_mode = static_cast<boot_modes>(get_boot_mode());
 
     // If the trigger is held down on startup, display the boot menu
-    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW) {
+    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW || boot_mode == BOOT_MODE_UNKNOWN) {
         auto* boot_menu = display::lcdDriver::make_menu("Select Boot Mode");
         display::lcdDriver::add_menu_item(boot_menu, "Game",        &boot_mode_game);
         display::lcdDriver::add_menu_item(boot_menu, "Referee",     &boot_mode_ref);
@@ -162,7 +178,7 @@ void setup() {
 
     // Else check the eeprom to see what the last boot mode was and run the appropriate boot mode
 
-    switch (boot_mode) {
+    switch (boot_mode) { // Run the appropriate boot mode initializer
         case BOOT_MODE_GAME:
             boot_mode_game();
             break;
@@ -183,6 +199,7 @@ void setup() {
     }
 }
 
+// This method will be removed in the future, currently only used for testing
 int split(const String& command, String pString[4], int i, char delimiter, int max_length) {
     int pos = command.indexOf(delimiter, 0);
     if (pos == -1) {
@@ -207,9 +224,7 @@ void loop() {
             tagger_loop(); // Run all main tagger functions
             hud.update_hud(); // Update the HUD
             break;
-        case BOOT_MODE_REF:
-            // Not implemented
-            break;
+        case BOOT_MODE_REF: // All Ref functions are interrupt based so no loop is required;
         case BOOT_MODE_CLONE_CONFIG:
             // Not implemented
             break;
@@ -219,8 +234,8 @@ void loop() {
         case BOOT_MODE_GUN_CONFIG:
             // Not implemented
             break;
-        default:
-            boot_mode_game();
+        default: ;
+            // Do nothing if no boot mode is selected
     }
 
 

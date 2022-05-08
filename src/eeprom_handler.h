@@ -21,6 +21,10 @@ void set_defaults();
 
 int get_remaining_space();
 
+unsigned char get_boot_mode();
+
+void set_boot_mode(unsigned char mode);
+
 void init_eeprom();
 
 #endif //TLTPROJECT1_EEPROM_HANDLER_H

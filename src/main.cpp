@@ -7,6 +7,7 @@
 
 #include "audio/audio_interface.h"
 #include "InternalTemperature.h"
+#include "eeprom_handler.h"
 //#include "mt2Library/tag_communicator.h"
 #include <lcdDisplay/lcdDriver.h>
 //#include <radio/radioInterface.h>
@@ -33,6 +34,19 @@ struct button_methods {
 };
 
 button_methods io_actions;
+
+
+enum boot_modes: uint8_t {
+    BOOT_MODE_UNKNOWN,
+    BOOT_MODE_GAME,
+    BOOT_MODE_REF,
+    BOOT_MODE_CLONE_CONFIG,
+    BOOT_MODE_CLONE_GUN,
+    BOOT_MODE_GUN_CONFIG,
+    BOOT_MODE_SET_DEFAULTS
+};
+
+boot_modes boot_mode;
 
 void io_refresh(){ // Called every .25 ms
   trigger_button.update();
@@ -102,7 +116,15 @@ void boot_mode_clone(){
 
 }
 
+void boot_mode_clone_config(){
+
+}
+
 void boot_mode_options(){
+
+}
+
+void boot_mode_set_defaults(){
 
 }
 
@@ -119,13 +141,17 @@ void setup() {
     display::lcdDriver::displayInit(); // Initialize the LCD display
     io_refresh_timer.begin(io_refresh, 250);
 
+    boot_mode = static_cast<boot_modes>(get_boot_mode());
+
     // If the trigger is held down on startup, display the boot menu
     if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW) {
         auto* boot_menu = display::lcdDriver::make_menu("Select Boot Mode");
-        display::lcdDriver::add_menu_item(boot_menu, "Game", &boot_mode_game);
-        display::lcdDriver::add_menu_item(boot_menu, "Referee", &boot_mode_ref);
-        display::lcdDriver::add_menu_item(boot_menu, "Clone Mode", &boot_mode_clone);
+        display::lcdDriver::add_menu_item(boot_menu, "Game",        &boot_mode_game);
+        display::lcdDriver::add_menu_item(boot_menu, "Referee",     &boot_mode_ref);
+        display::lcdDriver::add_menu_item(boot_menu, "Clone Mode",  &boot_mode_clone);
+        display::lcdDriver::add_menu_item(boot_menu, "Configure Clone",&boot_mode_options);
         display::lcdDriver::add_menu_item(boot_menu, "Gun Options", &boot_mode_options);
+        display::lcdDriver::add_menu_item(boot_menu, "Set Defaults", &boot_mode_set_defaults);
         hud.load_and_display_menu(boot_menu);
         io_actions.trigger_method = display::lcdDriver::menu_select;
         io_actions.reload_method = display::lcdDriver::menu_increment;
@@ -135,18 +161,21 @@ void setup() {
     }
 
     // Else check the eeprom to see what the last boot mode was and run the appropriate boot mode
-    uint8_t boot_mode = eeprom_read_byte((uint8_t *) 0);
+
     switch (boot_mode) {
-        case 0:
+        case BOOT_MODE_GAME:
             boot_mode_game();
             break;
-        case 1:
+        case BOOT_MODE_REF:
             boot_mode_ref();
             break;
-        case 2:
+        case BOOT_MODE_CLONE_CONFIG:
+            boot_mode_clone_config();
+            break;
+        case BOOT_MODE_CLONE_GUN:
             boot_mode_clone();
             break;
-        case 3:
+        case BOOT_MODE_GUN_CONFIG:
             boot_mode_options();
             break;
         default:
@@ -173,8 +202,27 @@ int split(const String& command, String pString[4], int i, char delimiter, int m
 void loop() {
     next_loop_time = micros() + (20 * 1000);
 
-    tagger_loop(); // Run all main tagger functions
-    hud.update_hud(); // Update the HUD
+    switch (boot_mode){
+        case BOOT_MODE_GAME:
+            tagger_loop(); // Run all main tagger functions
+            hud.update_hud(); // Update the HUD
+            break;
+        case BOOT_MODE_REF:
+            // Not implemented
+            break;
+        case BOOT_MODE_CLONE_CONFIG:
+            // Not implemented
+            break;
+        case BOOT_MODE_CLONE_GUN:
+            // Not implemented
+            break;
+        case BOOT_MODE_GUN_CONFIG:
+            // Not implemented
+            break;
+        default:
+            boot_mode_game();
+    }
+
 
     if (Serial.available()) {
         String command = Serial.readStringUntil('\n');

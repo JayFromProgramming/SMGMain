@@ -51,8 +51,8 @@
 #define DEATH_TEXT_SIZE      3
 
 #define MAX_MENU_ITEMS       32
-#define MAX_OPTION_MENU_OPTIONS  128
-#define MAX_OPTION_LENGTH   20
+#define MAX_OPTION_MENU_OPTIONS  255
+#define MAX_OPTION_LENGTH   32
 
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
@@ -299,7 +299,7 @@ namespace display {
     void lcdDriver::draw_menu(){ // Draws the currently loaded menu
         clear_screen();
         lcd.fillScreen(current_menu->background_color);
-        lcd.setCursor(5, 0);
+        lcd.setCursor(0, 0);
         lcd.setTextSize(3);
         lcd.setTextColor(current_menu->text_color);
         lcd.print(current_menu->name);
@@ -336,12 +336,14 @@ namespace display {
             lcd.print(num_str);
             lcd.print(current_menu->items[i].name);
             lcd.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
-            if (current_menu->items[i].options != nullptr) {
-                lcd.setCursor(0, start_y + i * h);
-                lcd.print(">");
-                lcd.print(current_menu->items[i].options->options[current_menu->items[i].options->selected_option]);
-                lcd.getTextBounds(current_menu->items[i].options->options[current_menu->items[i].options->selected_option]
-                                  , 0, start_y, &x1, &y1, &w2, &h2);
+            if (current_menu->items[i].sub_menu != nullptr) {
+                lcd.setCursor(0, start_y + i * h + 3);
+                lcd.print("->");
+                auto* name = current_menu->items[i].sub_menu->option_names
+                        [current_menu->items[i].sub_menu->selected_option]->c_str();
+                lcd.print(name);
+                lcd.getTextBounds(num_str, 0, start_y + i * h + 3, &x1, &y1, &w2, &h2);
+//                start_y += h + 3;
             }
             start_y += h + 3;
             lcd.setCursor(0, start_y);
@@ -358,7 +360,9 @@ namespace display {
 
     menu_holder *lcdDriver::make_menu(const char *name, uint16_t text_color, uint16_t background_color) {
         auto *menu = new menu_holder;
-        menu->name = name;
+        char* name_ptr = new char[strlen(name) + 1];
+        strcpy(name_ptr, name);
+        menu->name = name_ptr;
         menu->text_color = text_color;
         menu->background_color = background_color;
         menu->num_items = 0;
@@ -378,7 +382,7 @@ namespace display {
             menu->items[menu->num_items].name = name_ptr;
             menu->items[menu->num_items].func = func;
             menu->items[menu->num_items].func_param = nullptr;
-            menu->items[menu->num_items].options = nullptr;
+            menu->items[menu->num_items].sub_menu = nullptr;
             menu->num_items++;
         }
     }
@@ -391,7 +395,7 @@ namespace display {
             menu->items[menu->num_items].func = nullptr;
             menu->items[menu->num_items].func_param = func;
             menu->items[menu->num_items].func_arg = arg;
-            menu->items[menu->num_items].options = nullptr;
+            menu->items[menu->num_items].sub_menu = nullptr;
             menu->num_items++;
         }
     }
@@ -403,7 +407,7 @@ namespace display {
             menu->items[menu->num_items].name = name_ptr;
             menu->items[menu->num_items].func = nullptr;
             menu->items[menu->num_items].func_param = nullptr;
-            menu->items[menu->num_items].options = nullptr;
+            menu->items[menu->num_items].sub_menu = nullptr;
             menu->num_items++;
         }
     }
@@ -428,42 +432,45 @@ namespace display {
 
     void lcdDriver::menu_select(bool select) {
         if (select) {
-            if (current_menu->items[current_menu->selected_item].func != nullptr) {
+            if (current_menu->items[current_menu->selected_item].sub_menu != nullptr) {
+
+            } else if (current_menu->items[current_menu->selected_item].func != nullptr) {
                 current_menu->items[current_menu->selected_item].func();
-            }
-            if (current_menu->items[current_menu->selected_item].func_param != nullptr) {
+            } else if (current_menu->items[current_menu->selected_item].func_param != nullptr) {
                 current_menu->items[current_menu->selected_item].func_param
                 (current_menu->items[current_menu->selected_item].func_arg);
             }
         }
     }
 
-    menu_option_item *lcdDriver::add_option_menu(menu_holder *menu, const char *name, void (*func)(int)) {
-        auto* item = new menu_option_item();
-        item->num_options = 0;
-        item->options = static_cast<char **>(malloc(sizeof(char *) * MAX_OPTION_MENU_OPTIONS));
-        item->selected_option = 0;
-        menu->items[menu->num_items].name = name;
+    menu_option_item *lcdDriver::add_submenu(menu_holder *menu, const char* name, void (*func)(int)) {
+
+        char* name_ptr = new char[strlen(name) + 1];
+        strcpy(name_ptr, name);
+        menu->items[menu->num_items].name = name_ptr;
         menu->items[menu->num_items].func = nullptr;
         menu->items[menu->num_items].func_param = func;
-        menu->items[menu->num_items].options = item;
+        auto* item = new menu_option_item;
+        item->num_options = 0;
+        item->option_names = new String*[MAX_OPTION_MENU_OPTIONS];
+        item->selected_option = 0;
+        menu->items[menu->num_items].sub_menu = item;
+        menu->num_items++;
         return item;
     }
 
-    void lcdDriver::add_option_menu_values(menu_option_item *item, unsigned int range, unsigned int step) {
-        if (item->num_options < MAX_OPTION_MENU_OPTIONS) {
-            for (unsigned int i = 0; i < range; i += step) {
-                char *name = new char[2];
-                sprintf(name, "%d", i);
-                item->options[item->num_options] = name;
-            }
+    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step) {
+        for (unsigned int i = 0; i < range; i += step) {
+            auto *name = new String(i);
+            sub_menu->option_names[sub_menu->num_options] = name;
+            sub_menu->num_options++;
         }
     }
 
-    void lcdDriver::add_option_menu_item(menu_option_item *menu, const char *name) {
-        menu->options[menu->num_options] = static_cast<char *>(malloc(sizeof(char) * MAX_OPTION_LENGTH));
-        strcpy(menu->options[menu->num_options], name);
-        menu->num_options++;
+    void lcdDriver::add_option_menu_item(menu_option_item *sub_menu, const char *name) {
+        auto* name_ptr = new String(name);
+        sub_menu->option_names[sub_menu->num_options] = name_ptr;
+        sub_menu->num_options++;
     }
 
     void lcdDriver::option_menu_set_selected(menu_option_item *menu, unsigned int selected) {

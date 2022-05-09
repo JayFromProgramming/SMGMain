@@ -13,26 +13,26 @@
 namespace display {
 
     struct menu_option_item {
-        char **options; // An array of strings that are the options for the menu
-        int num_options; // The number of options for the menu
-        int selected_option; // The index of the selected option
+        String** option_names = nullptr;
+        int num_options = 0; // The number of options for the menu
+        int selected_option = 0; // The index of the selected option
     };
 
     struct menu_item {
         const char *name = nullptr;
         void (*func)() = nullptr;
         void (*func_param)(int) = nullptr;
-        menu_option_item* options = nullptr;
+        menu_option_item* sub_menu = nullptr;
         int func_arg = 0;
     };
 
     struct menu_holder {
-        const char* name;
-        menu_item* items;
-        int num_items;
-        int selected_item;
-        uint16_t background_color;
-        uint16_t text_color;
+        const char* name = nullptr;
+        menu_item* items = nullptr;
+        int num_items = 0;
+        int selected_item = 0;
+        uint16_t background_color = 0;
+        uint16_t text_color = 0;
     };
 
     class lcdDriver {
@@ -106,7 +106,7 @@ namespace display {
 
         static void add_menu_item(menu_holder* menu, const char* name);
 
-        static menu_option_item* add_option_menu(menu_holder* menu, const char* name, void (*func)(int));
+        static menu_option_item* add_submenu(menu_holder* menu, const char* name, void (*func)(int));
 
         static void add_option_menu_item(menu_option_item* menu, const char* name);
 
@@ -122,7 +122,7 @@ namespace display {
 
         void add_option_menu_values(menu_option_item *item, unsigned int range);
 
-        static void add_option_menu_values(menu_option_item *item, unsigned int range, unsigned int step);
+        static void add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step);
 
         static void option_menu_set_selected(menu_option_item *menu, unsigned int selected);
     };

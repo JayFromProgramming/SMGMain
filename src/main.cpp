@@ -212,15 +212,15 @@ void boot_mode_ref(){
 
 void launch_clone_config_menu(int clone_id){
     auto* clone = load_preset(clone_id);
-    auto* menu = create_clone_config_menu(clone);
-    hud.load_and_display_menu(menu);
+    create_clone_config_menu(clone, hud);
+//    hud.load_and_display_menu(menu);
 //    display::lcdDriver::add_menu_item(menu, "Exit", &boot_mode_clone_config);
 //    hud.load_and_display_menu(menu);
 
-    clear_io_actions();
-    io_actions.trigger_method = select_menu;
-    io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+//    clear_io_actions();
+//    io_actions.trigger_method = select_menu;
+//    io_actions.reload_method = increment_menu;
+//    io_actions.select_method = decrement_menu;
 }
 
 void boot_mode_clone_config(){

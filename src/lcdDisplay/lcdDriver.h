@@ -13,7 +13,6 @@
 namespace display {
 
     struct menu_option_item {
-        const char *name;
         char **options; // An array of strings that are the options for the menu
         int num_options; // The number of options for the menu
         int selected_option; // The index of the selected option
@@ -23,7 +22,7 @@ namespace display {
         const char *name = nullptr;
         void (*func)() = nullptr;
         void (*func_param)(int) = nullptr;
-        menu_option_item *options = nullptr;
+        menu_option_item* options = nullptr;
         int func_arg = 0;
     };
 
@@ -118,6 +117,14 @@ namespace display {
         void menu_select(bool select);
 
         static void add_menu_item(menu_holder *menu, const char *name, void (*func)(int), int func_arg);
+
+        void tagger_init_screen();
+
+        void add_option_menu_values(menu_option_item *item, unsigned int range);
+
+        static void add_option_menu_values(menu_option_item *item, unsigned int range, unsigned int step);
+
+        static void option_menu_set_selected(menu_option_item *menu, unsigned int selected);
     };
 
 } // display

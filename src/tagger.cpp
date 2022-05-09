@@ -231,12 +231,15 @@ void test_sensors(){
 }
 
 void restart_gun(){
-    // Because I can't find a way to force a restart of the teensy, I'm just going to crash the program
-    score_data_ptr->hits_from_players_game[INT64_MAX] = INT16_MAX;
-    // Basically writing well past the end of memory
+    SCB_AIRCR = 0x05FA0004; // Reset the MCU
 }
 
 // End event handlers
+
+void start(){
+    // To start the game the player must hold the trigger for 2 seconds
+
+}
 
 void tagger_loop(){
     // Called by loop() this is where main code logic goes

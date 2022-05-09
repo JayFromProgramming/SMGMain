@@ -57,6 +57,7 @@ struct tagger_state {
     volatile bool reloading = false;
     volatile unsigned long reload_time = 0.0;
     volatile bool paused = false;
+    volatile bool started = true;
 };
 
 struct score_data {

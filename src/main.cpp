@@ -9,6 +9,7 @@
 #include "InternalTemperature.h"
 #include "eeprom_handler.h"
 //#include "mt2Library/tag_communicator.h"
+#include <mt2Library/clone_configurer.h>
 #include <lcdDisplay/lcdDriver.h>
 //#include <radio/radioInterface.h>
 
@@ -157,7 +158,8 @@ void boot_mode_game(){
 }
 
 void transmit_clone(int clone_id){
-    load_preset(clone_id);
+//    load_preset(clone_id);
+      hud.clear();
 }
 
 void boot_mode_clone(){
@@ -208,7 +210,38 @@ void boot_mode_ref(){
 
 }
 
+void launch_clone_config_menu(int clone_id){
+    auto* clone = load_preset(clone_id);
+    auto* menu = create_clone_config_menu(clone);
+    hud.load_and_display_menu(menu);
+//    display::lcdDriver::add_menu_item(menu, "Exit", &boot_mode_clone_config);
+//    hud.load_and_display_menu(menu);
+
+    clear_io_actions();
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
+}
+
 void boot_mode_clone_config(){
+
+    if (boot_mode != BOOT_MODE_CLONE_CONFIG) {
+        set_boot_mode(BOOT_MODE_CLONE_CONFIG);
+        SCB_AIRCR = 0x05FA0004;
+    }
+
+    auto* clone_menu = display::lcdDriver::make_menu("Select Preset\nto Edit");
+    int presets;
+    clone** presets_ptr = load_presets(&presets);
+    for (int i = 0; i < presets; i++){
+        display::lcdDriver::add_menu_item(clone_menu, presets_ptr[i]->name, launch_clone_config_menu, i);
+    }
+    display::lcdDriver::add_menu_item(clone_menu, "Exit", &boot_menu);
+    hud.load_and_display_menu(clone_menu);
+    clear_io_actions();
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
 
 }
 

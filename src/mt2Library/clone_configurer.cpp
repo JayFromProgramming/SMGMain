@@ -18,20 +18,27 @@ void edit_firerate(int firerate) {
 
 }
 
+void edit_reload_time(int reload_time) {
+
+}
+
 void edit_clips_from_ammobox(int amount){
 
 }
 
+void respawn_delay(int delay) {
+
+}
+
 display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDriver driver) {
-    char* formatted_text_ptr = new char[100];
+    // Due to the nature of adding a bunch of different items to a menu this method is very large
+    char *formatted_text_ptr = new char[100];
     sprintf(formatted_text_ptr, "Editing Clone\n%s", clone->name);
-    auto* clone_menu = display::lcdDriver::make_menu(formatted_text_ptr);
+    auto *clone_menu = display::lcdDriver::make_menu(formatted_text_ptr);
     display::lcdDriver::add_menu_item(clone_menu, "Return to menu");
-    display::menu_option_item* menu = display::lcdDriver::add_submenu(clone_menu, "Ammobox quant.",
-                                                                      edit_clips_from_ammobox);
-//    display::lcdDriver::add_option_menu_item(menu, "Test 1234");
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1);
-    display::lcdDriver::option_menu_set_selected(menu, clone->clips_from_ammo_box);
+
+    display::menu_option_item *menu = nullptr;
+
     menu = display::lcdDriver::add_submenu(clone_menu, "Respawn Health", edit_health);
     // For value in the respawn_health table in the mt2_protocol.h
     for (int i = 0; i < 0x48; i++) {
@@ -51,7 +58,6 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDr
         if (i == clone->damage_per_shot)
             display::lcdDriver::option_menu_set_selected(menu, i);
     }
-    display::lcdDriver::add_menu_item(clone_menu, "Save");
 
     // Add firerate to menu
     menu = display::lcdDriver::add_submenu(clone_menu, "Rate of fire", edit_firerate);
@@ -63,6 +69,20 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDr
             display::lcdDriver::option_menu_set_selected(menu, i);
     }
 
+    menu = display::lcdDriver::add_submenu(clone_menu, "Reload Time", edit_reload_time);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, "Seconds");
+    display::lcdDriver::option_menu_set_selected(menu, clone->reload_time);
+
+    menu = display::lcdDriver::add_submenu(clone_menu, "Respawn Delay", respawn_delay);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF * 10, 10, "Seconds");
+    display::lcdDriver::option_menu_set_selected(menu, clone->respawn_delay / 10);
+
+    menu = display::lcdDriver::add_submenu(clone_menu, "Ammobox quant.",
+                                           edit_clips_from_ammobox);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Clips");
+    display::lcdDriver::option_menu_set_selected(menu, clone->clips_from_ammo_box);
+
+    display::lcdDriver::add_menu_item(clone_menu, "Save");
 
     return clone_menu;
 }

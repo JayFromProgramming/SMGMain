@@ -319,6 +319,7 @@ namespace display {
         for (int i = 0; i < current_menu->num_items; i++) {
             // Calculate the bounds of all the items before the selected item
             lcd.getTextBounds(current_menu->items[i].name, start_x, start_y + i * h, &x1, &y1, &w, &h);
+            if (current_menu->items[i].sub_menu != nullptr) h = h * 2;
             // If the selected item is not on the screen skip items until it is
             if (y1 + h >= LCD_HEIGHT - h) {
                 if (i == current_menu->selected_item) {
@@ -420,18 +421,37 @@ namespace display {
     }
 
     void lcdDriver::menu_increment() {
-        current_menu->selected_item++;
-        if (current_menu->selected_item >= current_menu->num_items) {
-            current_menu->selected_item = 0;
+        if (current_menu->items[current_menu->selected_item].sub_menu != nullptr &&
+            current_menu->items[current_menu->selected_item].sub_menu->is_active){
+            current_menu->items[current_menu->selected_item].sub_menu->selected_option++;
+            if (current_menu->items[current_menu->selected_item].sub_menu->selected_option >=
+                current_menu->items[current_menu->selected_item].sub_menu->num_options) {
+                current_menu->items[current_menu->selected_item].sub_menu->selected_option = 0;
+            }
+        } else {
+            current_menu->selected_item++;
+            if (current_menu->selected_item >= current_menu->num_items) {
+                current_menu->selected_item = 0;
+            }
         }
         clear_screen();
         draw_menu();
     }
 
     void lcdDriver::menu_decrement() {
-        current_menu->selected_item--;
-        if (current_menu->selected_item < 0) {
-            current_menu->selected_item = current_menu->num_items - 1;
+        // Check if the current item has a sub menu, if so, go cycle through the sub menu items instead
+        if (current_menu->items[current_menu->selected_item].sub_menu != nullptr &&
+            current_menu->items[current_menu->selected_item].sub_menu->is_active){
+                current_menu->items[current_menu->selected_item].sub_menu->selected_option--;
+                if (current_menu->items[current_menu->selected_item].sub_menu->selected_option < 0) {
+                    current_menu->items[current_menu->selected_item].sub_menu->selected_option =
+                            current_menu->items[current_menu->selected_item].sub_menu->num_options - 1;
+                }
+        } else { // If the current item doesn't have a sub menu, decrement the current item
+            current_menu->selected_item--;
+            if (current_menu->selected_item < 0) {
+                current_menu->selected_item = current_menu->num_items - 1;
+            }
         }
         clear_screen();
         draw_menu();
@@ -469,6 +489,14 @@ namespace display {
     void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step) {
         for (unsigned int i = 0; i < range; i += step) {
             auto *name = new String(i);
+            sub_menu->option_names[sub_menu->num_options] = name;
+            sub_menu->num_options++;
+        }
+    }
+
+    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char* unit) {
+        for (unsigned int i = 0; i < range; i += step) {
+            auto *name = new String(String(i) + " " + String(unit));
             sub_menu->option_names[sub_menu->num_options] = name;
             sub_menu->num_options++;
         }

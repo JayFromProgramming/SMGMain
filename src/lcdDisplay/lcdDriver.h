@@ -16,6 +16,7 @@ namespace display {
         String** option_names = nullptr;
         unsigned int num_options = 0; // The number of options for the menu
         unsigned int selected_option = 0; // The index of the selected option
+        bool is_active = true; // Whether the menu is active
     };
 
     struct menu_item {
@@ -127,6 +128,9 @@ namespace display {
         static void free_menu(menu_holder *menu);
 
         void load_free_display_menu(menu_holder *menu);
+
+        static void
+        add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char *unit);
     };
 
 } // display

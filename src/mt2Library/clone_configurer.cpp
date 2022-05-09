@@ -51,8 +51,24 @@ void edit_hit_delay(int delay) {
 }
 
 
+void edit_clip_size(int size) {
+    temp_clone->clip_size = size;
+}
+
 void save_config() {
     save_preset(temp_clone_id, temp_clone);
+}
+
+void edit_start_delay(int delay) {
+    temp_clone->start_delay = delay;
+}
+
+void edit_death_delay(int delay) {
+    temp_clone->death_delay = delay;
+}
+
+void edit_armor_value(int value) {
+    temp_clone->armour_value = value;
 }
 
 display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id) {
@@ -119,6 +135,12 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Clips");
     display::lcdDriver::option_menu_set_selected(menu, clone->clips_from_ammo_box);
 
+    // Clip size
+    menu = display::lcdDriver::add_submenu(clone_menu, "Clip size",
+                                           edit_clip_size);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Bullets");
+    display::lcdDriver::option_menu_set_selected(menu, clone->clip_size);
+
     // Number of clips
     menu = display::lcdDriver::add_submenu(clone_menu, "Number of clips",
                                                edit_number_of_clips);
@@ -135,6 +157,32 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     // hit_delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Hit delay",
                                                    edit_hit_delay);
+    for (int i = 0; i < 0x17; i++) {
+        float hit_delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
+        String hit_delay_str = String(hit_delay) + " Seconds";
+        display::lcdDriver::add_option_menu_item(menu, hit_delay_str.c_str());
+        if (i == clone->hit_delay)
+            display::lcdDriver::option_menu_set_selected(menu, i);
+    }
+
+    // Start delay
+    menu = display::lcdDriver::add_submenu(clone_menu, "Start delay",
+                                                       edit_start_delay);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
+    display::lcdDriver::option_menu_set_selected(menu, clone->start_delay);
+
+    // Death delay
+    menu = display::lcdDriver::add_submenu(clone_menu, "Death delay",
+                                                       edit_death_delay);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
+    display::lcdDriver::option_menu_set_selected(menu, clone->death_delay);
+
+    // Armor value
+    menu = display::lcdDriver::add_submenu(clone_menu, "Armor value",
+                                                           edit_armor_value);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Points");
+    display::lcdDriver::option_menu_set_selected(menu, clone->armour_value);
+
     for (int i = 0 ; i < 0x17; i++) {
         float delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
         String delay_str = String(delay) + " Seconds";

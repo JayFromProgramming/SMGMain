@@ -329,9 +329,11 @@ namespace display {
         }
         char* num_str = new char[3];
         for (int i = skip_items; i < current_menu->num_items; i++) {
+            lcd.setTextColor(current_menu->text_color);
             if (i == current_menu->selected_item) {
                 if (current_menu->items[i].func != nullptr || current_menu->items[i].func_param != nullptr) {
                     sprintf(num_str, "%02d>", i + 1);
+                    lcd.setTextColor(ST77XX_GREEN);
                 } else sprintf(num_str, "%02d-", i + 1);
             } else sprintf(num_str, "%02d:", i + 1);
             lcd.print(num_str);
@@ -340,6 +342,7 @@ namespace display {
             if (current_menu->items[i].sub_menu != nullptr) {
                 lcd.setCursor(0, start_y + h + 3);
                 if (current_menu->items[i].sub_menu->is_active) {
+                    lcd.setTextColor(ST77XX_YELLOW);
                     lcd.print("=>");
                 } else lcd.print("->");
                 auto* name = current_menu->items[i].sub_menu->option_names
@@ -468,6 +471,8 @@ namespace display {
                                 current_menu->items[current_menu->selected_item].sub_menu->selected_option);
                     current_menu->items[current_menu->selected_item].sub_menu->is_active = false;
                 } else current_menu->items[current_menu->selected_item].sub_menu->is_active = true;
+                clear_screen();
+                draw_menu();
             } else if (current_menu->items[current_menu->selected_item].func != nullptr) {
                 current_menu->items[current_menu->selected_item].func();
             } else if (current_menu->items[current_menu->selected_item].func_param != nullptr) {
@@ -487,6 +492,9 @@ namespace display {
         auto* item = new menu_option_item;
         item->num_options = 0;
         item->option_names = new String*[MAX_OPTION_MENU_OPTIONS];
+        for (int i = 0; i < MAX_OPTION_MENU_OPTIONS; i++) {
+            item->option_names[i] = nullptr;
+        }
         item->selected_option = 0;
         menu->items[menu->num_items].sub_menu = item;
         menu->num_items++;
@@ -501,7 +509,8 @@ namespace display {
         }
     }
 
-    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char* unit) {
+    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step,
+                                           const char* unit) {
         for (unsigned int i = 0; i < range; i += step) {
             auto *name = new String(String(i) + " " + String(unit));
             sub_menu->option_names[sub_menu->num_options] = name;
@@ -516,7 +525,11 @@ namespace display {
     }
 
     void lcdDriver::option_menu_set_selected(menu_option_item *menu, unsigned int selected) {
-        menu->selected_option = selected;
+        if (selected < menu->num_options) {
+            menu->selected_option = selected;
+        } else {
+            menu->selected_option = 0;
+        }
     }
 
     void lcdDriver::free_menu(menu_holder *menu) {

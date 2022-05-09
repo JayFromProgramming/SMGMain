@@ -10,6 +10,8 @@
 mt2::clone* temp_clone;
 uint8_t temp_clone_id;
 
+void (*temp_callback)();
+
 void edit_health(int health) {
     temp_clone->respawn_health = static_cast<mt2::respawn_health>(health);
 }
@@ -57,6 +59,7 @@ void edit_clip_size(int size) {
 
 void save_config() {
     save_preset(temp_clone_id, temp_clone);
+    temp_callback();
 }
 
 void edit_start_delay(int delay) {
@@ -71,18 +74,27 @@ void edit_armor_value(int value) {
     temp_clone->armour_value = value;
 }
 
-display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id) {
+void edit_firemode(int mode) {
+    temp_clone->fire_selector = static_cast<mt2::fire_mode>(mode);
+}
+
+void edit_burst_size(int size) {
+    temp_clone->burst_size = size;
+}
+
+display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id, void (*config_menu_callback)()) {
     // Due to the nature of adding a bunch of different items to a menu this method is very large
 
     temp_clone = clone;
     temp_clone_id = clone_id;
+    temp_callback = config_menu_callback;
 
     char *formatted_text_ptr = new char[100];
     sprintf(formatted_text_ptr, "Editing Clone\n%s", clone->name);
     auto *clone_menu = display::lcdDriver::make_menu(formatted_text_ptr);
     delete[] formatted_text_ptr;
-    display::lcdDriver::add_menu_item(clone_menu, "Return to menu");
-
+    display::lcdDriver::add_menu_item(clone_menu, "Save & Return", save_config);
+    display::lcdDriver::add_menu_item(clone_menu, "Exit without\nsaving", config_menu_callback);
     display::menu_option_item *menu = nullptr;
 
     menu = display::lcdDriver::add_submenu(clone_menu, "Respawn Health", edit_health);
@@ -115,6 +127,19 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
             display::lcdDriver::option_menu_set_selected(menu, i);
     }
 
+    // Firemode
+    menu = display::lcdDriver::add_submenu(clone_menu, "Fire selector", edit_firemode);
+    display::lcdDriver::add_option_menu_item(menu, "Single shot");
+    display::lcdDriver::add_option_menu_item(menu, "Burst fire");
+    display::lcdDriver::add_option_menu_item(menu, "Full Auto");
+    display::lcdDriver::option_menu_set_selected(menu, clone->fire_selector);
+
+
+    // Burst size
+    menu = display::lcdDriver::add_submenu(clone_menu, "Burst size", edit_burst_size);
+    display::lcdDriver::add_option_menu_values(menu, 30, 1);
+    display::lcdDriver::option_menu_set_selected(menu, clone->burst_size);
+
     // Reload time
     menu = display::lcdDriver::add_submenu(clone_menu, "Reload Time", edit_reload_time);
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, "Seconds");
@@ -127,7 +152,8 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
 
     // Max respawns
     menu = display::lcdDriver::add_submenu(clone_menu, "Max Respawns", max_respawns);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, "Times");
+    display::lcdDriver::add_option_menu_values(menu, 0xFE, 1, "Times");
+    display::lcdDriver::add_option_menu_item(menu, "Unlimited");
     display::lcdDriver::option_menu_set_selected(menu, clone->max_respawns);
 
     // Clips from ammo box
@@ -135,7 +161,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
                                            edit_clips_from_ammobox);
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Clips");
     display::lcdDriver::option_menu_set_selected(menu, clone->clips_from_ammo_box);
-
+//
     // Clip size
     menu = display::lcdDriver::add_submenu(clone_menu, "Clip size",
                                            edit_clip_size);
@@ -145,7 +171,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     // Number of clips
     menu = display::lcdDriver::add_submenu(clone_menu, "Number of clips",
                                                edit_number_of_clips);
-    display::lcdDriver::add_option_menu_values(menu, 0xBF, 1, " Clips");
+    display::lcdDriver::add_option_menu_values(menu, 0xCA-1, 1, " Clips");
     display::lcdDriver::add_option_menu_item(menu, "Unlimited");
     display::lcdDriver::option_menu_set_selected(menu, clone->number_of_clips);
 
@@ -155,17 +181,17 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
     display::lcdDriver::option_menu_set_selected(menu, clone->hit_led_timout_seconds);
 
-    // hit_delay
-    menu = display::lcdDriver::add_submenu(clone_menu, "Hit delay",
-                                                   edit_hit_delay);
-    for (int i = 0; i < 0x17; i++) {
-        float hit_delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
-        String hit_delay_str = String(hit_delay) + " Seconds";
-        display::lcdDriver::add_option_menu_item(menu, hit_delay_str.c_str());
-        if (i == clone->hit_delay)
-            display::lcdDriver::option_menu_set_selected(menu, i);
-    }
-
+//    // hit_delay
+//    menu = display::lcdDriver::add_submenu(clone_menu, "Hit delay",
+//                                                   edit_hit_delay);
+//    for (int i = 0; i < 0x17; i++) {
+//        float hit_delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
+//        String hit_delay_str = String(hit_delay) + " Seconds";
+//        display::lcdDriver::add_option_menu_item(menu, hit_delay_str.c_str());
+//        if (i == clone->hit_delay)
+//            display::lcdDriver::option_menu_set_selected(menu, i);
+//    }
+//
     // Start delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Start delay",
                                                        edit_start_delay);
@@ -183,14 +209,14 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
                                                            edit_armor_value);
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Points");
     display::lcdDriver::option_menu_set_selected(menu, clone->armour_value);
-
-    for (int i = 0 ; i < 0x17; i++) {
-        float delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
-        String delay_str = String(delay) + " Seconds";
-        display::lcdDriver::add_option_menu_item(menu, delay_str.c_str());
-        if (i == clone->hit_delay)
-            display::lcdDriver::option_menu_set_selected(menu, i);
-    }
+//
+//    for (int i = 0 ; i < 0x17; i++) {
+//        float delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
+//        String delay_str = String(delay) + " Seconds";
+//        display::lcdDriver::add_option_menu_item(menu, delay_str.c_str());
+//        if (i == clone->hit_delay)
+//            display::lcdDriver::option_menu_set_selected(menu, i);
+//    }
 
     display::lcdDriver::add_menu_item(clone_menu, "Save", save_config);
 

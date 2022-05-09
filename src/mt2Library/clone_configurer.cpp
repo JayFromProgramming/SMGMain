@@ -80,6 +80,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     char *formatted_text_ptr = new char[100];
     sprintf(formatted_text_ptr, "Editing Clone\n%s", clone->name);
     auto *clone_menu = display::lcdDriver::make_menu(formatted_text_ptr);
+    delete[] formatted_text_ptr;
     display::lcdDriver::add_menu_item(clone_menu, "Return to menu");
 
     display::menu_option_item *menu = nullptr;

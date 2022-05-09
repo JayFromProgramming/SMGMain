@@ -22,13 +22,15 @@
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
 
+void boot_mode_game();
+void boot_mode_ref();
+void boot_mode_set_defaults();
+void boot_mode_sys_info();
+void boot_mode_clone_config();
 void boot_menu();
 
-void boot_mode_ref();
 
-void boot_mode_sys_info();
-
-IntervalTimer io_refresh_timer;
+//IntervalTimer io_refresh_timer;
 
 Bounce trigger_button = Bounce(TRIGGER_PIN_NUMBER, 5);
 Bounce reload_button = Bounce(RELOAD_PIN_NUMBER, 5);
@@ -42,6 +44,11 @@ struct button_methods {
 
 button_methods io_actions;
 
+void clear_io_actions() {
+    io_actions.trigger_method = nullptr;
+    io_actions.reload_method = nullptr;
+    io_actions.select_method = nullptr;
+}
 
 enum boot_modes: uint8_t {
     BOOT_MODE_UNKNOWN = 0,
@@ -50,10 +57,22 @@ enum boot_modes: uint8_t {
     BOOT_MODE_CLONE_CONFIG = 3,
     BOOT_MODE_CLONE_GUN = 4,
     BOOT_MODE_GUN_CONFIG = 5,
-    BOOT_MODE_SET_DEFAULTS = 6
+    BOOT_MODE_SET_DEFAULTS = 6,
+    BOOT_MODE_SYS_INFO = 7,
 };
 
-boot_modes boot_mode;
+String boot_mode_names[] = {
+    "Unknown",
+    "Game",
+    "Ref",
+    "Clone Config",
+    "Clone Gun",
+    "Gun Config",
+    "Set Defaults",
+    "Sys Info"
+};
+
+volatile boot_modes boot_mode;
 
 void io_refresh(){ // Called every .25 ms
   trigger_button.update();
@@ -86,7 +105,6 @@ display::lcdDriver hud = display::lcdDriver();
 //wireless::radioInterface radio = wireless::radioInterface();
 audio_interface::audio_interface audio = audio_interface::audio_interface();
 uint16_t next_loop_time = 0;
-
 event_handlers* tagger_events = nullptr;
 
 void increment_menu(){
@@ -101,6 +119,12 @@ void select_menu(bool select){
     hud.menu_select(select);
 }
 
+float read_battery_voltage(){
+    float batVal = analogRead(BATTERY_PIN_NUMBER);
+    float batVoltage = (batVal * 3.3f) / 1024;
+    return batVoltage;
+}
+
 //void overheat_method() {
 //    // In the event of the main cpu overheating we reduce the system clock to .75MHz and stop the main loop.
 //    // We will also attach a low temp interrupt to the main cpu to restart the system clock once the cpu has cooled down.
@@ -112,9 +136,16 @@ void select_menu(bool select){
 //#define DEBUG_MODE
 
 void boot_mode_game(){
+
+    if (boot_mode != BOOT_MODE_GAME){
+        set_boot_mode(BOOT_MODE_GAME);
+        SCB_AIRCR = 0x05FA0004;
+    }
+
     tagger_init(&audio); // Initialize the tagger
 
     // Initialize all debounced IO methods
+    clear_io_actions();
     io_actions.trigger_method = &shot_check;
     io_actions.reload_method =  &on_reload;
     io_actions.select_method =  &display::lcdDriver::toggle_backlight;
@@ -123,10 +154,6 @@ void boot_mode_game(){
     tagger_events = get_event_handler_ptr() ; // get the tagger event pointer
 //    digitalWrite(LED_BUILTIN, LOW);
     hud.clear();
-    if (boot_mode != BOOT_MODE_GAME){
-        set_boot_mode(BOOT_MODE_GAME);
-        SCB_AIRCR = 0x05FA0004;
-    }
 }
 
 void transmit_clone(int clone_id){
@@ -146,7 +173,9 @@ void boot_mode_clone(){
     for (int i = 0; i < presets; i++){
         display::lcdDriver::add_menu_item(clone_menu, presets_ptr[i]->name, transmit_clone, i);
     }
+    display::lcdDriver::add_menu_item(clone_menu, "Exit", &boot_menu);
     hud.load_and_display_menu(clone_menu);
+    clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
     io_actions.select_method = decrement_menu;
@@ -155,22 +184,28 @@ void boot_mode_clone(){
 
 void boot_mode_ref(){
     // Build the ref option menu
+
+    if (boot_mode != BOOT_MODE_REF) {
+        set_boot_mode(BOOT_MODE_REF);
+        SCB_AIRCR = 0x05FA0004;
+    }
+
     auto* ref_menu = display::lcdDriver::make_menu("Ref Menu");
-    display::lcdDriver::add_menu_item(ref_menu, "Kill");
-    display::lcdDriver::add_menu_item(ref_menu, "Respawn");
-    display::lcdDriver::add_menu_item(ref_menu, "Reset");
-    display::lcdDriver::add_menu_item(ref_menu, "Explode");
-    display::lcdDriver::add_menu_item(ref_menu, "Enter Clone Mode", &boot_mode_clone);
+    display::lcdDriver::add_menu_item(ref_menu, "Admin Kill");
+    display::lcdDriver::add_menu_item(ref_menu, "Respawn Player");
+    display::lcdDriver::add_menu_item(ref_menu, "Reset Player");
+    display::lcdDriver::add_menu_item(ref_menu, "Explode Player");
+
+    display::lcdDriver::add_menu_item(ref_menu, "Enter Clone Mode",&boot_mode_clone);
+    display::lcdDriver::add_menu_item(ref_menu, "Edit Presets", &boot_mode_clone_config);
+    display::lcdDriver::add_menu_item(ref_menu, "Exit to boot", &boot_menu);
     hud.load_and_display_menu(ref_menu);
 
+    clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
     io_actions.select_method = decrement_menu;
 
-    if (boot_mode != BOOT_MODE_REF){
-        set_boot_mode(BOOT_MODE_REF);
-        SCB_AIRCR = 0x05FA0004; // Reboot if the boot mode was not already set to ref
-    }
 }
 
 void boot_mode_clone_config(){
@@ -182,18 +217,33 @@ void boot_mode_options(){
 }
 
 void boot_mode_set_defaults(){
-    auto* confirmation_menu = display::lcdDriver::make_menu("Are you sure you want to set all"
-                                                            " values to default?");
+
+    if (boot_mode != BOOT_MODE_SET_DEFAULTS){
+        set_temp_boot_mode(BOOT_MODE_SET_DEFAULTS);
+        SCB_AIRCR = 0x05FA0004;
+        return;
+    }
+
+    auto* confirmation_menu = display::lcdDriver::make_menu(
+            "Are you sure\nyou want to set\nall values\nto default?");
     display::lcdDriver::add_menu_item(confirmation_menu, "Yes", &set_defaults);
     display::lcdDriver::add_menu_item(confirmation_menu, "No", &boot_mode_options);
     display::lcdDriver::add_menu_item(confirmation_menu, "Cancel", &boot_menu);
     hud.load_and_display_menu(confirmation_menu);
+    clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
     io_actions.select_method = decrement_menu;
 }
 
 void boot_menu(){
+
+    if (boot_mode != BOOT_MODE_UNKNOWN){
+        set_temp_boot_mode(BOOT_MODE_UNKNOWN);
+        SCB_AIRCR = 0x05FA0004;
+        return;
+    }
+
     auto* boot_menu = display::lcdDriver::make_menu("Select\nBoot Mode");
     display::lcdDriver::add_menu_item(boot_menu, "Game",        &boot_mode_game);
     display::lcdDriver::add_menu_item(boot_menu, "Referee",     &boot_mode_ref);
@@ -203,27 +253,44 @@ void boot_menu(){
     display::lcdDriver::add_menu_item(boot_menu, "Set Defaults", &boot_mode_set_defaults);
     display::lcdDriver::add_menu_item(boot_menu, "Sys Info",    &boot_mode_sys_info);
     hud.load_and_display_menu(boot_menu);
+    clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
     io_actions.select_method = decrement_menu;
 }
 
 void boot_mode_sys_info() { // Display system information, does not override current boot mode
-    auto* sys_info_menu = display::lcdDriver::make_menu("System Info");
-    display::lcdDriver::add_menu_item(sys_info_menu, "OS Version: " __TIME__ " " __DATE__);
-    char* format_string = new char[100];
-    sprintf(format_string, "Device ID: %d", get_device_id());
-    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
-    sprintf(format_string, "Boot Mode: %d", boot_mode);
-    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
-    sprintf(format_string, "System Temp: %f", InternalTemperatureClass::readTemperatureC());
-    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
-    sprintf(format_string, "Battery Voltage: %f%%", analogRead(BATTERY_PIN_NUMBER) * 100.f / 1024);
-    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
-    sprintf(format_string, "Radio Connection: %s", false ? "Connected" : "Disconnected");
-    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
-    display::lcdDriver::add_menu_item(sys_info_menu, "Copyright (c) 2022, ", &boot_menu);
 
+    if (boot_mode != BOOT_MODE_SYS_INFO){
+        set_temp_boot_mode(BOOT_MODE_SYS_INFO); // Because this is a temp boot mode set the temp boot mode
+        SCB_AIRCR = 0x05FA0004;
+        return;
+    }
+
+    auto* sys_info_menu = display::lcdDriver::make_menu("System Info");
+    display::lcdDriver::add_menu_item(sys_info_menu, "Gun OS Version:\n" __TIME__ " " __DATE__);
+    char* format_string = new char[100];
+    sprintf(format_string, "Device ID:\nTagger-%d", get_device_id());
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    sprintf(format_string, "Boot Mode:\n%s", boot_mode_names[get_boot_mode()].c_str());
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    sprintf(format_string, "System Temp:\n%.2fC", InternalTemperatureClass::readTemperatureC());
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    sprintf(format_string, "Battery Voltage:\n%.2f Volts", read_battery_voltage());
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    display::lcdDriver::add_menu_item(sys_info_menu, "Radio Status:\nNo Radio Module");
+    sprintf(format_string, "Remaining EEPROM:\n%d bytes", get_remaining_space());
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    display::lcdDriver::add_menu_item(sys_info_menu, "Copyright(c) 2022\nLOAFCLAN TACTICAL\nEQUIPMENT, LLC\n"
+                                                                 "All rights reserved.");
+    display::lcdDriver::add_menu_item(sys_info_menu, "Exit", &boot_menu);
+    hud.load_and_display_menu(sys_info_menu);
+    clear_io_actions();
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
+
+    boot_mode = BOOT_MODE_SYS_INFO;
 }
 
 void setup() {
@@ -235,9 +302,10 @@ void setup() {
     pinMode(TRIGGER_PIN_NUMBER, INPUT_PULLUP);
     pinMode(RELOAD_PIN_NUMBER, INPUT_PULLUP);
     pinMode(SELECT_PIN_NUMBER, INPUT_PULLUP);
+    pinMode(BATTERY_PIN_NUMBER, INPUT);
 
     display::lcdDriver::displayInit(); // Initialize the LCD display
-    io_refresh_timer.begin(io_refresh, 250);
+//    io_refresh_timer.begin(io_refresh, 250);
 
     boot_mode = static_cast<boot_modes>(get_boot_mode());
 
@@ -265,6 +333,12 @@ void setup() {
         case BOOT_MODE_GUN_CONFIG:
             boot_mode_options();
             break;
+        case BOOT_MODE_SYS_INFO:
+            boot_mode_sys_info();
+            break;
+        case BOOT_MODE_UNKNOWN:
+            boot_menu();
+            break;
         default:
             boot_menu();
             break;
@@ -285,18 +359,18 @@ int split(const String& command, String pString[4], int i, char delimiter, int m
     return split(command.substring(pos + 1, command.length()), pString, i + 1, delimiter, max_length);
 }
 
-
-
 // Main loop this runs once every 20ms or 50Hz while the tagger and hud updates run audio interrupts are disabled
 void loop() {
     next_loop_time = micros() + (20 * 1000);
+    io_refresh();
 
     switch (boot_mode){
         case BOOT_MODE_GAME:
             tagger_loop(); // Run all main tagger functions
             hud.update_hud(); // Update the HUD
             break;
-        case BOOT_MODE_REF: // All Ref functions are interrupt based so no loop is required;
+        case BOOT_MODE_REF: // All Ref functions are interrupt based so no loop is required
+            break;
         case BOOT_MODE_CLONE_CONFIG:
             // Not implemented
             break;
@@ -306,7 +380,13 @@ void loop() {
         case BOOT_MODE_GUN_CONFIG:
             // Not implemented
             break;
-        default: ;
+        case BOOT_MODE_SYS_INFO:
+            // Not implemented
+            break;
+        case BOOT_MODE_UNKNOWN:
+            break;
+        default:
+            break;
             // Do nothing if no boot mode is selected
     }
 

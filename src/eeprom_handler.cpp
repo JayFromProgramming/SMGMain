@@ -6,13 +6,14 @@
 
 #include <EEPROM.h>
 
-#define EEPROM_RESET_FLAG 0x0F // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
+#define EEPROM_RESET_FLAG 0x1F // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
 
 #define PRESET_START_ADDRESS 0x1F // EEPROM address where presets start ( 0x1F = 31 )
 #define TOTAL_PRESETS 12
 
 typedef struct device_configs {
     unsigned char boot_mode;
+    unsigned char temp_boot_mode; // Indicates if the device is temporarily in switching boot modes
 
     unsigned char screen_orientation; // 0 for left, 1 for right, 2 for up, 3 for down
     unsigned char device_type; // Will be used by the radio library once it's implemented
@@ -214,11 +215,23 @@ FLASHMEM int get_remaining_space(){
 }
 
 FLASHMEM unsigned char get_boot_mode(){
-    return device_config->boot_mode;
+    if (device_config->temp_boot_mode != 0xFF) {
+        unsigned char boot_mode = device_config->temp_boot_mode;
+        device_config->temp_boot_mode = 0xFF;
+        EEPROM.put(calcAddress(1), *device_config);
+        return boot_mode;
+    } else {
+        return device_config->boot_mode;
+    }
 }
 
 FLASHMEM void set_boot_mode(unsigned char mode) {
     device_config->boot_mode = mode;
+    EEPROM.put(calcAddress(1), *device_config);
+}
+
+FLASHMEM void set_temp_boot_mode(unsigned char mode) {
+    device_config->temp_boot_mode = mode;
     EEPROM.put(calcAddress(1), *device_config);
 }
 

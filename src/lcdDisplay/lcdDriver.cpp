@@ -22,16 +22,18 @@
 
 #define BACKLIGHT_PIN 15
 
+#define LCD_HEIGHT    240
+
 #define HEALTH_BAR_START_X  7
 #define HEALTH_BAR_START_Y  10
 #define HEALTH_BAR_WIDTH    233
 #define HEALTH_BAR_HEIGHT   10
 
-#define CLIP_TEXT_START_X   50
-#define CLIP_TEXT_START_Y   72
+#define CLIP_TEXT_START_X   69
+#define CLIP_TEXT_START_Y   84
 #define CLIP_TEXT_SIZE      4
 
-#define AMMO_TEXT_START_X   64
+#define AMMO_TEXT_START_X   69
 #define AMMO_TEXT_START_Y   128
 #define AMMO_TEXT_SIZE      14
 
@@ -48,8 +50,8 @@
 #define DEATH_TEXT_START_Y   10
 #define DEATH_TEXT_SIZE      3
 
-#define MAX_MENU_ITEMS       12
-#define MAX_OPTION_MENU_OPTIONS  10
+#define MAX_MENU_ITEMS       32
+#define MAX_OPTION_MENU_OPTIONS  128
 #define MAX_OPTION_LENGTH   20
 
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
@@ -68,8 +70,10 @@ namespace display {
         lcd.fillScreen(ST77XX_BLUE);
         lcd.fillScreen(ST77XX_WHITE);
         lcd.fillScreen(ST77XX_BLACK);
-        lcd.setTextSize(7);
-        lcd.print("Hello World!");
+        lcd.setTextSize(4);
+        for (int i = 0; i < 12; i++) {
+            lcd.print("You should not see this");
+        }
 //        digitalWriteFast(BACKLIGHT_PIN, LOW);
     }
 
@@ -182,7 +186,7 @@ namespace display {
         unsigned long time_alive_seconds = time_alive / 1000;
         unsigned long time_alive_minutes = time_alive_seconds / 60;
         sprintf(time_alive_str, "%lu:%02lu", time_alive_minutes, time_alive_seconds % 60);
-        sprintf(death_str, "You died!\n"
+        sprintf(death_str, "GAME OVER!\n"
                            "Shots fired:\n%d\n"
                            "Time alive:\n%13s\n"
                            "Killed by:\n%d", score->rounds_fired, time_alive_str, score->killed_by);
@@ -190,22 +194,23 @@ namespace display {
     }
 
     void lcdDriver::draw_health_bar() {
+        lcd.drawRect(0, 0, 64, HEALTH_BAR_START_Y, ST77XX_BLACK);
+        lcd.setCursor(0, 0);
+        lcd.setTextSize(1);
+        lcd.setTextColor(ST77XX_WHITE);
+        lcd.print("Health: ");
+        lcd.print(this->game_state->health);
+        lcd.print("/");
+        lcd.print(this->game_state->max_health);
         if (this->game_state->health <= 0) {
             draw_death_screen();
         } else if (this->game_state->health == this->game_state->max_health) {
-            lcd.setCursor(0, 0);
-            lcd.setTextSize(1);
-            lcd.setTextColor(ST77XX_WHITE);
-            lcd.print("Health: ");
-            lcd.print(this->game_state->health);
-            lcd.print("/");
-            lcd.print(this->game_state->max_health);
-            lcd.fillRect(7, 10, 233, 10, ST77XX_GREEN);
+            lcd.fillRect(0, 10, 240, 20, ST77XX_GREEN);
         } else {
-            lcd.fillRect((int)(calc_health_percentage() * 226) + 7, 10,
-                         233, 7, ST77XX_RED);
+            lcd.fillRect((int)(calc_health_percentage() * 240), 10,
+                         240, 20, ST77XX_RED);
             lcd.fillRect(0, 10,
-                         (int)(calc_health_percentage() * 226) + 7, 10, ST77XX_GREEN);
+                         (int)(calc_health_percentage() * 240), 20, ST77XX_GREEN);
         }
     }
 
@@ -292,26 +297,39 @@ namespace display {
         int16_t start_y = y1 + h + 5;
         lcd.setCursor(0, start_y);
         lcd.setTextSize(2);
-        lcd.getTextBounds(current_menu->items[0].name, 0, 0, &x1, &y1, &w2, &h2);
+        // Disable text wraping
+        lcd.setTextWrap(false);
+        // Calculate how many items need to be skipped so that the selected item is on the screen
+        int16_t skip_items = 0;
         for (int i = 0; i < current_menu->num_items; i++) {
-            if (current_menu->selected_item == i) {
-                // If this item is selected, draw a triangle pointing to it and indent it
-                lcd.print("> ");
-                lcd.print(current_menu->items[i].name);
-                lcd.print("\n");
-            } else {
-                lcd.print(current_menu->items[i].name);
-                lcd.print("\n");
-            }
-            // Check if the next item will go off the screen
+            // Calculate the bounds of all the items before the selected item
             lcd.getTextBounds(current_menu->items[i].name, start_x, start_y + i * h, &x1, &y1, &w, &h);
-            if (y1 + h2 > 240) {
-                break;
+            // If the selected item is not on the screen skip items until it is
+            if (y1 + h >= LCD_HEIGHT - h) {
+                if (i == current_menu->selected_item) {
+                    skip_items = i;
+                }
             }
         }
+        char* num_str = new char[3];
+        for (int i = skip_items; i < current_menu->num_items; i++) {
+            if (i == current_menu->selected_item) {
+                if (current_menu->items[i].func != nullptr || current_menu->items[i].func_param != nullptr) {
+                    sprintf(num_str, "%02d>", i + 1);
+                } else sprintf(num_str, "%02d-", i + 1);
+            } else sprintf(num_str, "%02d:", i + 1);
+            lcd.print(num_str);
+            lcd.print(current_menu->items[i].name);
+            lcd.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
+            start_y += h + 3;
+            lcd.setCursor(0, start_y);
+        }
+        lcd.setTextWrap(true);
+        delete[] num_str;
     }
 
     void lcdDriver::load_and_display_menu(menu_holder *menu) {
+        free(current_menu);
         current_menu = menu;
         this->draw_menu();
     }
@@ -332,22 +350,35 @@ namespace display {
     }
 
     void lcdDriver::add_menu_item(menu_holder *menu, const char *name, void (*func)()) {
-        menu->items[menu->num_items].name = name;
-        menu->items[menu->num_items].func = func;
-        menu->num_items++;
+        if (menu->num_items < MAX_MENU_ITEMS) {
+            char* name_ptr = new char[strlen(name) + 1];
+            strcpy(name_ptr, name);
+            menu->items[menu->num_items].name = name_ptr;
+            menu->items[menu->num_items].func = func;
+            menu->num_items++;
+        }
     }
 
     void lcdDriver::add_menu_item(menu_holder *menu, const char *name, void (*func)(int), int arg){
-        menu->items[menu->num_items].name = name;
-        menu->items[menu->num_items].func_param = func;
-        menu->items[menu->num_items].func_arg = arg;
-        menu->num_items++;
+        if (menu->num_items < MAX_MENU_ITEMS) {
+            char* name_ptr = new char[strlen(name) + 1];
+            strcpy(name_ptr, name);
+            menu->items[menu->num_items].name = name_ptr;
+            menu->items[menu->num_items].func_param = func;
+            menu->items[menu->num_items].func_arg = arg;
+            menu->num_items++;
+        }
     }
 
     void lcdDriver::add_menu_item(menu_holder *menu, const char *name) {
-        menu->items[menu->num_items].name = name;
-        menu->items[menu->num_items].func = nullptr;
-        menu->num_items++;
+        if (menu->num_items < MAX_MENU_ITEMS) {
+            char* name_ptr = new char[strlen(name) + 1];
+            strcpy(name_ptr, name);
+            menu->items[menu->num_items].name = name_ptr;
+            menu->items[menu->num_items].func = nullptr;
+            menu->items[menu->num_items].func_param = nullptr;
+            menu->num_items++;
+        }
     }
 
     void lcdDriver::menu_increment() {
@@ -361,6 +392,19 @@ namespace display {
 
     void lcdDriver::menu_decrement() {
         current_menu->selected_item--;
+        // Check if the next item has a valid function, and if not go to the next item
+//        int cycled_items = 0;
+//        while (current_menu->items[current_menu->selected_item].func == nullptr) {
+//            current_menu->selected_item--;
+//            if (current_menu->selected_item < 0) {
+//                current_menu->selected_item = current_menu->num_items - 1;
+//            }
+//            cycled_items++;
+//            if (cycled_items > current_menu->num_items) {
+//                 If we've cycled through all the items, we're at the end
+//                break;
+//            }
+//        }
         if (current_menu->selected_item < 0) {
             current_menu->selected_item = current_menu->num_items - 1;
         }

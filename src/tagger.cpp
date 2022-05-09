@@ -130,7 +130,7 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
 
     // Check if friendly fire is enabled, if so check if the hit was on a friendly team and if so ignore the hit
     if (game_state->currentConfig->game_bool_flags_1 & GAME_FRIENDLY_FIRE || teamID != game_state->currentConfig->team_id) {
-        game_state->health = min(game_state->health - mt2::damage_table_lookup(static_cast<damage_table>(dmg)), 0);
+        game_state->health = max(0, game_state->health - mt2::damage_table_lookup(static_cast<damage_table>(dmg)));
         game_state->last_hit = millis(); // Set the last hit time
         score_data_ptr->hits_from_players_game[playerID]++;
         score_data_ptr->hits_from_players_life[playerID]++;

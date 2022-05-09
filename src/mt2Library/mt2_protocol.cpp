@@ -278,6 +278,59 @@ namespace mt2 {
                 return 750;
             case RPM_800:
                 return 800;
-        };
+        }
+    }
+
+    float hit_delay_to_seconds(hit_delays hit_delay) {
+        switch (hit_delay) {
+            case NO_DELAY:
+                return 0;
+            case ONE_QUARTER_SECOND:
+                return 0.25;
+            case HALF_SECOND:
+                return 0.5;
+            case THREE_QUARTER_SECOND:
+                return 0.75;
+            case ONE_SECOND:
+                return 1;
+            case TWO_SECONDS:
+                return 2;
+            case THREE_SECONDS:
+                return 3;
+            case FOUR_SECONDS:
+                return 4;
+            case FIVE_SECONDS:
+                return 5;
+            case SIX_SECONDS:
+                return 6;
+            case SEVEN_SECONDS:
+                return 7;
+            case EIGHT_SECONDS:
+                return 8;
+            case NINE_SECONDS:
+                return 9;
+            case TEN_SECONDS:
+                return 10;
+            case ELEVEN_SECONDS:
+                return 11;
+            case TWELVE_SECONDS:
+                return 12;
+            case THIRTEEN_SECONDS:
+                return 13;
+            case FOURTEEN_SECONDS:
+                return 14;
+            case FIFTEEN_SECONDS:
+                return 15;
+            case SIXTEEN_SECONDS:
+                return 16;
+            case SEVENTEEN_SECONDS:
+                return 17;
+            case EIGHTEEN_SECONDS:
+                return 18;
+            case NINETEEN_SECONDS:
+                return 19;
+            case TWENTY_SECONDS:
+                return 20;
+        }
     }
 }

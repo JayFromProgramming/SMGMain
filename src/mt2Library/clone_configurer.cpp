@@ -5,33 +5,62 @@
 #include "clone_configurer.h"
 #include "mt2_protocol.h"
 #include <lcdDisplay/lcdDriver.h>
+#include <eeprom_handler.h>
+
+mt2::clone* temp_clone;
+uint8_t temp_clone_id;
 
 void edit_health(int health) {
-
+    temp_clone->respawn_health = static_cast<mt2::respawn_health>(health);
 }
 
 void edit_damage(int damage) {
-
+    temp_clone->damage_per_shot = static_cast<mt2::damage_table>(damage);
 }
 
 void edit_firerate(int firerate) {
-
+    temp_clone->cyclic_rpm = static_cast<mt2::fire_rate_table>(firerate);
 }
 
 void edit_reload_time(int reload_time) {
-
+    temp_clone->reload_time = reload_time;
 }
 
 void edit_clips_from_ammobox(int amount){
-
+    temp_clone->clips_from_ammo_box = amount;
 }
 
 void respawn_delay(int delay) {
-
+    temp_clone->respawn_delay = delay;
 }
 
-display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDriver driver) {
+void max_respawns(int max_respawns) {
+    temp_clone->max_respawns = max_respawns;
+}
+
+void edit_number_of_clips(int) {
+    temp_clone->number_of_clips = 0;
+}
+
+void edit_hit_led_timeout(int timeout) {
+    temp_clone->hit_led_timout_seconds = timeout;
+}
+
+void edit_hit_delay(int delay) {
+    temp_clone->hit_delay = static_cast<mt2::hit_delays>(delay);
+}
+
+
+void save_config() {
+    save_preset(temp_clone_id, temp_clone);
+}
+
+display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id) {
     // Due to the nature of adding a bunch of different items to a menu this method is very large
+
+    temp_clone = clone;
+    temp_clone_id = clone_id;
+
     char *formatted_text_ptr = new char[100];
     sprintf(formatted_text_ptr, "Editing Clone\n%s", clone->name);
     auto *clone_menu = display::lcdDriver::make_menu(formatted_text_ptr);
@@ -49,7 +78,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDr
             display::lcdDriver::option_menu_set_selected(menu, i);
     }
 
-    // Add damage per shot
+    // Damage per shot
     menu = display::lcdDriver::add_submenu(clone_menu, "Shot Damage", edit_damage);
     for (int i = 0; i < 0x0F; i++) {
         int damage = mt2::damage_table_lookup(static_cast<mt2::damage_table>(i));
@@ -59,7 +88,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDr
             display::lcdDriver::option_menu_set_selected(menu, i);
     }
 
-    // Add firerate to menu
+    // Firerate
     menu = display::lcdDriver::add_submenu(clone_menu, "Rate of fire", edit_firerate);
     for (int i = 0; i < 0x0B; i++) {
         int firerate = mt2::fire_rate_table_lookup(static_cast<mt2::fire_rate_table>(i));
@@ -69,20 +98,54 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDr
             display::lcdDriver::option_menu_set_selected(menu, i);
     }
 
+    // Reload time
     menu = display::lcdDriver::add_submenu(clone_menu, "Reload Time", edit_reload_time);
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, "Seconds");
     display::lcdDriver::option_menu_set_selected(menu, clone->reload_time);
 
+    // Respawn delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Respawn Delay", respawn_delay);
     display::lcdDriver::add_option_menu_values(menu, 0xFF * 10, 10, "Seconds");
     display::lcdDriver::option_menu_set_selected(menu, clone->respawn_delay / 10);
 
+    // Max respawns
+    menu = display::lcdDriver::add_submenu(clone_menu, "Max Respawns", max_respawns);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, "Times");
+    display::lcdDriver::option_menu_set_selected(menu, clone->max_respawns);
+
+    // Clips from ammo box
     menu = display::lcdDriver::add_submenu(clone_menu, "Ammobox quant.",
                                            edit_clips_from_ammobox);
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Clips");
     display::lcdDriver::option_menu_set_selected(menu, clone->clips_from_ammo_box);
 
-    display::lcdDriver::add_menu_item(clone_menu, "Save");
+    // Number of clips
+    menu = display::lcdDriver::add_submenu(clone_menu, "Number of clips",
+                                               edit_number_of_clips);
+    display::lcdDriver::add_option_menu_values(menu, 0xBF, 1, " Clips");
+    display::lcdDriver::add_option_menu_item(menu, "Unlimited");
+    display::lcdDriver::option_menu_set_selected(menu, clone->number_of_clips);
+
+    // hit_led_timout_seconds
+    menu = display::lcdDriver::add_submenu(clone_menu, "Hit LED timeout",
+                                               edit_hit_led_timeout);
+    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
+    display::lcdDriver::option_menu_set_selected(menu, clone->hit_led_timout_seconds);
+
+    // hit_delay
+    menu = display::lcdDriver::add_submenu(clone_menu, "Hit delay",
+                                                   edit_hit_delay);
+    for (int i = 0 ; i < 0x17; i++) {
+        float delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
+        String delay_str = String(delay) + " Seconds";
+        display::lcdDriver::add_option_menu_item(menu, delay_str.c_str());
+        if (i == clone->hit_delay)
+            display::lcdDriver::option_menu_set_selected(menu, i);
+    }
+
+    display::lcdDriver::add_menu_item(clone_menu, "Save", save_config);
 
     return clone_menu;
 }
+
+

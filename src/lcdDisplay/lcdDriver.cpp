@@ -463,7 +463,10 @@ namespace display {
         if (select) {
             if (current_menu->items[current_menu->selected_item].sub_menu != nullptr) {
                 if (current_menu->items[current_menu->selected_item].sub_menu->is_active) {
-                current_menu->items[current_menu->selected_item].sub_menu->is_active = false;
+                    if (current_menu->items[current_menu->selected_item].func_param != nullptr)
+                        current_menu->items[current_menu->selected_item].func_param(
+                                current_menu->items[current_menu->selected_item].sub_menu->selected_option);
+                    current_menu->items[current_menu->selected_item].sub_menu->is_active = false;
                 } else current_menu->items[current_menu->selected_item].sub_menu->is_active = true;
             } else if (current_menu->items[current_menu->selected_item].func != nullptr) {
                 current_menu->items[current_menu->selected_item].func();

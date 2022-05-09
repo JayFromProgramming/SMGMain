@@ -14,8 +14,8 @@ namespace display {
 
     struct menu_option_item {
         String** option_names = nullptr;
-        unsigned int num_options = 0; // The number of options for the menu
-        unsigned int selected_option = 0; // The index of the selected option
+        uint16_t num_options = 0; // The number of options for the menu
+        uint16_t selected_option = 0; // The index of the selected option
         bool is_active = false; // Whether the menu is active
     };
 

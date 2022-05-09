@@ -212,7 +212,7 @@ void boot_mode_ref(){
 
 void launch_clone_config_menu(int clone_id){
     auto* clone = load_preset(clone_id);
-    auto* menu = create_clone_config_menu(clone, hud);
+    auto* menu = create_clone_config_menu(clone, clone_id);
 //    hud.load_and_display_menu(menu);
 //    display::lcdDriver::add_menu_item(menu, "Exit", &boot_mode_clone_config);
     hud.load_and_display_menu(menu);

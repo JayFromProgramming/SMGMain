@@ -239,6 +239,9 @@ namespace mt2 {
 
     short fire_rate_table_lookup(fire_rate_table rpm);
 
+    short ir_range_table_lookup(ir_range_table range);
+
+    float hit_delay_to_seconds(hit_delays delay);
 }
 
 #endif //TLTPROJECT1_MT2_PROTOCOL_H

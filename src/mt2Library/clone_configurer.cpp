@@ -10,6 +10,14 @@ void edit_health(int health) {
 
 }
 
+void edit_damage(int damage) {
+
+}
+
+void edit_firerate(int firerate) {
+
+}
+
 void edit_clips_from_ammobox(int amount){
 
 }
@@ -30,11 +38,31 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, display::lcdDr
         int health = mt2::health_lookup(static_cast<mt2::respawn_health>(i));
         String health_str = String(health) + " HP";
         display::lcdDriver::add_option_menu_item(menu, health_str.c_str());
-        if (health == clone->respawn_health)
+        if (i == clone->respawn_health)
+            display::lcdDriver::option_menu_set_selected(menu, i);
+    }
+
+    // Add damage per shot
+    menu = display::lcdDriver::add_submenu(clone_menu, "Shot Damage", edit_damage);
+    for (int i = 0; i < 0x0F; i++) {
+        int damage = mt2::damage_table_lookup(static_cast<mt2::damage_table>(i));
+        String damage_str = String(damage) + " DMG";
+        display::lcdDriver::add_option_menu_item(menu, damage_str.c_str());
+        if (i == clone->damage_per_shot)
             display::lcdDriver::option_menu_set_selected(menu, i);
     }
     display::lcdDriver::add_menu_item(clone_menu, "Save");
-    driver.load_and_display_menu(clone_menu);
+
+    // Add firerate to menu
+    menu = display::lcdDriver::add_submenu(clone_menu, "Rate of fire", edit_firerate);
+    for (int i = 0; i < 0x0B; i++) {
+        int firerate = mt2::fire_rate_table_lookup(static_cast<mt2::fire_rate_table>(i));
+        String firerate_str = String(firerate) + " RPM";
+        display::lcdDriver::add_option_menu_item(menu, firerate_str.c_str());
+        if (i == clone->cyclic_rpm)
+            display::lcdDriver::option_menu_set_selected(menu, i);
+    }
+
 
     return clone_menu;
 }

@@ -237,6 +237,8 @@ namespace mt2 {
 
     short damage_table_lookup(damage_table damage);
 
+    short fire_rate_table_lookup(fire_rate_table rpm);
+
 }
 
 #endif //TLTPROJECT1_MT2_PROTOCOL_H

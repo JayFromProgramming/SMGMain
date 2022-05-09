@@ -14,8 +14,8 @@ namespace display {
 
     struct menu_option_item {
         String** option_names = nullptr;
-        int num_options = 0; // The number of options for the menu
-        int selected_option = 0; // The index of the selected option
+        unsigned int num_options = 0; // The number of options for the menu
+        unsigned int selected_option = 0; // The index of the selected option
     };
 
     struct menu_item {
@@ -120,11 +120,13 @@ namespace display {
 
         void tagger_init_screen();
 
-        void add_option_menu_values(menu_option_item *item, unsigned int range);
-
         static void add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step);
 
         static void option_menu_set_selected(menu_option_item *menu, unsigned int selected);
+
+        static void free_menu(menu_holder *menu);
+
+        void load_free_display_menu(menu_holder *menu);
     };
 
 } // display

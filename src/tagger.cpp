@@ -26,7 +26,7 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
     game_state->currentConfig = newClone;
 
     // The config firerate is stored as Rounds per minute, so we need to calculate the interval in milliseconds
-    game_state->shot_interval = (game_state->currentConfig->cyclic_rpm / 60) * 1000;
+    game_state->shot_interval = (fire_rate_table_lookup(game_state->currentConfig->cyclic_rpm) / 60) * 1000;
 
     game_state->hit_delay_ms = mt2::hit_delay_to_micros(game_state->currentConfig->hit_delay);
 

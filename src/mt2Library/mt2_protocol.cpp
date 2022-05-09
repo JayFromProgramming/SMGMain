@@ -251,4 +251,33 @@ namespace mt2 {
                 return 100;
         }
     };
+
+    short fire_rate_table_lookup(fire_rate_table fire_rate) {
+        switch (fire_rate) {
+            case RPM_250:
+                return 250;
+            case RPM_300:
+                return 300;
+            case RPM_350:
+                return 350;
+            case RPM_400:
+                return 400;
+            case RPM_450:
+                return 450;
+            case RPM_500:
+                return 500;
+            case RPM_550:
+                return 550;
+            case RPM_600:
+                return 600;
+            case RPM_650:
+                return 650;
+            case RPM_700:
+                return 700;
+            case RPM_750:
+                return 750;
+            case RPM_800:
+                return 800;
+        };
+    }
 }

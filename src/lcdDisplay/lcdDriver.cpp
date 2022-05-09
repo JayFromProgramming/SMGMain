@@ -337,13 +337,13 @@ namespace display {
             lcd.print(current_menu->items[i].name);
             lcd.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
             if (current_menu->items[i].sub_menu != nullptr) {
-                lcd.setCursor(0, start_y + i * h + 3);
+                lcd.setCursor(0, start_y + h + 3);
                 lcd.print("->");
                 auto* name = current_menu->items[i].sub_menu->option_names
                         [current_menu->items[i].sub_menu->selected_option]->c_str();
                 lcd.print(name);
                 lcd.getTextBounds(num_str, 0, start_y + i * h + 3, &x1, &y1, &w2, &h2);
-//                start_y += h + 3;
+                start_y += h + 3;
             }
             start_y += h + 3;
             lcd.setCursor(0, start_y);
@@ -352,9 +352,16 @@ namespace display {
         delete[] num_str;
     }
 
+    void lcdDriver::load_free_display_menu(menu_holder* menu) {
+        free_menu(current_menu);
+        current_menu = new menu_holder(*menu);
+        draw_menu();
+    }
+
     void lcdDriver::load_and_display_menu(menu_holder *menu) {
-        free(current_menu);
-        current_menu = menu;
+//        free_menu(current_menu);
+        // Make a copy of the new menu otherwise if the old menu is ceased to exist the
+        this->current_menu = menu;
         this->draw_menu();
     }
 
@@ -475,6 +482,23 @@ namespace display {
 
     void lcdDriver::option_menu_set_selected(menu_option_item *menu, unsigned int selected) {
         menu->selected_option = selected;
+    }
+
+    void lcdDriver::free_menu(menu_holder *menu) {
+        if (menu != nullptr) {
+            for (unsigned int i = 0; i < menu->num_items; i++) {
+                delete[] menu->items[i].name;
+                if (menu->items[i].sub_menu != nullptr) {
+                    for (unsigned int j = 0; j < menu->items[i].sub_menu->num_options; j++) {
+                        delete[] menu->items[i].sub_menu->option_names[j];
+                    }
+                    delete[] menu->items[i].sub_menu->option_names;
+                    delete menu->items[i].sub_menu;
+                }
+            }
+            delete[] menu->items;
+            delete menu;
+        }
     }
 
 } // display

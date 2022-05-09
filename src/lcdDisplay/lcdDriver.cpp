@@ -28,11 +28,11 @@
 #define HEALTH_BAR_HEIGHT   10
 
 #define CLIP_TEXT_START_X   50
-#define CLIP_TEXT_START_Y   30
+#define CLIP_TEXT_START_Y   72
 #define CLIP_TEXT_SIZE      4
 
 #define AMMO_TEXT_START_X   64
-#define AMMO_TEXT_START_Y   76
+#define AMMO_TEXT_START_Y   128
 #define AMMO_TEXT_SIZE      14
 
 #define RELOAD_CENTER_X      128
@@ -48,7 +48,9 @@
 #define DEATH_TEXT_START_Y   10
 #define DEATH_TEXT_SIZE      3
 
-#define MAX_MENU_ITEMS       6
+#define MAX_MENU_ITEMS       12
+#define MAX_OPTION_MENU_OPTIONS  10
+#define MAX_OPTION_LENGTH   20
 
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
@@ -191,10 +193,19 @@ namespace display {
         if (this->game_state->health <= 0) {
             draw_death_screen();
         } else if (this->game_state->health == this->game_state->max_health) {
+            lcd.setCursor(0, 0);
+            lcd.setTextSize(1);
+            lcd.setTextColor(ST77XX_WHITE);
+            lcd.print("Health: ");
+            lcd.print(this->game_state->health);
+            lcd.print("/");
+            lcd.print(this->game_state->max_health);
             lcd.fillRect(7, 10, 233, 10, ST77XX_GREEN);
         } else {
-            lcd.fillRect((int)(calc_health_percentage() * 226) + 7, 10, 233, 7, ST77XX_RED);
-            lcd.fillRect(7, 10, (int)(calc_health_percentage() * 226) + 7, 7, ST77XX_GREEN);
+            lcd.fillRect((int)(calc_health_percentage() * 226) + 7, 10,
+                         233, 7, ST77XX_RED);
+            lcd.fillRect(0, 10,
+                         (int)(calc_health_percentage() * 226) + 7, 10, ST77XX_GREEN);
         }
     }
 
@@ -367,6 +378,24 @@ namespace display {
                         (current_menu->items[current_menu->selected_item].func_arg);
             }
         }
+    }
+
+    menu_option_item *lcdDriver::add_option_menu(menu_holder *menu, const char *name, void (*func)(int)) {
+        auto *item = new menu_option_item;
+        item->name = name;
+        item->num_options = 0;
+        item->options = reinterpret_cast<char **>(static_cast<char *>(malloc(
+                sizeof(char *) * MAX_OPTION_MENU_OPTIONS)));
+        item->selected_option = 0;
+        menu->items[menu->num_items].name = name;
+        menu->items[menu->num_items].func_param = func;
+        return item;
+    }
+
+    void lcdDriver::add_option_menu_item(menu_option_item *menu, const char *name) {
+        menu->options[menu->num_options] = static_cast<char *>(malloc(sizeof(char) * MAX_OPTION_LENGTH));
+        strcpy(menu->options[menu->num_options], name);
+        menu->num_options++;
     }
 
 } // display

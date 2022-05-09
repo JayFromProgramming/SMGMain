@@ -222,6 +222,15 @@ FLASHMEM void set_boot_mode(unsigned char mode) {
     EEPROM.put(calcAddress(1), *device_config);
 }
 
+FLASHMEM unsigned short get_device_id(){
+    return device_config->device_id;
+}
+
+FLASHMEM void set_device_id(unsigned short id) {
+    device_config->device_id = id;
+    EEPROM.put(calcAddress(1), *device_config);
+}
+
 FLASHMEM void init_eeprom(){
     EEPROM.begin();
     if (EEPROM.read(calcAddress(0)) == EEPROM_RESET_FLAG) { // If the first byte is 0xFF,

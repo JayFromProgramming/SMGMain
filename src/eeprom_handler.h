@@ -25,6 +25,10 @@ unsigned char get_boot_mode();
 
 void set_boot_mode(unsigned char mode);
 
+unsigned short get_device_id();
+
+void set_device_id(unsigned short id);
+
 void init_eeprom();
 
 #endif //TLTPROJECT1_EEPROM_HANDLER_H

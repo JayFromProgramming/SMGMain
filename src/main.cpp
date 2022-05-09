@@ -16,6 +16,8 @@
 #define RELOAD_PIN_NUMBER 2
 #define SELECT_PIN_NUMBER 20
 
+#define BATTERY_PIN_NUMBER 5
+
 #define DEVICE_ID 0x01
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
@@ -23,6 +25,8 @@ extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
 void boot_menu();
 
 void boot_mode_ref();
+
+void boot_mode_sys_info();
 
 IntervalTimer io_refresh_timer;
 
@@ -197,10 +201,29 @@ void boot_menu(){
     display::lcdDriver::add_menu_item(boot_menu, "Configure Clone",&boot_mode_clone_config);
     display::lcdDriver::add_menu_item(boot_menu, "Gun Options", &boot_mode_options);
     display::lcdDriver::add_menu_item(boot_menu, "Set Defaults", &boot_mode_set_defaults);
+    display::lcdDriver::add_menu_item(boot_menu, "Sys Info",    &boot_mode_sys_info);
     hud.load_and_display_menu(boot_menu);
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
     io_actions.select_method = decrement_menu;
+}
+
+void boot_mode_sys_info() { // Display system information, does not override current boot mode
+    auto* sys_info_menu = display::lcdDriver::make_menu("System Info");
+    display::lcdDriver::add_menu_item(sys_info_menu, "OS Version: " __TIME__ " " __DATE__);
+    char* format_string = new char[100];
+    sprintf(format_string, "Device ID: %d", get_device_id());
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    sprintf(format_string, "Boot Mode: %d", boot_mode);
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    sprintf(format_string, "System Temp: %f", InternalTemperatureClass::readTemperatureC());
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    sprintf(format_string, "Battery Voltage: %f%%", analogRead(BATTERY_PIN_NUMBER) * 100.f / 1024);
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    sprintf(format_string, "Radio Connection: %s", false ? "Connected" : "Disconnected");
+    display::lcdDriver::add_menu_item(sys_info_menu, format_string);
+    display::lcdDriver::add_menu_item(sys_info_menu, "Copyright (c) 2022, ", &boot_menu);
+
 }
 
 void setup() {

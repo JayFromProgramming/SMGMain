@@ -12,11 +12,19 @@
 
 namespace display {
 
-    struct menu_item {
+    struct menu_option_item {
         const char *name;
-        void (*func)();
-        void (*func_param)(int);
-        int func_arg;
+        char **options; // An array of strings that are the options for the menu
+        int num_options; // The number of options for the menu
+        int selected_option; // The index of the selected option
+    };
+
+    struct menu_item {
+        const char *name = nullptr;
+        void (*func)() = nullptr;
+        void (*func_param)(int) = nullptr;
+        menu_option_item *options = nullptr;
+        int func_arg = 0;
     };
 
     struct menu_holder {
@@ -98,6 +106,10 @@ namespace display {
         static void add_menu_item(menu_holder* menu, const char* name, void (*func)());
 
         static void add_menu_item(menu_holder* menu, const char* name);
+
+        static menu_option_item* add_option_menu(menu_holder* menu, const char* name, void (*func)(int));
+
+        static void add_option_menu_item(menu_option_item* menu, const char* name);
 
         void menu_increment();
 

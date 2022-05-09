@@ -339,7 +339,9 @@ namespace display {
             lcd.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
             if (current_menu->items[i].sub_menu != nullptr) {
                 lcd.setCursor(0, start_y + h + 3);
-                lcd.print("->");
+                if (current_menu->items[i].sub_menu->is_active) {
+                    lcd.print("=>");
+                } else lcd.print("->");
                 auto* name = current_menu->items[i].sub_menu->option_names
                         [current_menu->items[i].sub_menu->selected_option]->c_str();
                 lcd.print(name);
@@ -460,7 +462,9 @@ namespace display {
     void lcdDriver::menu_select(bool select) {
         if (select) {
             if (current_menu->items[current_menu->selected_item].sub_menu != nullptr) {
-
+                if (current_menu->items[current_menu->selected_item].sub_menu->is_active) {
+                current_menu->items[current_menu->selected_item].sub_menu->is_active = false;
+                } else current_menu->items[current_menu->selected_item].sub_menu->is_active = true;
             } else if (current_menu->items[current_menu->selected_item].func != nullptr) {
                 current_menu->items[current_menu->selected_item].func();
             } else if (current_menu->items[current_menu->selected_item].func_param != nullptr) {

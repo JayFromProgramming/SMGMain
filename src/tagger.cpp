@@ -285,7 +285,6 @@ FLASHMEM score_data* get_score_data_ptr(){
 
 FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     IR_init();
-    init_eeprom();
     audio_ptr = audioPtr;
     game_state = new tagger_state();
 

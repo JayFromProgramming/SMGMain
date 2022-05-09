@@ -54,8 +54,6 @@ Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
 bool backlight = true;
 
-display::menu_holder current_menu;
-
 namespace display {
 
     void lcdDriver::displayInit() {
@@ -269,31 +267,42 @@ namespace display {
 
     void lcdDriver::draw_menu(){ // Draws the currently loaded menu
         clear_screen();
-        lcd.fillScreen(current_menu.background_color);
+        lcd.fillScreen(current_menu->background_color);
         lcd.setCursor(5, 0);
-        lcd.setTextSize(4);
-        lcd.setTextColor(current_menu.text_color);
-        lcd.print(current_menu.name);
-        lcd.setCursor(5, 20);
+        lcd.setTextSize(3);
+        lcd.setTextColor(current_menu->text_color);
+        lcd.print(current_menu->name);
+        // Calculate the bounds of the menu name and start the menu items from there
+        int16_t x1, y1;
+        uint16_t w, h;
+        uint16_t w2, h2;
+        lcd.getTextBounds(current_menu->name, 5, 0, &x1, &y1, &w, &h);
+        int16_t start_x = x1 + w + 5;
+        int16_t start_y = y1 + h + 5;
+        lcd.setCursor(0, start_y);
         lcd.setTextSize(2);
-        for (int i = 0; i < current_menu.num_items; i++) {
-            if (current_menu.selected_item == i) {
+        lcd.getTextBounds(current_menu->items[0].name, 0, 0, &x1, &y1, &w2, &h2);
+        for (int i = 0; i < current_menu->num_items; i++) {
+            if (current_menu->selected_item == i) {
                 // If this item is selected, draw a triangle pointing to it and indent it
                 lcd.print("> ");
-                lcd.setCursor(10, 20 + i * 10);
-                lcd.print(current_menu.items[i].name);
-                lcd.setCursor(10 + current_menu.num_items, 20 + i * 10);
-            } else {
-                lcd.print(current_menu.items[i].name);
+                lcd.print(current_menu->items[i].name);
                 lcd.print("\n");
+            } else {
+                lcd.print(current_menu->items[i].name);
+                lcd.print("\n");
+            }
+            // Check if the next item will go off the screen
+            lcd.getTextBounds(current_menu->items[i].name, start_x, start_y + i * h, &x1, &y1, &w, &h);
+            if (y1 + h2 > 240) {
+                break;
             }
         }
     }
 
     void lcdDriver::load_and_display_menu(menu_holder *menu) {
-        this->clear_screen();
+        current_menu = menu;
         this->draw_menu();
-        current_menu = *menu;
     }
 
     menu_holder *lcdDriver::make_menu(const char *name, uint16_t text_color, uint16_t background_color) {
@@ -317,6 +326,13 @@ namespace display {
         menu->num_items++;
     }
 
+    void lcdDriver::add_menu_item(menu_holder *menu, const char *name, void (*func)(int), int arg){
+        menu->items[menu->num_items].name = name;
+        menu->items[menu->num_items].func_param = func;
+        menu->items[menu->num_items].func_arg = arg;
+        menu->num_items++;
+    }
+
     void lcdDriver::add_menu_item(menu_holder *menu, const char *name) {
         menu->items[menu->num_items].name = name;
         menu->items[menu->num_items].func = nullptr;
@@ -324,18 +340,18 @@ namespace display {
     }
 
     void lcdDriver::menu_increment() {
-        current_menu.selected_item++;
-        if (current_menu.selected_item >= current_menu.num_items) {
-            current_menu.selected_item = 0;
+        current_menu->selected_item++;
+        if (current_menu->selected_item >= current_menu->num_items) {
+            current_menu->selected_item = 0;
         }
         clear_screen();
         draw_menu();
     }
 
     void lcdDriver::menu_decrement() {
-        current_menu.selected_item--;
-        if (current_menu.selected_item < 0) {
-            current_menu.selected_item = current_menu.num_items - 1;
+        current_menu->selected_item--;
+        if (current_menu->selected_item < 0) {
+            current_menu->selected_item = current_menu->num_items - 1;
         }
         clear_screen();
         draw_menu();
@@ -343,8 +359,12 @@ namespace display {
 
     void lcdDriver::menu_select(bool select) {
         if (select) {
-            if (current_menu.items[current_menu.selected_item].func != nullptr) {
-                current_menu.items[current_menu.selected_item].func();
+            if (current_menu->items[current_menu->selected_item].func != nullptr) {
+                current_menu->items[current_menu->selected_item].func();
+            }
+            if (current_menu->items[current_menu->selected_item].func_param != nullptr) {
+                current_menu->items[current_menu->selected_item].func_param
+                        (current_menu->items[current_menu->selected_item].func_arg);
             }
         }
     }

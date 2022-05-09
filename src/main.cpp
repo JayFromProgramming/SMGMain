@@ -20,6 +20,9 @@
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
 
+void boot_menu();
+
+void boot_mode_ref();
 
 IntervalTimer io_refresh_timer;
 
@@ -53,8 +56,8 @@ void io_refresh(){ // Called every .25 ms
   reload_button.update();
   select_button.update();
   if (trigger_button.fallingEdge()){
-      if (io_actions.trigger_method != nullptr){
-        io_actions.trigger_method(true);
+      if (io_actions.trigger_method != nullptr) {
+          io_actions.trigger_method(true);
       }
   }
   if (trigger_button.risingEdge()){
@@ -82,7 +85,17 @@ uint16_t next_loop_time = 0;
 
 event_handlers* tagger_events = nullptr;
 
-bool status_LED = false;
+void increment_menu(){
+    hud.menu_increment();
+}
+
+void decrement_menu(){
+    hud.menu_decrement();
+}
+
+void select_menu(bool select){
+    hud.menu_select(select);
+}
 
 //void overheat_method() {
 //    // In the event of the main cpu overheating we reduce the system clock to .75MHz and stop the main loop.
@@ -106,9 +119,33 @@ void boot_mode_game(){
     tagger_events = get_event_handler_ptr() ; // get the tagger event pointer
 //    digitalWrite(LED_BUILTIN, LOW);
     hud.clear();
+    if (boot_mode != BOOT_MODE_GAME){
+        set_boot_mode(BOOT_MODE_GAME);
+        SCB_AIRCR = 0x05FA0004;
+    }
+}
+
+void transmit_clone(int clone_id){
+    load_preset(clone_id);
 }
 
 void boot_mode_clone(){
+
+    if (boot_mode != BOOT_MODE_CLONE_GUN) {
+        set_boot_mode(BOOT_MODE_CLONE_GUN);
+        SCB_AIRCR = 0x05FA0004;
+    }
+
+    auto* clone_menu = display::lcdDriver::make_menu("Select\nClone Preset");
+    int presets;
+    clone** presets_ptr = load_presets(&presets);
+    for (int i = 0; i < presets; i++){
+        display::lcdDriver::add_menu_item(clone_menu, presets_ptr[i]->name, transmit_clone, i);
+    }
+    hud.load_and_display_menu(clone_menu);
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
 
 }
 
@@ -120,7 +157,16 @@ void boot_mode_ref(){
     display::lcdDriver::add_menu_item(ref_menu, "Reset");
     display::lcdDriver::add_menu_item(ref_menu, "Explode");
     display::lcdDriver::add_menu_item(ref_menu, "Enter Clone Mode", &boot_mode_clone);
+    hud.load_and_display_menu(ref_menu);
 
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
+
+    if (boot_mode != BOOT_MODE_REF){
+        set_boot_mode(BOOT_MODE_REF);
+        SCB_AIRCR = 0x05FA0004; // Reboot if the boot mode was not already set to ref
+    }
 }
 
 void boot_mode_clone_config(){
@@ -136,12 +182,25 @@ void boot_mode_set_defaults(){
                                                             " values to default?");
     display::lcdDriver::add_menu_item(confirmation_menu, "Yes", &set_defaults);
     display::lcdDriver::add_menu_item(confirmation_menu, "No", &boot_mode_options);
-    display::lcdDriver::add_menu_item(confirmation_menu, "Cancel", &boot_mode_options);
+    display::lcdDriver::add_menu_item(confirmation_menu, "Cancel", &boot_menu);
     hud.load_and_display_menu(confirmation_menu);
-    io_actions.trigger_method = display::lcdDriver::menu_select;
-    io_actions.reload_method = display::lcdDriver::menu_increment;
-    io_actions.select_method = display::lcdDriver::menu_decrement;
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
+}
 
+void boot_menu(){
+    auto* boot_menu = display::lcdDriver::make_menu("Select\nBoot Mode");
+    display::lcdDriver::add_menu_item(boot_menu, "Game",        &boot_mode_game);
+    display::lcdDriver::add_menu_item(boot_menu, "Referee",     &boot_mode_ref);
+    display::lcdDriver::add_menu_item(boot_menu, "Clone Mode",  &boot_mode_clone);
+    display::lcdDriver::add_menu_item(boot_menu, "Configure Clone",&boot_mode_clone_config);
+    display::lcdDriver::add_menu_item(boot_menu, "Gun Options", &boot_mode_options);
+    display::lcdDriver::add_menu_item(boot_menu, "Set Defaults", &boot_mode_set_defaults);
+    hud.load_and_display_menu(boot_menu);
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
 }
 
 void setup() {
@@ -149,7 +208,7 @@ void setup() {
     Serial.begin(9600);
     Serial.println("Starting...");
 #endif
-
+    init_eeprom();
     pinMode(TRIGGER_PIN_NUMBER, INPUT_PULLUP);
     pinMode(RELOAD_PIN_NUMBER, INPUT_PULLUP);
     pinMode(SELECT_PIN_NUMBER, INPUT_PULLUP);
@@ -160,19 +219,8 @@ void setup() {
     boot_mode = static_cast<boot_modes>(get_boot_mode());
 
     // If the trigger is held down on startup, display the boot menu
-    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW || boot_mode == BOOT_MODE_UNKNOWN) {
-        auto* boot_menu = display::lcdDriver::make_menu("Select Boot Mode");
-        display::lcdDriver::add_menu_item(boot_menu, "Game",        &boot_mode_game);
-        display::lcdDriver::add_menu_item(boot_menu, "Referee",     &boot_mode_ref);
-        display::lcdDriver::add_menu_item(boot_menu, "Clone Mode",  &boot_mode_clone);
-        display::lcdDriver::add_menu_item(boot_menu, "Configure Clone",&boot_mode_options);
-        display::lcdDriver::add_menu_item(boot_menu, "Gun Options", &boot_mode_options);
-        display::lcdDriver::add_menu_item(boot_menu, "Set Defaults", &boot_mode_set_defaults);
-        hud.load_and_display_menu(boot_menu);
-        io_actions.trigger_method = display::lcdDriver::menu_select;
-        io_actions.reload_method = display::lcdDriver::menu_increment;
-        io_actions.select_method = display::lcdDriver::menu_decrement;
-        return; // Exit the setup function and wait for the user to select a boot mode which will run an interrupt
+    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW) {
+        boot_mode = BOOT_MODE_UNKNOWN;
         // to start the main loop
     }
 
@@ -195,7 +243,8 @@ void setup() {
             boot_mode_options();
             break;
         default:
-            boot_mode_game();
+            boot_menu();
+            break;
     }
 }
 

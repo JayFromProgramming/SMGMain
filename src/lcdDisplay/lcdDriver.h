@@ -8,13 +8,15 @@
 
 #include "tagger.h"
 
-
+#define CALL_MEMBER_FN(object, ptrToMember)  ((object).*(ptrToMember))
 
 namespace display {
 
     struct menu_item {
         const char *name;
         void (*func)();
+        void (*func_param)(int);
+        int func_arg;
     };
 
     struct menu_holder {
@@ -50,6 +52,8 @@ namespace display {
         char* death_str = nullptr;
         char* time_alive_str = nullptr;
 
+        menu_holder* current_menu = nullptr;
+
         // Methods for selective updates of the display
         void draw_health_bar();
 
@@ -83,7 +87,7 @@ namespace display {
 
         void clear_reload_str();
 
-        static void draw_menu();
+        void draw_menu();
 
         void load_and_display_menu(menu_holder* menu);
 
@@ -95,13 +99,13 @@ namespace display {
 
         static void add_menu_item(menu_holder* menu, const char* name);
 
+        void menu_increment();
 
-        static void menu_increment();
+        void menu_decrement();
 
-        static void menu_decrement();
+        void menu_select(bool select);
 
-        static void menu_select(bool select);
-
+        static void add_menu_item(menu_holder *menu, const char *name, void (*func)(int), int func_arg);
     };
 
 } // display

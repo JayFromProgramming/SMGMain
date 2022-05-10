@@ -49,7 +49,7 @@ namespace mt2 {
         NONE = 0x04
     };
 
-    enum fire_mode {
+    enum fire_mode: uint8_t {
         FIRE_MODE_SINGLE = 0x00,
         FIRE_MODE_BURST = 0x01,
         FIRE_MODE_AUTO = 0x02
@@ -210,7 +210,7 @@ namespace mt2 {
         damage_table damage_per_shot = DAMAGE_25; // See section 2.3.3
         unsigned char clip_size = 0x1E; // 0xFF is unlimited
         unsigned char number_of_clips = 0xCA; // 0xCA is unlimited
-        fire_mode fire_selector = FIRE_MODE_SINGLE; // See section 2.3.4
+        fire_mode fire_selector = FIRE_MODE_AUTO; // See section 2.3.4
         unsigned char burst_size = 0x05; // Number of shots per burst
         fire_rate_table cyclic_rpm = RPM_450; // See 2.3.5
         unsigned char reload_time = 0x03; // In seconds
@@ -226,7 +226,7 @@ namespace mt2 {
         unsigned char start_delay = 0x00; // In seconds
         unsigned char death_delay = 0x00; // In seconds
         unsigned char time_limit = 0x00; // In minutes
-        unsigned char max_respawns = 0x00;
+        unsigned char max_respawns = 0xFF;
         char checksum_valid = 0x00; // Flag to indicate this clone passed parity
         // -1 is invalid, 0 is unchecked, 1 is checked and valid
     } clone;

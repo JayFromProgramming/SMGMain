@@ -51,7 +51,7 @@
 #define DEATH_TEXT_SIZE      3
 
 #define MAX_MENU_ITEMS       32
-#define MAX_OPTION_MENU_OPTIONS  255
+#define MAX_OPTION_MENU_OPTIONS  300
 #define MAX_OPTION_LENGTH   32
 
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
@@ -447,10 +447,13 @@ namespace display {
         // Check if the current item has a sub menu, if so, go cycle through the sub menu items instead
         if (current_menu->items[current_menu->selected_item].sub_menu != nullptr &&
             current_menu->items[current_menu->selected_item].sub_menu->is_active){
+            if (current_menu->items[current_menu->selected_item].sub_menu->selected_option > 0) {
                 current_menu->items[current_menu->selected_item].sub_menu->selected_option--;
-                if (current_menu->items[current_menu->selected_item].sub_menu->selected_option < 0) {
-                    current_menu->items[current_menu->selected_item].sub_menu->selected_option =
-                            current_menu->items[current_menu->selected_item].sub_menu->num_options - 1;
+            } else {
+                current_menu->items[current_menu->selected_item].sub_menu->selected_option =
+                current_menu->items[current_menu->selected_item].sub_menu->num_options - 1; // Go to the last option
+//                if (current_menu->items[current_menu->selected_item].sub_menu->selected_option <= 0) {
+//
                 }
         } else { // If the current item doesn't have a sub menu, decrement the current item
             current_menu->selected_item--;
@@ -490,11 +493,11 @@ namespace display {
         menu->items[menu->num_items].func = nullptr;
         menu->items[menu->num_items].func_param = func;
         auto* item = new menu_option_item;
-        item->num_options = 0;
         item->option_names = new String*[MAX_OPTION_MENU_OPTIONS];
         for (int i = 0; i < MAX_OPTION_MENU_OPTIONS; i++) {
-            item->option_names[i] = nullptr;
+            item->option_names[i] = new String("null");
         }
+        item->num_options = 0;
         item->selected_option = 0;
         menu->items[menu->num_items].sub_menu = item;
         menu->num_items++;
@@ -503,6 +506,7 @@ namespace display {
 
     void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step) {
         for (unsigned int i = 0; i < range; i += step) {
+            delete sub_menu->option_names[sub_menu->num_options];
             auto *name = new String(i);
             sub_menu->option_names[sub_menu->num_options] = name;
             sub_menu->num_options++;
@@ -512,15 +516,17 @@ namespace display {
     void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step,
                                            const char* unit) {
         for (unsigned int i = 0; i < range; i += step) {
+            delete sub_menu->option_names[sub_menu->num_options];
             auto *name = new String(String(i) + " " + String(unit));
             sub_menu->option_names[sub_menu->num_options] = name;
             sub_menu->num_options++;
         }
     }
 
-    void lcdDriver::add_option_menu_item(menu_option_item *sub_menu, const char *name) {
-        auto* name_ptr = new String(name);
-        sub_menu->option_names[sub_menu->num_options] = name_ptr;
+    void lcdDriver::add_option_menu_item(menu_option_item *sub_menu, const char *name_new) {
+        delete sub_menu->option_names[sub_menu->num_options];
+        auto *name = new String(String(name_new) + String(sub_menu->num_options));
+        sub_menu->option_names[sub_menu->num_options] = name;
         sub_menu->num_options++;
     }
 
@@ -528,7 +534,7 @@ namespace display {
         if (selected < menu->num_options) {
             menu->selected_option = selected;
         } else {
-            menu->selected_option = 0;
+            menu->selected_option = MAX_OPTION_MENU_OPTIONS - 1;
         }
     }
 

@@ -370,6 +370,9 @@ void setup() {
         case BOOT_MODE_UNKNOWN:
             boot_menu();
             break;
+        case BOOT_MODE_SET_DEFAULTS:
+            boot_mode_set_defaults();
+            break;
         default:
             boot_menu();
             break;

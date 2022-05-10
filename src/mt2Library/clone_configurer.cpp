@@ -74,8 +74,20 @@ void edit_armor_value(int value) {
     temp_clone->armour_value = value;
 }
 
-void edit_firemode(int mode) {
-    temp_clone->fire_selector = static_cast<mt2::fire_mode>(mode);
+void edit_fire_mode(int mode) {
+    switch (mode) {
+        case 0:
+            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_SINGLE;
+            break;
+        case 1:
+            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_AUTO;
+            break;
+        case 2:
+            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_BURST;
+            break;
+        default:
+            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_SINGLE;
+    }
 }
 
 void edit_burst_size(int size) {
@@ -99,7 +111,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
 
     menu = display::lcdDriver::add_submenu(clone_menu, "Respawn Health", edit_health);
     // For value in the respawn_health table in the mt2_protocol.h
-    for (int i = 0; i < 0x48; i++) {
+    for (int i = 0; i <= 0x48; i++) {
         int health = mt2::health_lookup(static_cast<mt2::respawn_health>(i));
         String health_str = String(health) + " HP";
         display::lcdDriver::add_option_menu_item(menu, health_str.c_str());
@@ -109,7 +121,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
 
     // Damage per shot
     menu = display::lcdDriver::add_submenu(clone_menu, "Shot Damage", edit_damage);
-    for (int i = 0; i < 0x0F; i++) {
+    for (int i = 0; i <= 0x0F; i++) {
         int damage = mt2::damage_table_lookup(static_cast<mt2::damage_table>(i));
         String damage_str = String(damage) + " DMG";
         display::lcdDriver::add_option_menu_item(menu, damage_str.c_str());
@@ -119,7 +131,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
 
     // Firerate
     menu = display::lcdDriver::add_submenu(clone_menu, "Rate of fire", edit_firerate);
-    for (int i = 0; i < 0x0B; i++) {
+    for (int i = 0; i <= 0x0B; i++) {
         int firerate = mt2::fire_rate_table_lookup(static_cast<mt2::fire_rate_table>(i));
         String firerate_str = String(firerate) + " RPM";
         display::lcdDriver::add_option_menu_item(menu, firerate_str.c_str());
@@ -128,7 +140,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     }
 
     // Firemode
-    menu = display::lcdDriver::add_submenu(clone_menu, "Fire selector", edit_firemode);
+    menu = display::lcdDriver::add_submenu(clone_menu, "Fire selector", edit_fire_mode);
     display::lcdDriver::add_option_menu_item(menu, "Single shot");
     display::lcdDriver::add_option_menu_item(menu, "Burst fire");
     display::lcdDriver::add_option_menu_item(menu, "Full Auto");
@@ -181,17 +193,17 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
     display::lcdDriver::option_menu_set_selected(menu, clone->hit_led_timout_seconds);
 
-//    // hit_delay
-//    menu = display::lcdDriver::add_submenu(clone_menu, "Hit delay",
-//                                                   edit_hit_delay);
-//    for (int i = 0; i < 0x17; i++) {
-//        float hit_delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
-//        String hit_delay_str = String(hit_delay) + " Seconds";
-//        display::lcdDriver::add_option_menu_item(menu, hit_delay_str.c_str());
-//        if (i == clone->hit_delay)
-//            display::lcdDriver::option_menu_set_selected(menu, i);
-//    }
-//
+    // hit_delay
+    menu = display::lcdDriver::add_submenu(clone_menu, "Hit delay",
+                                                   edit_hit_delay);
+    for (int i = 0; i < 0x17; i++) {
+        float hit_delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
+        String hit_delay_str = String(hit_delay) + " Seconds";
+        display::lcdDriver::add_option_menu_item(menu, hit_delay_str.c_str());
+        if (i == clone->hit_delay)
+            display::lcdDriver::option_menu_set_selected(menu, i);
+    }
+
     // Start delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Start delay",
                                                        edit_start_delay);

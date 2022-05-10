@@ -5,6 +5,7 @@
 #include "audio/audio_interface.h"
 //#include "mt2Library/tag_communicator.h"
 #include <eeprom_handler.h>
+#include <Bounce.h>
 
 tagger_state *game_state = nullptr;
 
@@ -26,7 +27,7 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
     game_state->currentConfig = newClone;
 
     // The config firerate is stored as Rounds per minute, so we need to calculate the interval in milliseconds
-    game_state->shot_interval = (fire_rate_table_lookup(game_state->currentConfig->cyclic_rpm) / 60);
+    game_state->shot_interval = (mt2::fire_rate_table_lookup(game_state->currentConfig->cyclic_rpm) * 60) * 1000;
 
     game_state->hit_delay_ms = mt2::hit_delay_to_micros(game_state->currentConfig->hit_delay);
 
@@ -51,59 +52,63 @@ void on_reload(){
     }
 }
 
-void shot_check(bool trigger_state){
+void shot_check(Bounce *bounce_ptr){
 
-    if (trigger_state) {
-        if (trigger_down == 0) {
-            trigger_down = 1; // Just pulled
-        } else trigger_down = -1; // Held
-    } else {
+    if (bounce_ptr->fallingEdge()) {
+        trigger_down = 1;
+    } else if (bounce_ptr->risingEdge()) {
         trigger_down = 0; // Reset the trigger_down flag
+    } else {
+        if (trigger_down == 1) trigger_down = -1;
     }
-
-    if (game_state->last_shot + game_state->shot_interval < millis() && !game_state->reloading) {
+    game_state->currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
+    if (game_state->last_shot < game_state->shot_interval && !game_state->reloading) {
         if (game_state->ammo_count > 0) {
             // Check what fire mode we are in
             switch (game_state->currentConfig->fire_selector) {
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
                     if (trigger_down == 1) {
-                        audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                        shoot();
-                        game_state->last_shot = millis();
-                        game_state->ammo_count--;
-                        digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                        muzzle_flash_timer = millis() + 250;
-                    }
-                    break;
-                case mt2::FIRE_MODE_BURST:
-                    if (trigger_down == 1) {
-                        game_state->current_burst_count = game_state->currentConfig->burst_size;
-                        audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                        shoot();
-                        game_state->last_shot = millis();
-                        game_state->ammo_count--;
-                        digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                        muzzle_flash_timer = millis() + 250;
-                    } else if (trigger_down == -1) {
-                        if (game_state->current_burst_count > 0) {
-                            game_state->current_burst_count--;
+                        if (shoot()) {
                             audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                            shoot();
-                            game_state->last_shot = millis();
+                            game_state->last_shot = 0;
                             game_state->ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                             muzzle_flash_timer = millis() + 250;
                         }
                     }
                     break;
+                case mt2::FIRE_MODE_BURST:
+                    if (trigger_down == 1) {
+                        if (shoot()) {
+                            game_state->current_burst_count = game_state->currentConfig->burst_size;
+                            audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
+                            game_state->last_shot = 0;
+                            game_state->ammo_count--;
+                            digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+                            muzzle_flash_timer = millis() + 250;
+                        }
+                    } else if (trigger_down == -1) {
+                        if (game_state->current_burst_count > 0) {
+                            if (shoot()) {
+                                game_state->current_burst_count--;
+                                audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
+                                game_state->last_shot = 0;
+                                game_state->ammo_count--;
+                                digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+                                muzzle_flash_timer = millis() + 250;
+                            }
+                        }
+                    }
+                    break;
                 case mt2::FIRE_MODE_AUTO:
                     if (trigger_down != 0) {
-                        audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
-                        shoot();
-                        game_state->last_shot = millis();
-                        game_state->ammo_count--;
-                        digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                        muzzle_flash_timer = millis() + 250;
+                        if (shoot()) { // If the IR transmitter is not busy preform shot actions
+                            audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
+                            game_state->last_shot = 0;
+                            game_state->ammo_count--;
+                            digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+                            muzzle_flash_timer = millis() + 250;
+                        }
                     }
                     break;
             }

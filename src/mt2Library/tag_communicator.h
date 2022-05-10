@@ -48,7 +48,7 @@ void sendCommand(mt2::system_commands command);
 
 void sendShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg);
 
-void shoot();
+bool shoot();
 
 void sendClone(mt2::clone *clone);
 

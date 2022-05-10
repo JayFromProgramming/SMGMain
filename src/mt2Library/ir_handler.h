@@ -10,9 +10,9 @@ unsigned char * get_buffer();
 void transmitter_init();
 void receiver_init();
 
-void send(const unsigned char *data, unsigned int bits);
+bool send(const unsigned char *data, unsigned int bits);
 
-void send(const unsigned char *data, unsigned short bytes);
+bool send(const unsigned char *data, unsigned short bytes);
 
 char IRScan();
 

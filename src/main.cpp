@@ -39,6 +39,7 @@ Bounce select_button = Bounce(SELECT_PIN_NUMBER, 5);
 
 struct button_methods {
   void (*trigger_method)(bool state) = nullptr;
+  void (*shot_check_method)(Bounce* passthrough) = nullptr;
   void (*reload_method)()  = nullptr;
   void (*select_method)()  = nullptr;
 };
@@ -79,6 +80,9 @@ void io_refresh(){ // Called every .25 ms
   trigger_button.update();
   reload_button.update();
   select_button.update();
+  if (io_actions.shot_check_method != nullptr) {
+        io_actions.shot_check_method(&trigger_button);
+  }
   if (trigger_button.fallingEdge()){
       if (io_actions.trigger_method != nullptr) {
           io_actions.trigger_method(true);
@@ -147,7 +151,8 @@ void boot_mode_game(){
 
     // Initialize all debounced IO methods
     clear_io_actions();
-    io_actions.trigger_method = &shot_check;
+    io_actions.trigger_method = nullptr;
+    io_actions.shot_check_method = &shot_check;
     io_actions.reload_method =  &on_reload;
     io_actions.select_method =  &display::lcdDriver::toggle_backlight;
 

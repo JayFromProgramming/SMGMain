@@ -131,6 +131,8 @@ namespace display {
 
         static void
         add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char *unit);
+
+        void draw_dynamic_elements();
     };
 
 } // display

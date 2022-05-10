@@ -48,10 +48,10 @@ void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
 }
 
 // Use precalculated shot data to send shot instead of building it (disables interrupts)
-void shoot(){
-    cli(); // Disable interrupts
-    send(preShot, (unsigned int) 14);
-    sei(); // Enable interrupts
+bool shoot(){
+    noInterrupts();
+    return send(preShot, (unsigned int) 14);
+    interrupts();
 }
 
 // Sends a clone object over IR

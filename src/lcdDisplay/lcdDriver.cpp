@@ -168,6 +168,7 @@ namespace display {
                 this->draw_ammo_count();
                 this->last_ammo_count = this->game_state->ammo_count;
             }
+            this->draw_dynamic_elements();
         }
     }
 
@@ -189,6 +190,18 @@ namespace display {
         lcd.setTextSize(2);
         // Print some info about current config
 
+    }
+
+    // These are elements that are always changing
+    void lcdDriver::draw_dynamic_elements() {
+        lcd.setCursor(0, 45);
+        lcd.setTextSize(1);
+        int16_t x, y;
+        uint16_t w, h;
+        String str = String(this->game_state->last_shot);
+        lcd.getTextBounds(str.c_str(), 0, 45, &x, &y, &w, &h);
+        lcd.fillRect(x, y, w, h, ST77XX_BLACK);
+        lcd.print(this->game_state->last_shot);
     }
 
     void lcdDriver::draw_death_screen() {
@@ -525,7 +538,7 @@ namespace display {
 
     void lcdDriver::add_option_menu_item(menu_option_item *sub_menu, const char *name_new) {
         delete sub_menu->option_names[sub_menu->num_options];
-        auto *name = new String(String(name_new) + String(sub_menu->num_options));
+        auto *name = new String(name_new);
         sub_menu->option_names[sub_menu->num_options] = name;
         sub_menu->num_options++;
     }

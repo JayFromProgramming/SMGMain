@@ -150,14 +150,17 @@ int encodeMT2(const unsigned char *data, unsigned int bits){
 }
 
 // This function is used to send the IR signal to the IR transmitter in bytes
-void send(const unsigned char *data, unsigned short bytes){
-    send(data, (unsigned int) bytes*8);
+bool send(const unsigned char *data, unsigned short bytes){
+    return send(data, (unsigned int) bytes*8);
 }
 
 
 // Send data in a bit count
-void send(const unsigned char *data, unsigned int bits){
+bool send(const unsigned char *data, unsigned int bits){
     // Flush the transmission buffer
+    if (transmission_in_progress){
+        return false;
+    }
     for (unsigned short & i : transmission_buffer){
         i = 0;
     }
@@ -174,6 +177,7 @@ void send(const unsigned char *data, unsigned int bits){
 //    irsend.sendRaw(transmission_buffer, transmission_length,
 //                   56);
     transmit_start();
+    return true;
 }
 
 void transmit_finished(){

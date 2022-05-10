@@ -40,10 +40,11 @@
 #include <mt2Library/mt2_protocol.h>
 #include <audio/audio_interface.h>
 #include <mt2Library/tag_communicator.h>
+#include <Bounce.h>
 
 struct tagger_state {
     mt2::clone *currentConfig = nullptr;
-    uint32_t last_shot = 0;
+    elapsedMillis last_shot;
     uint32_t last_hit = 0;
     unsigned int hit_delay_ms = 0;
     long shot_interval = 0;
@@ -73,7 +74,7 @@ struct score_data {
     volatile unsigned short* hits_from_players_life = nullptr; // How many times this player was hit by each player during this life
 };
 
-void shot_check(bool trigger_state);
+void shot_check(Bounce *bounce);
 
 void on_reload();
 

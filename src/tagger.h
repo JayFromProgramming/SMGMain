@@ -60,6 +60,7 @@ struct tagger_state {
     volatile bool paused = false;
     volatile bool started = true;
     volatile uint8_t max_respawns = 0;
+    volatile uint8_t respawns_remaining = 0;
 };
 
 struct score_data {

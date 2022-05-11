@@ -103,7 +103,7 @@ namespace display {
             this->progress_circle(remaining_time, (float) this->game_state->currentConfig->reload_time);
         } else {
             if (!this->game_state->started){
-                tagger_init_screen();
+//                tagger_init_screen();
             }
             if (already_progressing) { // Stop reloading animation
                 already_progressing = false;
@@ -204,14 +204,14 @@ namespace display {
 
     // These are elements that are always changing
     void lcdDriver::draw_dynamic_elements() {
-        lcd.setCursor(0, 45);
-        lcd.setTextSize(1);
-        int16_t x, y;
-        uint16_t w, h;
-        String str = String(this->game_state->last_shot);
-        lcd.getTextBounds(str.c_str(), 0, 45, &x, &y, &w, &h);
-        lcd.fillRect(x, y, w, h, ST77XX_BLACK);
-        lcd.print(this->game_state->last_shot);
+//        lcd.setCursor(0, 45);
+//        lcd.setTextSize(1);
+//        int16_t x, y;
+//        uint16_t w, h;
+//        String str = String(this->game_state->last_shot);
+//        lcd.getTextBounds(str.c_str(), 0, 45, &x, &y, &w, &h);
+//        lcd.fillRect(x, y, w, h, ST77XX_BLACK);
+//        lcd.print(this->game_state->last_shot);
     }
 
     void lcdDriver::draw_death_screen() {

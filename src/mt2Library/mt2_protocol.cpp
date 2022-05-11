@@ -21,7 +21,7 @@ namespace mt2 {
             "Flame", "Rogue", "Shrek", "Sonic",
             "Dozer", "Micro", "LgtMG", "HvyMG",
             "ZOOKA", "ROCKT", "GRNDE", "CLYMR",
-            "MINE ", "BOMB ", "NUKE "
+            "MINE ", "BOMB ", "NUKE ", "ADMIN"
     };
 
     String* get_player_name(uint8_t player_id) {

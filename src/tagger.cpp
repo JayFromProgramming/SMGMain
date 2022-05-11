@@ -29,8 +29,8 @@ short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has be
 FLASHMEM void configure_from_clone(mt2::clone* newClone){
     game_state->currentConfig = newClone;
 
-    // The config firerate is stored as Rounds per minute, so we need to calculate the interval in milliseconds
-    game_state->shot_interval = (mt2::fire_rate_table_lookup(game_state->currentConfig->cyclic_rpm) * 60) * 1000;
+    // The config firerate is stored as Rounds per minute, so we need to calculate the delay in milliseconds
+    game_state->shot_interval = ((1 / mt2::fire_rate_table_lookup(newClone->cyclic_rpm)) * 60) * 1000;
 
     game_state->hit_delay_ms = mt2::hit_delay_to_micros(game_state->currentConfig->hit_delay);
 
@@ -66,7 +66,7 @@ void shot_check(Bounce *bounce_ptr){
         if (trigger_down == 1) trigger_down = -1;
     }
     game_state->currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
-    if (game_state->last_shot < game_state->shot_interval && !game_state->reloading) {
+    if (game_state->last_shot > game_state->shot_interval && !game_state->reloading) {
         if (game_state->ammo_count > 0) {
             // Check what fire mode we are in
             switch (game_state->currentConfig->fire_selector) {
@@ -78,6 +78,7 @@ void shot_check(Bounce *bounce_ptr){
                             game_state->ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                             muzzle_flash_timer = millis() + 250;
+                            score_data_ptr->rounds_fired_life++;
                         }
                     }
                     break;
@@ -90,6 +91,7 @@ void shot_check(Bounce *bounce_ptr){
                             game_state->ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                             muzzle_flash_timer = millis() + 250;
+                            score_data_ptr->rounds_fired_life++;
                         }
                     } else if (trigger_down == -1) {
                         if (game_state->current_burst_count > 0) {
@@ -100,6 +102,7 @@ void shot_check(Bounce *bounce_ptr){
                                 game_state->ammo_count--;
                                 digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                                 muzzle_flash_timer = millis() + 250;
+                                score_data_ptr->rounds_fired_life++;
                             }
                         }
                     }
@@ -112,6 +115,7 @@ void shot_check(Bounce *bounce_ptr){
                             game_state->ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                             muzzle_flash_timer = millis() + 250;
+                            score_data_ptr->rounds_fired_life++;
                         }
                     }
                     break;
@@ -142,7 +146,11 @@ void on_killed(uint_least8_t killer_id) {
             }
         }
     }
-    score_data_ptr->assist_name = mt2::get_player_name(max_damage_id); // Set the assist name
+    if (max_damage_id != killer_id) {
+        score_data_ptr->assist_name = mt2::get_player_name(max_damage_id); // Set the assist name
+    }
+
+    score_data_ptr->last_alive_time = score_data_ptr->alive_time;
 }
 
 // This section contains the event handlers for the game
@@ -181,20 +189,19 @@ void on_hit(uint_least8_t playerID, mt2::teams teamID, mt2::damage_table dmg){
 }
 // Called when the player is killed, transfers score data from this life to the game score data
 void move_life_scores(){
+    score_data_ptr->rounds_fired_game += score_data_ptr->rounds_fired_life;
+    score_data_ptr->rounds_fired_life = 0;
+    score_data_ptr->total_hits_game += score_data_ptr->total_hits_life;
+    score_data_ptr->total_hits_life = 0;
+    score_data_ptr->killer_name = nullptr;
+    score_data_ptr->assist_name = nullptr;
     for (uint_least8_t i = 0; i < MT2_MAX_PLAYERS; i++) {
         score_data_ptr->hits_from_players_game += score_data_ptr->hits_from_players_life[i];
         score_data_ptr->hits_from_players_life[i] = 0;
         score_data_ptr->damage_from_players_game[i] += score_data_ptr->damage_from_players_life[i];
         score_data_ptr->damage_from_players_life[i] = 0;
     }
-    score_data_ptr->rounds_fired_game += score_data_ptr->rounds_fired_life;
-    score_data_ptr->rounds_fired_life = 0;
-    score_data_ptr->total_hits_game += score_data_ptr->total_hits_life;
-    score_data_ptr->total_hits_life = 0;
-    score_data_ptr->last_alive_time = score_data_ptr->alive_time;
     score_data_ptr->alive_time = 0;
-    score_data_ptr->killer_name = nullptr;
-    score_data_ptr->assist_name = nullptr;
 }
 
 // Clear all scoring data for the current game
@@ -232,8 +239,9 @@ void new_game(){
     game_state->health = game_state->max_health;
     game_state->last_shot = 0;
     game_state->last_hit = 0;
+    game_state->max_respawns = game_state->respawns_remaining;
     clear_scores();
-    audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+    audio_ptr->play_sound(audio_interface::SOUND_RELOADED);
 }
 
 void end_game(){
@@ -241,18 +249,16 @@ void end_game(){
     game_state->last_shot = 0;
     game_state->last_hit = 0;
     audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+    move_life_scores();
+    game_state->started = false;
 }
 
 void start_game(){
     if (game_state->started) {
         audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+    } else {
+        new_game();
     }
-    score_data_ptr->game_time = 0;
-    clear_scores();
-    game_state->health = game_state->max_health;
-    game_state->last_shot = 0;
-    game_state->last_hit = 0;
-    audio_ptr->play_sound(audio_interface::SOUND_RELOADED);
 }
 
 void full_health(){
@@ -262,15 +268,20 @@ void full_health(){
 
 void respawn(){ // Called when a player respawns
     // Called when a player respawns
-    game_state->health = game_state->max_health;
-    game_state->clip_count = game_state->currentConfig->number_of_clips;
-    game_state->last_shot = 0;
-    game_state->last_hit = 0;
-    game_state->ammo_count = game_state->clip_size;
-    game_state->reloading = false;
-    game_state->reload_time = 0;
-    score_data_ptr->respawn_time = millis();
-    move_life_scores(); // Move the life scores to the game scores
+    if (game_state->respawns_remaining > 0 || game_state->currentConfig->game_bool_flags_1 & GAME_RESPAWN_ENABLE) {
+        if (game_state->currentConfig->game_bool_flags_2 & GAME_FULL_AMMO_ON_RESPAWN) {
+            game_state->ammo_count = game_state->clip_size;
+            game_state->clip_count = game_state->currentConfig->number_of_clips;
+        }
+        game_state->health = game_state->max_health;
+        game_state->last_shot = 0;
+        game_state->last_hit = 0;
+        game_state->reloading = false;
+        game_state->reload_time = 0;
+        score_data_ptr->respawn_time = millis();
+        move_life_scores(); // Move the life scores to the game scores
+        game_state->respawns_remaining--;
+    }
 }
 
 void admin_kill(){ // Called when an admin kills a player
@@ -306,11 +317,6 @@ void restart_gun(){
 
 // End event handlers
 
-void start(){
-    // To start the game the player must hold the trigger for 2 seconds
-
-}
-
 void tagger_loop(){
     // Called by loop() this is where main code logic goes
 
@@ -328,6 +334,7 @@ void tagger_loop(){
                 game_state->clip_count--;
             }
             audio_ptr->play_sound(audio_interface::SOUND_RELOADED);
+            game_state->last_shot = 0;
         }
     }
 
@@ -361,7 +368,7 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     IR_init();
     audio_ptr = audioPtr;
     game_state = new tagger_state();
-
+    game_state->started = true;
     score_data_ptr = new score_data();
     clear_scores();
 

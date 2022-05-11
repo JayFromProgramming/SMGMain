@@ -13,9 +13,9 @@
 
 #define MT2_FREQUENCY 56000 // Frequency of the MT2 protocol in Hz
 
-#define SYSTEM_PLAYER 0x31 // Player ID for the system "Dozer"
+#define SYSTEM_PLAYER 59 // Player ID for the system "Dozer"
 
-#define MT2_MAX_PLAYERS 105 // Maximum number of players
+#define MT2_MAX_PLAYERS 60 // Maximum number of players
 
 // Game flags first byte
 #define GAME_HIT_LED_ENABLE 0x02 // Game Flag to enable the hit LED

@@ -136,9 +136,9 @@ namespace display {
 
         void progress_circle(float remaining_time, float total_time);
 
-        void clear_canvas();
+        static void clear_canvas();
 
-        void draw_canvas();
+        static void draw_canvas();
     };
 
 } // display

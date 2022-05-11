@@ -11,7 +11,7 @@
 #include "lcdDriver.h"
 #include "../../.pio/libdeps/teensylc/Adafruit GFX Library/Adafruit_GFX.h"
 
-#include <Adafruit-ST7735-Library-master/Adafruit_ST7789.h>    // Core graphics library
+#include "Adafruit-ST7735-Library-master/Adafruit_ST7789.h"
 //#include <Adafruit_GFX.h>
 #include <SPI.h>
 #include <gfxfont.h>
@@ -332,33 +332,33 @@ namespace display {
         canvas.fillScreen(ST77XX_BLACK);
     }
 
-    void lcdDriver::draw_canvas() {
+    void lcdDriver::draw_canvas() { // Draws the canvas without blanking the screen
        lcd.drawRGBBitmap(0, 0, canvas.getBuffer(), 240, 240);
     }
 
     void lcdDriver::draw_menu(){ // Draws the currently loaded menu
-        clear_screen();
-        lcd.fillScreen(current_menu->background_color);
-        lcd.setCursor(0, 0);
-        lcd.setTextSize(3);
-        lcd.setTextColor(current_menu->text_color);
-        lcd.print(current_menu->name);
+        clear_canvas();
+        canvas.fillScreen(current_menu->background_color);
+        canvas.setCursor(0, 0);
+        canvas.setTextSize(3);
+        canvas.setTextColor(current_menu->text_color);
+        canvas.print(current_menu->name);
         // Calculate the bounds of the menu name and start the menu items from there
         int16_t x1, y1;
         uint16_t w, h;
         uint16_t w2, h2;
-        lcd.getTextBounds(current_menu->name, 5, 0, &x1, &y1, &w, &h);
+        canvas.getTextBounds(current_menu->name, 5, 0, &x1, &y1, &w, &h);
         int16_t start_x = x1 + w + 5;
         int16_t start_y = y1 + h + 5;
-        lcd.setCursor(0, start_y);
-        lcd.setTextSize(2);
+        canvas.setCursor(0, start_y);
+        canvas.setTextSize(2);
         // Disable text wraping
-        lcd.setTextWrap(false);
+        canvas.setTextWrap(false);
         // Calculate how many items need to be skipped so that the selected item is on the screen
         int16_t skip_items = 0;
         for (int i = 0; i < current_menu->num_items; i++) {
             // Calculate the bounds of all the items before the selected item
-            lcd.getTextBounds(current_menu->items[i].name, start_x, start_y + i * h, &x1, &y1, &w, &h);
+            canvas.getTextBounds(current_menu->items[i].name, start_x, start_y + i * h, &x1, &y1, &w, &h);
             if (current_menu->items[i].sub_menu != nullptr) h = h * 2;
             // If the selected item is not on the screen skip items until it is
             if (y1 + h >= LCD_HEIGHT - h) {
@@ -369,33 +369,34 @@ namespace display {
         }
         char* num_str = new char[3];
         for (int i = skip_items; i < current_menu->num_items; i++) {
-            lcd.setTextColor(current_menu->text_color);
+            canvas.setTextColor(current_menu->text_color);
             if (i == current_menu->selected_item) {
                 if (current_menu->items[i].func != nullptr || current_menu->items[i].func_param != nullptr) {
                     sprintf(num_str, "%02d>", i + 1);
-                    lcd.setTextColor(ST77XX_GREEN);
+                    canvas.setTextColor(ST77XX_GREEN);
                 } else sprintf(num_str, "%02d-", i + 1);
             } else sprintf(num_str, "%02d:", i + 1);
-            lcd.print(num_str);
-            lcd.print(current_menu->items[i].name);
-            lcd.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
+            canvas.print(num_str);
+            canvas.print(current_menu->items[i].name);
+            canvas.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
             if (current_menu->items[i].sub_menu != nullptr) {
-                lcd.setCursor(0, start_y + h + 3);
+                canvas.setCursor(0, start_y + h + 3);
                 if (current_menu->items[i].sub_menu->is_active) {
-                    lcd.setTextColor(ST77XX_YELLOW);
-                    lcd.print("=>");
-                } else lcd.print("->");
+                    canvas.setTextColor(ST77XX_YELLOW);
+                    canvas.print("=>");
+                } else canvas.print("->");
                 auto* name = current_menu->items[i].sub_menu->option_names
                         [current_menu->items[i].sub_menu->selected_option]->c_str();
-                lcd.print(name);
-                lcd.getTextBounds(num_str, 0, start_y + i * h + 3, &x1, &y1, &w2, &h2);
+                canvas.print(name);
+                canvas.getTextBounds(num_str, 0, start_y + i * h + 3, &x1, &y1, &w2, &h2);
                 start_y += h + 3;
             }
             start_y += h + 3;
-            lcd.setCursor(0, start_y);
+            canvas.setCursor(0, start_y);
         }
-        lcd.setTextWrap(true);
+        canvas.setTextWrap(true);
         delete[] num_str;
+        draw_canvas();
     }
 
     void lcdDriver::load_free_display_menu(menu_holder* menu) {

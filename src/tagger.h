@@ -59,19 +59,27 @@ struct tagger_state {
     volatile unsigned long reload_time = 0.0;
     volatile bool paused = false;
     volatile bool started = true;
+    volatile uint8_t max_respawns = 0;
 };
 
 struct score_data {
-    volatile unsigned short  rounds_fired = 0;
-    volatile unsigned short  total_hits = 0;
-    volatile unsigned int    game_start_time = 0; // Time of game start in ms
-    volatile unsigned int    game_time = 0; // Time of game as of game end in ms
-    volatile unsigned char   respawn_count = 0;
-    volatile unsigned long   respawn_time = 0; // Time of last respawn in ms
-    volatile unsigned char   killed_by = 0; // Which player killed this player during this life
-    volatile unsigned short* kills_by = nullptr; // Which players killed this player during the game
-    volatile unsigned short* hits_from_players_game = nullptr; // How many times this player was hit by each player during the game
-    volatile unsigned short* hits_from_players_life = nullptr; // How many times this player was hit by each player during this life
+    volatile uint16_t      rounds_fired_game = 0;
+    volatile uint16_t      rounds_fired_life = 0;
+    volatile uint16_t      total_hits_game = 0;
+    volatile uint16_t      total_hits_life = 0;
+    elapsedMillis          game_time;  // Game elapsed time in milliseconds
+    elapsedMillis          alive_time; // Time player was alive in milliseconds
+    volatile uint16_t      respawn_count = 0;
+    volatile uint32_t      respawn_time = 0; // Time of last respawn in ms
+    volatile uint8_t       last_killed_by = 0; // Which player killed this player during this life
+    volatile uint16_t*     killed_by_game = nullptr; // Which players killed this player during the game
+    volatile uint32_t*     damage_from_players_game = nullptr; // How much damage this player has done to other players during the game
+    volatile uint16_t*     hits_from_players_game = nullptr; // How many times this player was hit by each player during the game
+    volatile uint32_t*     damage_from_players_life = nullptr; // How much damage this player has received from other players during the game
+    volatile uint16_t*     hits_from_players_life = nullptr; // How many times this player was hit by each player during this life
+
+    String* killer_name = nullptr;
+    String* assist_name = nullptr;
 };
 
 void shot_check(Bounce *bounce);

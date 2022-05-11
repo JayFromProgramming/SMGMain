@@ -36,6 +36,7 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
     game_state->clip_size = game_state->currentConfig->clip_size;
     game_state->clip_count = game_state->currentConfig->number_of_clips;
     game_state->ammo_count = game_state->clip_size;
+    game_state->started = false;
 }
 
 void on_reload(){
@@ -118,6 +119,26 @@ void shot_check(Bounce *bounce_ptr){
     }
 }
 
+void on_killed(uint_least8_t killer_id) {
+    score_data_ptr->killed_by_game[killer_id]++; // Increment the kills by player
+    score_data_ptr->last_killed_by = killer_id; // Set the killed by player
+    score_data_ptr->killer_name = &mt2::player_name_table[killer_id]; // Set the killer name
+
+    // Calculate who assisted the killer (whoever did the most amount of damage to the player not including the killer)
+    uint_least16_t max_damage = 0;
+    uint_least8_t max_damage_id = 0;
+    for (uint_least8_t i = 0; i < MT2_MAX_PLAYERS; i++) {
+        if (i != killer_id) {
+            if (score_data_ptr->damage_from_players_life[i] > max_damage) {
+                max_damage = score_data_ptr->damage_from_players_life[i];
+                max_damage_id = i;
+            }
+        }
+    }
+
+    audio_ptr->play_sound(audio_interface::SOUND_DEATH); // Make a scream of death
+}
+
 // This section contains the event handlers for the game
 
 void on_clone(mt2::clone* clone){
@@ -137,33 +158,59 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     if (game_state->currentConfig->game_bool_flags_1 & GAME_FRIENDLY_FIRE || teamID != game_state->currentConfig->team_id) {
         game_state->health = max(0, game_state->health - mt2::damage_table_lookup(static_cast<damage_table>(dmg)));
         game_state->last_hit = millis(); // Set the last hit time
-        score_data_ptr->hits_from_players_game[playerID]++;
-        score_data_ptr->hits_from_players_life[playerID]++;
-        score_data_ptr->total_hits++;
+        score_data_ptr->hits_from_players_life[playerID]++;;
+        score_data_ptr->damage_from_players_life[playerID] +=
+                mt2::damage_table_lookup(static_cast<damage_table>(dmg));
+        score_data_ptr->total_hits_game++;
     }
 
     // Check if we are dead
-    if (game_state->health <= 0){
-        score_data_ptr->kills_by[playerID]++; // Increment the kills by player
-        score_data_ptr->killed_by = playerID; // Set the killed by player
-        audio_ptr->play_sound(audio_interface::SOUND_DEATH); // Make a scream of death
+    if (game_state->health <= 0) {
+        on_killed(playerID);
     } else {
-        audio_ptr->play_sound(audio_interface::SOUND_HIT); // Make a hit sound
+        audio_ptr->play_sound(audio_interface::SOUND_HIT);
+        digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE); // Turn on the hit led
+        hit_led_timer = millis() + 250; // Set the hit led timer
     }
-
-    digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE); // Turn on the hit led
-    hit_led_timer = millis() + 250; // Set the hit led timer
 }
 
-
-void clear_scores(){
+void clear_life_scores(){
     for (uint_least8_t i = 0; i < MT2_MAX_PLAYERS; i++) {
-        score_data_ptr->kills_by[i] = 0;
+        score_data_ptr->hits_from_players_life[i] = 0;
+        score_data_ptr->damage_from_players_life[i] = 0;
+    }
+    score_data_ptr->killer_name = nullptr;
+    score_data_ptr->assist_name = nullptr;
+}
+
+// Clear all scoring data for the current game
+void clear_scores(){
+    // If no memory has been allocated to the score arrays, initialize them
+    if (score_data_ptr->killed_by_game == nullptr) {
+        score_data_ptr->killed_by_game = new uint_least16_t[MT2_MAX_PLAYERS];
+    }
+    if (score_data_ptr->hits_from_players_game == nullptr) {
+        score_data_ptr->hits_from_players_game = new uint_least16_t[MT2_MAX_PLAYERS];
+    }
+    if (score_data_ptr->hits_from_players_life == nullptr) {
+        score_data_ptr->hits_from_players_life = new uint_least16_t[MT2_MAX_PLAYERS];
+    }
+    if (score_data_ptr->damage_from_players_game == nullptr) {
+        score_data_ptr->damage_from_players_game = new uint_least32_t[MT2_MAX_PLAYERS];
+    }
+    if (score_data_ptr->damage_from_players_life == nullptr) {
+        score_data_ptr->damage_from_players_life = new uint_least32_t[MT2_MAX_PLAYERS];
+    }
+
+    for (uint_least8_t i = 0; i < MT2_MAX_PLAYERS; i++) {
+        score_data_ptr->killed_by_game[i] = 0;
         score_data_ptr->hits_from_players_game[i] = 0;
         score_data_ptr->hits_from_players_life[i] = 0;
+        score_data_ptr->damage_from_players_game[i] = 0;
+        score_data_ptr->damage_from_players_life[i] = 0;
     }
-    score_data_ptr->total_hits = 0;
-    score_data_ptr->killed_by = 0;
+    score_data_ptr->total_hits_game = 0;
+    score_data_ptr->last_killed_by = 0;
     audio_ptr->play_sound(audio_interface::SOUND_BEEP);
 }
 
@@ -183,7 +230,6 @@ void end_game(){
 }
 
 void start_game(){
-    score_data_ptr->game_start_time = micros();
     score_data_ptr->game_time = 0;
     clear_scores();
     game_state->health = game_state->max_health;
@@ -201,7 +247,7 @@ void respawn(){ // Called when a player respawns
     // Called when a player respawns
     game_state->health = game_state->max_health;
     score_data_ptr->respawn_count++;
-    score_data_ptr->killed_by = 0;
+    score_data_ptr->last_killed_by = 0;
     game_state->clip_count = game_state->currentConfig->number_of_clips;
     game_state->last_shot = 0;
     game_state->last_hit = 0;
@@ -213,7 +259,7 @@ void respawn(){ // Called when a player respawns
 
 void admin_kill(){ // Called when an admin kills a player
     game_state->health = 0;
-    score_data_ptr->killed_by = GAME_ADMIN_ID;
+    score_data_ptr->last_killed_by = GAME_ADMIN_ID;
 }
 
 void pause_unpause(){
@@ -297,9 +343,7 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     game_state = new tagger_state();
 
     score_data_ptr = new score_data();
-    score_data_ptr->hits_from_players_game = new volatile unsigned short [MT2_MAX_PLAYERS];
-    score_data_ptr->hits_from_players_life = new volatile unsigned short [MT2_MAX_PLAYERS];
-    score_data_ptr->kills_by               = new volatile unsigned short [MT2_MAX_PLAYERS];
+    clear_scores();
 
     handles = get_handlers();
     trigger_down = 0;

@@ -183,13 +183,16 @@ namespace display {
     void lcdDriver::tagger_init_screen() {
         lcd.fillScreen(ST77XX_BLACK);
         lcd.setCursor(0, 0);
-        lcd.setTextSize(5);
+        lcd.setTextSize(4);
         lcd.setTextColor(ST77XX_GREEN);
         lcd.print("Hold Trigger to Start");
         lcd.setCursor(0, 12);
+
         lcd.setTextSize(2);
         // Print some info about current config
-
+        lcd.print("Health: " + String(game_state->max_health) + " | " +
+                  "Respawns: " + String(game_state->max_respawns) + "\n" +
+                  "Clips: " + String(game_state->clip_count) + " | ");
     }
 
     // These are elements that are always changing
@@ -214,10 +217,18 @@ namespace display {
         unsigned long time_alive_seconds = time_alive / 1000;
         unsigned long time_alive_minutes = time_alive_seconds / 60;
         sprintf(time_alive_str, "%lu:%02lu", time_alive_minutes, time_alive_seconds % 60);
+        String killer;
+        if (this->score->killer_name != nullptr && this->score->assist_name != nullptr) {
+            killer = String(*this->score->killer_name + " + " + *this->score->assist_name);
+        } else if (this->score->killer_name != nullptr) {
+            killer = String(*this->score->killer_name);
+        } else
+            killer = String("Unknown");
+
         sprintf(death_str, "GAME OVER!\n"
                            "Shots fired:\n%d\n"
                            "Time alive:\n%13s\n"
-                           "Killed by:\n%d", score->rounds_fired, time_alive_str, score->killed_by);
+                           "Killed by:\n%s", score->rounds_fired_game, time_alive_str, killer.c_str());
         lcd.print(death_str);
     }
 

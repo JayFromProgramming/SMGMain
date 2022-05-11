@@ -231,6 +231,24 @@ namespace mt2 {
         // -1 is invalid, 0 is unchecked, 1 is checked and valid
     } clone;
 
+    String player_name_table[] = {
+            "Eagle", "Joker", "Eggs ", "Sarge",
+            "Ryan ", "Mario", "Soup ", "Blaze",
+            "Camo ", "Fury ", "Flash","Gizmo",
+            "Homer","Storm", "Habit","Sofia",
+            "Karen", "Axel ", "Radar", "Roza ",
+            "Ninja", "Magic", "Kelly", "Cobra",
+            "Grama", "Rambo", "Snake", "Maco ",
+            "Sting", "Zeena", "Bugsy", "Viper",
+            "Husky", "Genie", "Maxim", "Razor",
+            "Slick", "Venom", "Rocky", "Sabre",
+            "Crush", "Titan", "Orbit", "Vixen",
+            "Flame", "Rogue", "Shrek", "Sonic",
+            "Dozer", "Micro", "LgtMG", "HvyMG",
+            "ZOOKA", "ROCKT", "GRNDE", "CLYMR",
+            "MINE ", "BOMB ", "NUKE "
+    };
+
     volatile short health_lookup(respawn_health health);
 
     short hit_delay_to_micros(hit_delays delay);

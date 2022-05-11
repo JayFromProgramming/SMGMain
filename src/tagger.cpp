@@ -153,7 +153,7 @@ void on_clone(mt2::clone* clone){
 }
 
 // Called when the player is hit
-void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
+void on_hit(uint_least8_t playerID, mt2::teams teamID, mt2::damage_table dmg){
 
     // Check if we are currently still in the hit delay period and if so, ignore the hit
     if (millis() - game_state->last_hit < game_state->hit_delay_ms) {
@@ -162,11 +162,11 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
 
     // Check if friendly fire is enabled, if so check if the hit was on a friendly team and if so ignore the hit
     if (game_state->currentConfig->game_bool_flags_1 & GAME_FRIENDLY_FIRE || teamID != game_state->currentConfig->team_id) {
-        game_state->health = max(0, game_state->health - mt2::damage_table_lookup(static_cast<damage_table>(dmg)));
+        game_state->health = max(0, game_state->health - mt2::damage_table_lookup(dmg));
         game_state->last_hit = millis(); // Set the last hit time
         score_data_ptr->hits_from_players_life[playerID]++;;
         score_data_ptr->damage_from_players_life[playerID] +=
-                mt2::damage_table_lookup(static_cast<damage_table>(dmg));
+                mt2::damage_table_lookup(dmg);
         score_data_ptr->total_hits_life++;
     }
 
@@ -191,6 +191,8 @@ void move_life_scores(){
     score_data_ptr->rounds_fired_life = 0;
     score_data_ptr->total_hits_game += score_data_ptr->total_hits_life;
     score_data_ptr->total_hits_life = 0;
+    score_data_ptr->last_alive_time = score_data_ptr->alive_time;
+    score_data_ptr->alive_time = 0;
     score_data_ptr->killer_name = nullptr;
     score_data_ptr->assist_name = nullptr;
 }

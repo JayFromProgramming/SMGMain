@@ -12,7 +12,7 @@
 
 // A struct for the tagger.cpp to pass its event handlers to the tag_communicator.cpp
 struct event_handlers {
-    void (*on_hit)(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg) = nullptr;
+    void (*on_hit)(uint_least8_t playerID, mt2::teams teamID, mt2::damage_table dmg) = nullptr;
     void (*on_clone)(mt2::clone *clone) = nullptr;
     void (*on_pause_unpause)() = nullptr;
     void (*on_respawn)() = nullptr;

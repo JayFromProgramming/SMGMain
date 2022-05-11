@@ -150,7 +150,7 @@ FLASHMEM String* get_fire_rate(fire_rate_table rate){
 }
 
 
-FLASHMEM String* get_damagetable_name(damage_table damage){
+FLASHMEM String* get_damagetable_name(damage_table damage) {
     switch (damage) {
         case DAMAGE_1:
             return (String *) "1";
@@ -185,6 +185,7 @@ FLASHMEM String* get_damagetable_name(damage_table damage){
         case DAMAGE_100:
             return (String *) "100";
     }
+    return (String *) "Unknown";
 }
 
 FLASHMEM String* get_fire_mode_string(fire_mode mode){
@@ -357,6 +358,7 @@ FLASHMEM String* hitdelay_string(hit_delays delay){
         case TWENTY_SECONDS:
             return (String *) F("20 Seconds");
     }
+    return (String *) F("Unknown");
 }
 
 void print_clone_values(clone* preset) {

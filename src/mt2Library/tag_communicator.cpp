@@ -134,7 +134,8 @@ void decodeMT2Data(unsigned char* data){
         uint_least8_t player_id = messageByte & B01111111;
         uint_least8_t team_id = (data[1] & B11000000) >> 6;
         uint_least8_t damage = (data[1] & B00111100) >> 2;
-        if (handlers->on_hit != nullptr) handlers->on_hit(player_id, team_id, damage);
+        if (handlers->on_hit != nullptr) handlers->on_hit(player_id, static_cast<teams>(team_id),
+                                                          static_cast<damage_table>(damage));
 //        Serial.printf("Received shot packet\n"
 //                      "Player ID: %d\n"
 //                      "Team ID: %d\n"

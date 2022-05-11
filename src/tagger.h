@@ -69,6 +69,7 @@ struct score_data {
     volatile uint16_t      total_hits_life = 0;
     elapsedMillis          game_time;  // Game elapsed time in milliseconds
     elapsedMillis          alive_time; // Time player was alive in milliseconds
+    volatile uint32_t      last_alive_time = 0; // Time player was alive in milliseconds
     volatile uint16_t      respawn_count = 0;
     volatile uint32_t      respawn_time = 0; // Time of last respawn in ms
     volatile uint8_t       last_killed_by = 0; // Which player killed this player during this life

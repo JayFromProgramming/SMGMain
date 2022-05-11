@@ -219,9 +219,9 @@ namespace display {
         lcd.setCursor(DEATH_TEXT_START_X, DEATH_TEXT_START_Y);
         lcd.setTextSize(DEATH_TEXT_SIZE);
         lcd.setTextColor(ST77XX_WHITE);
-        unsigned long time_alive = millis() - this->score->respawn_time;
-        unsigned long time_alive_seconds = time_alive / 1000;
-        unsigned long time_alive_minutes = time_alive_seconds / 60;
+        uint32_t time_alive = this->score->last_alive_time;
+        uint32_t time_alive_seconds = time_alive / 1000;
+        uint32_t time_alive_minutes = time_alive_seconds / 60;
         sprintf(time_alive_str, "%lu:%02lu", time_alive_minutes, time_alive_seconds % 60);
         String killer;
         if (this->score->killer_name != nullptr && this->score->assist_name != nullptr) {

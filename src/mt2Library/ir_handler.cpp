@@ -133,7 +133,7 @@ int encodeMT2(const unsigned char *data, unsigned int bits){
     transmission_buffer[1] = MT2_SPACE_LENGTH; // Inter-pulse gap is 600us off
     unsigned char byte_to_encode = '\0';
     // Extract each bit from the data array and calculate the pulse timings
-    for (int i = 0; i < bits; i++){
+    for (uint32_t i = 0; i < bits; i++){
         if (i % 8 == 0){ // If we are at the start of a new byte, get the byte
             byte_to_encode = data[i / 8];
         }

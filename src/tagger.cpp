@@ -115,6 +115,8 @@ void shot_check(Bounce *bounce_ptr){
                         }
                     }
                     break;
+                default:
+                    break;
             }
         } else if (trigger_down == 1) {
             audio_ptr->play_sound(audio_interface::SOUND_EMPTY);
@@ -140,6 +142,7 @@ void on_killed(uint_least8_t killer_id) {
             }
         }
     }
+    score_data_ptr->assist_name = mt2::get_player_name(max_damage_id); // Set the assist name
 
     move_life_scores();
 

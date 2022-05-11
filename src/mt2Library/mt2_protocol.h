@@ -41,27 +41,29 @@
 
 namespace mt2 {
 
-    enum teams {
+    enum teams : uint8_t {
         RED = 0x00,
         BLUE = 0x01,
         YELLOW = 0x02,
         GREEN = 0x03,
-        NONE = 0x04
+        NONE = 0x04,
+        PASSTHROUGH = 0x05 // Used to indicate that the team should remain unchanged (used in clones only)
     };
 
     enum fire_mode: uint8_t {
         FIRE_MODE_SINGLE = 0x00,
         FIRE_MODE_BURST = 0x01,
-        FIRE_MODE_AUTO = 0x02
+        FIRE_MODE_AUTO = 0x02,
+        FIRE_MODE_SELECT = 0x03 // Allow user to select fire mode
     };
 
-    enum sounds_set {
+    enum sounds_set : uint8_t {
         MIL_SIM = 0x00,
         SCI_FI = 0x01,
         SILENCED = 0x02
     };
 
-    enum respawn_health {
+    enum respawn_health : uint_least8_t {
         HP_1 = 0x01, HP_2 = 0x02, HP_3 = 0x03,
         HP_4 = 0x04, HP_5 = 0x05, HP_6 = 0x06,
         HP_7 = 0x07, HP_8 = 0x08, HP_9 = 0x09,
@@ -88,7 +90,7 @@ namespace mt2 {
         HP_900 = 0x46, HP_950 = 0x47, HP_999 = 0x48
     };
 
-    enum damage_table {
+    enum damage_table : uint_least8_t {
         DAMAGE_1 = 0x00,
         DAMAGE_2 = 0x01,
         DAMAGE_4 = 0x02,
@@ -107,7 +109,7 @@ namespace mt2 {
         DAMAGE_100 = 0x0F
     };
 
-    enum fire_rate_table {
+    enum fire_rate_table : uint_least8_t {
         RPM_250 = 0x00,
         RPM_300 = 0x01,
         RPM_350 = 0x02,
@@ -122,7 +124,7 @@ namespace mt2 {
         RPM_800 = 0x0B
     };
 
-    enum ir_range_table {
+    enum ir_range_table : uint_least8_t {
         MIN = 0x00,
         TEN_PERCENT = 0x01,
         TWENTY_PERCENT = 0x02,
@@ -133,7 +135,7 @@ namespace mt2 {
     };
 
 
-    enum hit_delays {
+    enum hit_delays : uint_least8_t {
         NO_DELAY = 0x00,
         ONE_QUARTER_SECOND = 0x01,
         HALF_SECOND = 0x02,
@@ -160,7 +162,7 @@ namespace mt2 {
         TWENTY_SECONDS = 0x17
     };
 
-    enum message_types {
+    enum message_types : uint_least8_t {
         ADD_HEALTH = 0x80,
         ADD_ROUNDS = 0x81,
         SYSTEM_COMMAND = 0x83,
@@ -171,14 +173,14 @@ namespace mt2 {
         TERMINATION_LITERAL = 0xE8,
     };
 
-    enum system_data {
+    enum system_data : uint_least8_t {
         CLONE = 0x01,
         SCORE_1 = 0x03,
         SCORE_2 = 0x04,
         SCORE_3 = 0x05,
     };
 
-    enum system_commands {
+    enum system_commands : uint_least8_t {
         ADMIN_KILL = 0x00,
         PAUSE_UNPAUSE = 0x01,
         START_GAME = 0x02,
@@ -217,7 +219,7 @@ namespace mt2 {
         unsigned char ir_power = 0x00; // 0 is indoor, 1 is outdoor
         ir_range_table ir_range = MAX; // See section 2.3.7
         unsigned char tagger_bool_flags = B00000001; // See section 2.3.8
-        respawn_health respawn_health = HP_100; // See section 2.3.9 (default is 100 [0x24])
+        respawn_health respawn_health = mt2::HP_100; // See section 2.3.9 (default is 100 [0x24])
         unsigned char respawn_delay = 0x00; // In ten second increments
         unsigned char armour_value = 0x00;
         unsigned char game_bool_flags_1 = B00001010; // See section 2.3.10

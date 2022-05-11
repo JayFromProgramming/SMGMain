@@ -237,7 +237,6 @@ namespace mt2 {
 
     short damage_table_lookup(damage_table damage){
         switch (damage) {
-
             case DAMAGE_1:
                 return 1;
             case DAMAGE_2:
@@ -270,6 +269,8 @@ namespace mt2 {
                 return 75;
             case DAMAGE_100:
                 return 100;
+            default:
+                return 0;
         }
     };
 
@@ -300,6 +301,7 @@ namespace mt2 {
             case RPM_800:
                 return 800;
         }
+        return 0;
     }
 
     float hit_delay_to_seconds(hit_delays hit_delay) {
@@ -353,5 +355,6 @@ namespace mt2 {
             case TWENTY_SECONDS:
                 return 20;
         }
+        return 0;
     }
 }

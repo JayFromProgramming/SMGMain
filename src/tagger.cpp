@@ -20,6 +20,9 @@ uint32_t muzzle_flash_timer = 0;
 
 uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH_PIN_NUMBER;
 
+
+void move_life_scores();
+
 // 1 = Just pulled, 0 = Released, -1 = Not released but is being held
 short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has been called
 
@@ -122,7 +125,9 @@ void shot_check(Bounce *bounce_ptr){
 void on_killed(uint_least8_t killer_id) {
     score_data_ptr->killed_by_game[killer_id]++; // Increment the kills by player
     score_data_ptr->last_killed_by = killer_id; // Set the killed by player
-    score_data_ptr->killer_name = &mt2::player_name_table[killer_id]; // Set the killer name
+    score_data_ptr->killer_name = mt2::get_player_name(score_data_ptr->last_killed_by); // Set the killer name
+
+    audio_ptr->play_sound(audio_interface::SOUND_DEATH); // Make a scream of death
 
     // Calculate who assisted the killer (whoever did the most amount of damage to the player not including the killer)
     uint_least16_t max_damage = 0;
@@ -136,7 +141,8 @@ void on_killed(uint_least8_t killer_id) {
         }
     }
 
-    audio_ptr->play_sound(audio_interface::SOUND_DEATH); // Make a scream of death
+    move_life_scores();
+
 }
 
 // This section contains the event handlers for the game
@@ -161,7 +167,7 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
         score_data_ptr->hits_from_players_life[playerID]++;;
         score_data_ptr->damage_from_players_life[playerID] +=
                 mt2::damage_table_lookup(static_cast<damage_table>(dmg));
-        score_data_ptr->total_hits_game++;
+        score_data_ptr->total_hits_life++;
     }
 
     // Check if we are dead
@@ -173,12 +179,18 @@ void on_hit(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
         hit_led_timer = millis() + 250; // Set the hit led timer
     }
 }
-
-void clear_life_scores(){
+// Called when the player is killed, transfers score data from this life to the game score data
+void move_life_scores(){
     for (uint_least8_t i = 0; i < MT2_MAX_PLAYERS; i++) {
+        score_data_ptr->hits_from_players_game += score_data_ptr->hits_from_players_life[i];
         score_data_ptr->hits_from_players_life[i] = 0;
+        score_data_ptr->damage_from_players_game[i] += score_data_ptr->damage_from_players_life[i];
         score_data_ptr->damage_from_players_life[i] = 0;
     }
+    score_data_ptr->rounds_fired_game += score_data_ptr->rounds_fired_life;
+    score_data_ptr->rounds_fired_life = 0;
+    score_data_ptr->total_hits_game += score_data_ptr->total_hits_life;
+    score_data_ptr->total_hits_life = 0;
     score_data_ptr->killer_name = nullptr;
     score_data_ptr->assist_name = nullptr;
 }

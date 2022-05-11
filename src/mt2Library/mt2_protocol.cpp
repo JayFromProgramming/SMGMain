@@ -6,6 +6,27 @@
 
 namespace mt2 {
 
+    String player_name_table[] = {
+            "Eagle", "Joker", "Eggs ", "Sarge",
+            "Ryan ", "Mario", "Soup ", "Blaze",
+            "Camo ", "Fury ", "Flash","Gizmo",
+            "Homer","Storm", "Habit","Sofia",
+            "Karen", "Axel ", "Radar", "Roza ",
+            "Ninja", "Magic", "Kelly", "Cobra",
+            "Grama", "Rambo", "Snake", "Maco ",
+            "Sting", "Zeena", "Bugsy", "Viper",
+            "Husky", "Genie", "Maxim", "Razor",
+            "Slick", "Venom", "Rocky", "Sabre",
+            "Crush", "Titan", "Orbit", "Vixen",
+            "Flame", "Rogue", "Shrek", "Sonic",
+            "Dozer", "Micro", "LgtMG", "HvyMG",
+            "ZOOKA", "ROCKT", "GRNDE", "CLYMR",
+            "MINE ", "BOMB ", "NUKE "
+    };
+
+    String* get_player_name(uint8_t player_id) {
+        return &player_name_table[player_id];
+    }
 
 // Respawn health lookup table
     volatile short health_lookup(respawn_health health) {

@@ -39,7 +39,7 @@
 
 #define RELOAD_CENTER_X      128
 #define RELOAD_CENTER_Y      144
-#define RELOAD_RADIUS        100
+#define RELOAD_RADIUS        85
 #define RELOAD_INNER_RADIUS  50
 #define RELOAD_TEXT_X_OFFSET -35
 #define RELOAD_TEXT_Y_OFFSET -20
@@ -55,6 +55,9 @@
 #define MAX_OPTION_LENGTH   32
 
 Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
+
+// Define a canvas
+GFXcanvas16 canvas(240, 240);
 
 bool backlight = true;
 
@@ -96,53 +99,14 @@ namespace display {
         // Check if any game state values have changed to determine if we need to update the screen
 
         if (this->game_state->reloading) {
-            if (already_reloading){ // Update reloading animation
-                float remaining_reload = ((float) this->game_state->reload_time - (float) millis()) / 1000;
-                float remaining_reload_percent = (float) remaining_reload /
-                        (float) this->game_state->currentConfig->reload_time;
-                float reload_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
-                // Sweep the circle with a line based on the remaining reload time to make a full circle
-                // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle
-                for (float angle = last_angle; angle < reload_angle; angle += 0.1f) {
-                    int x = RELOAD_CENTER_X + RELOAD_RADIUS * cos(angle * M_PI / 180);
-                    int y = RELOAD_CENTER_Y + RELOAD_RADIUS * sin(angle * M_PI / 180);
-                    int x2 = RELOAD_CENTER_X + RELOAD_INNER_RADIUS * cos(angle * M_PI / 180);
-                    int y2 = RELOAD_CENTER_Y + RELOAD_INNER_RADIUS * sin(angle * M_PI / 180);
-                    lcd.drawLine(x, y, x2, y2, ST77XX_GREEN);
-                }
-                last_angle = reload_angle;
-
-                // Print the remaining reload time in seconds
-                if (remaining_reload < 10) {
-                    sprintf(reload_str, "%.1f", remaining_reload);
-                } else if (remaining_reload < 99) {
-                    sprintf(reload_str, "99");
-                }else sprintf(reload_str, "%d", (unsigned short)  remaining_reload);
-
-                last_reload_time = (unsigned short) remaining_reload;
-
-                if (strcmp(reload_str, old_reload_str) != 0) {
-                    lcd.setCursor(RELOAD_CENTER_X + RELOAD_TEXT_X_OFFSET, RELOAD_CENTER_Y + RELOAD_TEXT_Y_OFFSET);
-                    lcd.setTextSize(RELOAD_TEXT_SIZE);
-                    lcd.setTextColor(ST77XX_GREEN);
-                    this->clear_reload_str();
-                    lcd.print(reload_str);
-                    strcpy(old_reload_str, reload_str);
-                }
-
-            } else { // Start reloading animation
-                already_reloading = true;
-                this->clear_clip_count();
-                this->clear_ammo_count();
-                lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_RADIUS, ST77XX_YELLOW);
-                lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_INNER_RADIUS, ST77XX_BLACK);
-            }
+            float remaining_time = ((float) this->game_state->reload_time - (float) millis()) / 1000;
+            this->progress_circle(remaining_time, (float) this->game_state->currentConfig->reload_time);
         } else {
             if (!this->game_state->started){
                 tagger_init_screen();
             }
-            if (already_reloading) { // Stop reloading animation
-                already_reloading = false;
+            if (already_progressing) { // Stop reloading animation
+                already_progressing = false;
                 last_angle = -90.0f;
                 lcdDriver::clear_screen();
                 this->last_health = -1;
@@ -169,6 +133,48 @@ namespace display {
                 this->last_ammo_count = this->game_state->ammo_count;
             }
             this->draw_dynamic_elements();
+        }
+    }
+
+    void lcdDriver::progress_circle(float remaining_time, float total_time) {
+        if (this->already_progressing) {
+            float remaining_reload_percent =  remaining_time / total_time;
+            float remaining_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
+            // Sweep the circle with a line based on the remaining reload time to make a full circle
+            // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle
+            for (float angle = last_angle; angle < remaining_angle; angle += 0.1f) {
+                int x = RELOAD_CENTER_X + RELOAD_RADIUS * cos(angle * M_PI / 180);
+                int y = RELOAD_CENTER_Y + RELOAD_RADIUS * sin(angle * M_PI / 180);
+                int x2 = RELOAD_CENTER_X + RELOAD_INNER_RADIUS * cos(angle * M_PI / 180);
+                int y2 = RELOAD_CENTER_Y + RELOAD_INNER_RADIUS * sin(angle * M_PI / 180);
+                lcd.drawLine(x, y, x2, y2, ST77XX_GREEN);
+            }
+            last_angle = remaining_angle;
+
+            // Print the remaining reload time in seconds
+            if (remaining_time < 10) {
+                sprintf(reload_str, "%.1f", remaining_time);
+            } else if (remaining_time < 99) {
+                sprintf(reload_str, "99");
+            } else sprintf(reload_str, "%d", (unsigned short) remaining_time);
+
+            last_reload_time = (unsigned short) remaining_time;
+
+            if (strcmp(reload_str, old_reload_str) != 0) {
+                lcd.setCursor(RELOAD_CENTER_X + RELOAD_TEXT_X_OFFSET, RELOAD_CENTER_Y + RELOAD_TEXT_Y_OFFSET);
+                lcd.setTextSize(RELOAD_TEXT_SIZE);
+                lcd.setTextColor(ST77XX_GREEN);
+                this->clear_reload_str();
+                lcd.print(reload_str);
+                strcpy(old_reload_str, reload_str);
+            }
+
+        } else { // Start reloading animation
+            already_progressing = true;
+            this->clear_clip_count();
+            this->clear_ammo_count();
+            lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_RADIUS, ST77XX_YELLOW);
+            lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_INNER_RADIUS, ST77XX_BLACK);
         }
     }
 
@@ -318,6 +324,16 @@ namespace display {
 
     void lcdDriver::toggle_backlight() {
         digitalToggleFast(BACKLIGHT_PIN);
+    }
+
+    // ------------------------------------------------------MENU METHODS----------------------------------------------------//
+
+    void lcdDriver::clear_canvas(){
+        canvas.fillScreen(ST77XX_BLACK);
+    }
+
+    void lcdDriver::draw_canvas() {
+       lcd.drawRGBBitmap(0, 0, canvas.getBuffer(), 240, 240);
     }
 
     void lcdDriver::draw_menu(){ // Draws the currently loaded menu

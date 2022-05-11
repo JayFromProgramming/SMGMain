@@ -30,8 +30,8 @@ namespace display {
     struct menu_holder {
         const char* name = nullptr;
         menu_item* items = nullptr;
-        int num_items = 0;
-        int selected_item = 0;
+        uint16_t num_items = 0;
+        uint16_t selected_item = 0;
         uint16_t background_color = 0;
         uint16_t text_color = 0;
     };
@@ -47,7 +47,7 @@ namespace display {
         unsigned char last_clip_count = -1;
         float last_angle = -90.0f;
         unsigned short last_reload_time = -1;
-        bool already_reloading = false;
+        bool already_progressing = false;
 
         bool backlight_on = true;
 
@@ -133,6 +133,12 @@ namespace display {
         add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char *unit);
 
         void draw_dynamic_elements();
+
+        void progress_circle(float remaining_time, float total_time);
+
+        void clear_canvas();
+
+        void draw_canvas();
     };
 
 } // display

@@ -16,15 +16,16 @@
 namespace audio_interface {
 
     enum sound_samples{
-        SOUND_NONE = 0,
-        SOUND_SHOOT = 1,
-        SOUND_HIT = 2,
-        SOUND_DEATH = 3,
-        SOUND_PICKUP = 4,
-        SOUND_HEAL = 5,
-        SOUND_RELOAD = 6,
-        SOUND_EMPTY = 7,
-        SOUND_BEEP = 8,
+        SOUND_NONE,
+        SOUND_SHOOT,
+        SOUND_HIT,
+        SOUND_DEATH,
+        SOUND_PICKUP,
+        SOUND_HEAL,
+        SOUND_RELOAD,
+        SOUND_RELOADED,
+        SOUND_EMPTY,
+        SOUND_BEEP
     };
 
     enum actions{

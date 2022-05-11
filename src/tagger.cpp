@@ -143,9 +143,6 @@ void on_killed(uint_least8_t killer_id) {
         }
     }
     score_data_ptr->assist_name = mt2::get_player_name(max_damage_id); // Set the assist name
-
-    move_life_scores();
-
 }
 
 // This section contains the event handlers for the game
@@ -247,12 +244,15 @@ void end_game(){
 }
 
 void start_game(){
+    if (game_state->started) {
+        audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+    }
     score_data_ptr->game_time = 0;
     clear_scores();
     game_state->health = game_state->max_health;
     game_state->last_shot = 0;
     game_state->last_hit = 0;
-
+    audio_ptr->play_sound(audio_interface::SOUND_RELOADED);
 }
 
 void full_health(){
@@ -263,8 +263,6 @@ void full_health(){
 void respawn(){ // Called when a player respawns
     // Called when a player respawns
     game_state->health = game_state->max_health;
-    score_data_ptr->respawn_count++;
-    score_data_ptr->last_killed_by = 0;
     game_state->clip_count = game_state->currentConfig->number_of_clips;
     game_state->last_shot = 0;
     game_state->last_hit = 0;
@@ -272,11 +270,15 @@ void respawn(){ // Called when a player respawns
     game_state->reloading = false;
     game_state->reload_time = 0;
     score_data_ptr->respawn_time = millis();
+    move_life_scores(); // Move the life scores to the game scores
 }
 
 void admin_kill(){ // Called when an admin kills a player
     game_state->health = 0;
     score_data_ptr->last_killed_by = GAME_ADMIN_ID;
+    on_killed(GAME_ADMIN_ID);
+    score_data_ptr->killer_name = (String *) "Admin";
+    score_data_ptr->assist_name = nullptr;
 }
 
 void pause_unpause(){
@@ -325,6 +327,7 @@ void tagger_loop(){
             if ((game_state->currentConfig->game_bool_flags_1 & GAME_UNLIMITED_CLIPS) == false) {
                 game_state->clip_count--;
             }
+            audio_ptr->play_sound(audio_interface::SOUND_RELOADED);
         }
     }
 

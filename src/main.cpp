@@ -438,8 +438,8 @@ void loop() {
 
         if (command_array[0] == "hit") {
 
-            tagger_events->on_hit(0, 1, 1);
-            tagger_events->on_hit(1, 1, 1);
+            tagger_events->on_hit(0, mt2::BLUE, mt2::DAMAGE_25);
+            tagger_events->on_hit(1, mt2::BLUE, mt2::DAMAGE_25);
             Serial.printf("hit! Remaining health: %d\n", get_tagger_data_ptr()->health);
         } else if (command_array[0] == "shoot") {
             Serial.println("SHOOT");

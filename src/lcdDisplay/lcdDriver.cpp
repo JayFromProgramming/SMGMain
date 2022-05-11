@@ -139,6 +139,7 @@ namespace display {
     void lcdDriver::progress_circle(float remaining_time, float total_time) {
         if (this->already_progressing) {
             float remaining_reload_percent =  remaining_time / total_time;
+            if (remaining_reload_percent > 1.0f) remaining_reload_percent = 1.0f;
             float remaining_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
             // Sweep the circle with a line based on the remaining reload time to make a full circle
             // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle

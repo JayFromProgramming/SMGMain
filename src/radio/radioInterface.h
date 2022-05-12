@@ -11,11 +11,37 @@
 #define RADIO_FREQUENCY 915.0
 
 #include "messages.h"
+#include "mt2Library/mt2_protocol.h"
 
 namespace wireless {
 
-    struct game_event_handlers {
-        void (*on_clone_raw)(char *raw_clone[40]) = nullptr;
+    enum class RadioStates {
+        UNKNOWN, FAILED_INIT, INITIALIZED, RUNNING,
+        OVERHEAT
+    };
+
+    String* getRadioStateString(RadioStates state);
+
+    String stateStrings[] = {
+            "UNKNOWN", "FAILED_INIT", "INITIALIZED", "RUNNING",
+            "OVERHEAT"
+    };
+
+    // Wrapper for all different message types
+    typedef struct receipt{
+        MessageTypes type; // Type of message
+        void* message; // Pointer to the message
+        elapsedMillis age;
+        uint8_t ack_id;
+        bool acked; // true if the message has been acknowledged
+    } receipt_t;
+
+    struct radio_event_handlers {
+        void (*on_fault)(RadioStates fault);
+    };
+
+     struct game_event_handlers {
+        void (*on_clone_raw)(mt2::clone* clone) = nullptr;
         void (*on_pause_unpause)() = nullptr;
         void (*on_respawn)() = nullptr;
         void (*on_full_health)() = nullptr;
@@ -43,14 +69,19 @@ namespace wireless {
 
     class radioInterface {
     private:
-        uint8_t device_id;
-        DeviceTypes device_type;
-        game_event_handlers *event_handlers_;
+        uint8_t device_id = 0;
+        elapsedMillis last_controller_contact;
+        DeviceTypes device_type = DeviceTypes::player_gun;
+        game_event_handlers *event_handlers_ = nullptr;
+        RadioStates state = RadioStates::UNKNOWN;
+        receipt_t receipts[];
     public:
         void init(DeviceTypes type, uint8_t id);
         game_event_handlers* get_handlers();
         void check_for_data();
-        void sendEvent(GunEvents event, uint8_t data, uint8_t data2) const;
+        bool sendEvent(GunEvents event, uint8_t data, uint8_t data2) const;
+
+        void update_loop();
     };
 
 } // radio

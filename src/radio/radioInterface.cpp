@@ -11,28 +11,43 @@ RH_RF69 radio(RADIO_CHIP_SELECT_PIN, RADIO_CHIP_INTERRUPT_PIN);
 
 namespace wireless {
 
+    void pass_radio_event_handles(){
+
+    }
+
     void radioInterface::init(DeviceTypes type, uint8_t id) {
         // Initialize the radio
-        radio.init();
+        if (!radio.init()) {
+            state = RadioStates::FAILED_INIT;
+            return;
+        }
         radio.setFrequency(RADIO_FREQUENCY);
-        radio.setTxPower(20, true);
+        radio.setTxPower(14, true); // 14 dBm
+        radio.setPromiscuous(true); // Tell the radio to receive any packet, regardless of destination
+        radio.setThisAddress(id);
+        radio.temperatureRead(); // Read the current temperature
         device_id = id;
         device_type = type;
         event_handlers_ = new game_event_handlers;
     }
 
-    void radioInterface::sendEvent(GunEvents event, uint8_t data, uint8_t data2) const {
+    bool radioInterface::sendEvent(GunEvents event, uint8_t data, uint8_t data2) const {
         // Create a packet
         gun_event_message message;
-        message.sender_id = device_id;
         message.event_type = event;
         message.event_data_1 = data;
         message.event_data_2 = data2;
-        radio.send((uint8_t *)&message, sizeof(gun_event_message));
+        radio.setHeaderFrom(device_id);
+        radio.setModeTx();
+        return radio.send((uint8_t *)&message, sizeof(gun_event_message));
     }
 
     game_event_handlers *radioInterface::get_handlers() {
         return event_handlers_;
+    }
+
+    void acknowledgement_processor(acknowledgement_message *message) {
+
     }
 
     void system_command_processor(command_message *message) {
@@ -43,17 +58,29 @@ namespace wireless {
         // Not implemented yet
     }
 
+    void radioInterface::update_loop(){
+        check_for_data();
+        if (last_controller_contact > 10 * 1000) {
+            // No controller contact for 10 seconds
+            keep_alive_message message;
+            message.sender_type = device_type;
+            radio.send()
+        }
+    }
+
     void radioInterface::check_for_data() {
         // Check for data
         if (radio.available()) {
             // Get the data
             uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
-            uint8_t len = sizeof(buf);
+            uint8_t len = 0;
             if (radio.recv(buf, &len)) {
                 // Process the data
+                if (len < sizeof(acknowledgement_message))
+                    return;
                 uint8_t message_type = buf[0];
                 auto target_type = (DeviceTypes)buf[1];
-                uint8_t target_id = buf[2];
+                uint8_t target_id = radio.headerTo(); // The destination ID of the message
                 if (target_type == device_type || target_type == DeviceTypes::all_devices) {
                     if (target_id == device_id || target_id == 0xFF) {
                         switch (message_type) {

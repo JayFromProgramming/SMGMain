@@ -24,10 +24,11 @@ namespace wireless {
     enum DeviceTypes : uint8_t {
         // Device types
         all_devices = 0xFF, // A message to all devices is a device type of 1111 1111
+        not_defined_yet = 0x00, // A message to all devices is a device type of 0000 0000
         controller = 0,
         player_gun = 1,
         field_element = 2,
-        field_lighting = 3
+        field_lighting = 3,
     };
 
     enum Commands : uint8_t {
@@ -66,42 +67,33 @@ namespace wireless {
     struct gun_event_message { // Sent by a gun to the game controller to indicate a change of state event
         MessageTypes message_type = MessageTypes::game_event;
         DeviceTypes recipient_type = DeviceTypes::controller;
-        uint8_t recipient_id = 0;
         DeviceTypes sender_type = DeviceTypes::player_gun;
-        uint8_t sender_id = 0;
         GunEvents event_type = GunEvents::not_yet_defined;
         uint8_t event_data_1 = 0;
         uint8_t event_data_2 = 0;
         uint8_t ack_id = 0;
-    };
+    } __attribute__((packed));
 
     struct command_message {
         MessageTypes message_type = MessageTypes::game_command;
         DeviceTypes recipient_type = DeviceTypes::controller;
-        uint8_t recipient_id = 0;
         DeviceTypes sender_type = DeviceTypes::player_gun;
-        uint8_t sender_id = 0;
-
-    };
+    } __attribute__((packed));
 
     // When this message type is received an ack is sent back
     struct keep_alive_message {
         MessageTypes message_type = MessageTypes::keep_alive;
         DeviceTypes recipient_type = DeviceTypes::all_devices;
-        uint8_t recipient_id = 0;
-        DeviceTypes sender_type = 0;
-        uint8_t sender_id = 0;
+        DeviceTypes sender_type = DeviceTypes::not_defined_yet;
         uint8_t ack_id = 1; // The id of this message
-    };
+    } __attribute__((packed));
 
     struct acknowledgement_message {
         MessageTypes message_type = MessageTypes::acknowledgement;
-        DeviceTypes recipient_type = 0; // Address values are initialized when the message is sent
-        uint8_t recipient_id = 0;
-        DeviceTypes sender_type = 0;
-        uint8_t sender_id = 0;
+        DeviceTypes recipient_type = DeviceTypes::not_defined_yet; // Address values are initialized when the message is sent
+        DeviceTypes sender_type = DeviceTypes::not_defined_yet;
         uint8_t ack_id = 0; // The id of the message that was acknowledged
-    };
+    } __attribute__((packed));
 
 
 

@@ -11,19 +11,6 @@
 #define PRESET_START_ADDRESS 0x1F // EEPROM address where presets start ( 0x1F = 31 )
 #define TOTAL_PRESETS 12
 
-typedef struct device_configs {
-    unsigned char boot_mode;
-    unsigned char temp_boot_mode; // Indicates if the device is temporarily in switching boot modes
-
-    unsigned char screen_orientation; // 0 for left, 1 for right, 2 for up, 3 for down
-    unsigned char device_type; // Will be used by the radio library once it's implemented
-    unsigned char device_id;
-
-    unsigned char current_preset;
-    teams current_team;
-
-} device_configs;
-
 device_configs* device_config = nullptr;
 
 typedef struct eeprom_preset {
@@ -242,6 +229,14 @@ FLASHMEM unsigned short get_device_id(){
 FLASHMEM void set_device_id(unsigned short id) {
     device_config->device_id = id;
     EEPROM.put(calcAddress(1), *device_config);
+}
+
+FLASHMEM device_configs* get_device_configs(){
+    return device_config;
+}
+
+FLASHMEM void set_device_configs(device_configs* configs) {
+    EEPROM.put(calcAddress(1), *configs);
 }
 
 FLASHMEM void init_eeprom(){

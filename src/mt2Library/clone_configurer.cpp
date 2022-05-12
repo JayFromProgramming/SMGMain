@@ -75,19 +75,7 @@ void edit_armor_value(int value) {
 }
 
 void edit_fire_mode(int mode) {
-    switch (mode) {
-        case 0:
-            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_SINGLE;
-            break;
-        case 1:
-            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_AUTO;
-            break;
-        case 2:
-            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_BURST;
-            break;
-        default:
-            temp_clone->fire_selector = mt2::fire_mode::FIRE_MODE_SINGLE;
-    }
+    temp_clone->fire_selector = static_cast<mt2::fire_mode>(mode);
 }
 
 void edit_burst_size(int size) {

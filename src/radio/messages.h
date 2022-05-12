@@ -61,7 +61,7 @@ namespace wireless {
 
     enum state_update_types : uint8_t {
         // The keys for state update values
-
+    };
 
     struct gun_event_message { // Sent by a gun to the game controller to indicate a change of state event
         MessageTypes message_type = MessageTypes::game_event;

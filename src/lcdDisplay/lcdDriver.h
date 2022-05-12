@@ -139,6 +139,12 @@ namespace display {
         static void clear_canvas();
 
         static void draw_canvas();
+
+        static void add_option_menu_values(menu_option_item *sub_menu, uint32_t start, unsigned int range, unsigned int step);
+
+        static void
+        add_option_menu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range, unsigned int step,
+                               const char *unit);
     };
 
 } // display

@@ -5,12 +5,6 @@
 #ifndef SMGMAIN_AUDIO_INTERFACE_H
 #define SMGMAIN_AUDIO_INTERFACE_H
 
-
-#define AUDIO Serial2
-
-#define AUDIO_EOC 0xFF
-
-
 #include "audio_player.h"
 
 namespace audio_interface {
@@ -20,7 +14,6 @@ namespace audio_interface {
         SOUND_SHOOT,
         SOUND_HIT,
         SOUND_DEATH,
-        SOUND_PICKUP,
         SOUND_HEAL,
         SOUND_RELOAD,
         SOUND_RELOADED,
@@ -47,6 +40,7 @@ namespace audio_interface {
 
     private:
         audio_player::AudioPlayer *player;
+        sound_sets current_sound_set;
 
     public:
 
@@ -56,20 +50,49 @@ namespace audio_interface {
         }
 
         void play_sound(sound_samples sound){
-            player->play(sound);
+            switch (current_sound_set){
+                case AUDIO_SOUND_SET_MILSIM:
+                    switch(sound){
+                        case SOUND_SHOOT: player->play(0); break;
+                        case SOUND_HIT: player->play(5); break;
+                        case SOUND_DEATH: player->play(6); break;
+                        case SOUND_HEAL: player->play(10); break;
+                        case SOUND_RELOAD: player->play(2); break;
+                        case SOUND_RELOADED: player->play(3); break;
+                        case SOUND_EMPTY: player->play(1); break;
+                        case SOUND_BEEP: player->play(18); break;
+                        default: break;
+                    }
+                    break;
+                case AUDIO_SOUND_SET_SIFI:
+                    switch(sound){
+                        case SOUND_SHOOT: player->play(0); break;
+                        case SOUND_HIT: player->play(5); break;
+                        case SOUND_DEATH: player->play(6); break;
+                        case SOUND_HEAL: player->play(10); break;
+                        case SOUND_RELOAD: player->play(2); break;
+                        case SOUND_RELOADED: player->play(3); break;
+                        case SOUND_EMPTY: player->play(1); break;
+                        case SOUND_BEEP: player->play(18); break;
+                        default: break;
+                    }
+                    break;
+                case AUDIO_SOUND_SET_SILENCED:
+                    switch (sound) {
+                        case SOUND_SHOOT: player->play(0); break;
+                        case SOUND_HIT: player->play(5); break;
+                        case SOUND_DEATH: player->play(6); break;
+                        case SOUND_HEAL: player->play(10); break;
+                        case SOUND_RELOAD: player->play(2); break;
+                        case SOUND_RELOADED: player->play(3); break;
+                        case SOUND_EMPTY: player->play(1); break;
+                        case SOUND_BEEP: player->play(18); break;
+                        default: break;
+                    }
+                    break;
+            }
         }
 
-        FLASHMEM static void change_sound_set(sound_sets sound_set){
-            AUDIO.write(ACTION_CHANGE_SOUND_SET);
-            AUDIO.write(sound_set);
-            AUDIO.write(AUDIO_EOC);
-        }
-
-        FLASHMEM static void change_volume(int volume){
-            AUDIO.write(ACTION_VOLUME);
-            AUDIO.write(volume);
-            AUDIO.write(AUDIO_EOC);
-        }
     };
 
 } // audio_interface

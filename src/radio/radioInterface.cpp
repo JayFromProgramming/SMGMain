@@ -36,7 +36,7 @@ namespace wireless {
     }
 
     void system_command_processor(command_message *message) {
-        switch (message->command) {
+
     }
 
     void gun_event_processor(gun_event_message *message) {

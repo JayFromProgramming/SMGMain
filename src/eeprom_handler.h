@@ -48,6 +48,9 @@ typedef struct device_configs {
     float max_battery_voltage; // The maximum voltage of the battery
     float min_battery_voltage; // The minimum voltage of the battery
 
+    uint8_t radio_channel; // The channel the radio is on
+    uint8_t radio_power; // The transmission power of the radio
+
     uint8_t current_preset;
     teams current_team;
 

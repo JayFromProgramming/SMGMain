@@ -555,9 +555,28 @@ namespace display {
         }
     }
 
+    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, uint32_t start, unsigned int range, unsigned int step) {
+        for (uint32_t i = start; i < range; i += step) {
+            delete sub_menu->option_names[sub_menu->num_options];
+            auto *name = new String(i);
+            sub_menu->option_names[sub_menu->num_options] = name;
+            sub_menu->num_options++;
+        }
+    }
+
     void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step,
                                            const char* unit) {
         for (unsigned int i = 0; i < range; i += step) {
+            delete sub_menu->option_names[sub_menu->num_options];
+            auto *name = new String(String(i) + " " + String(unit));
+            sub_menu->option_names[sub_menu->num_options] = name;
+            sub_menu->num_options++;
+        }
+    }
+
+    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range,
+                                           unsigned int step, const char* unit) {
+        for (uint32_t i = start; i < range; i += step) {
             delete sub_menu->option_names[sub_menu->num_options];
             auto *name = new String(String(i) + " " + String(unit));
             sub_menu->option_names[sub_menu->num_options] = name;

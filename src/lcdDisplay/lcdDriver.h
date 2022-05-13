@@ -109,7 +109,7 @@ namespace display {
 
         static menu_option_item* add_submenu(menu_holder* menu, const char* name, void (*func)(int));
 
-        static void add_option_menu_item(menu_option_item* menu, const char* name);
+        static void add_submenu_item(menu_option_item* sub_menu, const char* name_new);
 
         void menu_increment();
 
@@ -121,16 +121,16 @@ namespace display {
 
         void tagger_init_screen();
 
-        static void add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step);
+        static void add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step);
 
-        static void option_menu_set_selected(menu_option_item *menu, unsigned int selected);
+        static void submenu_set_selected(menu_option_item *menu, unsigned int selected);
 
         static void free_menu(menu_holder *menu);
 
         void load_free_display_menu(menu_holder *menu);
 
         static void
-        add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char *unit);
+        add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char *unit);
 
         void draw_dynamic_elements();
 
@@ -140,11 +140,11 @@ namespace display {
 
         static void draw_canvas();
 
-        static void add_option_menu_values(menu_option_item *sub_menu, uint32_t start, unsigned int range, unsigned int step);
+        static void add_submenu_values(menu_option_item *sub_menu, uint32_t start, unsigned int range, unsigned int step);
 
         static void
-        add_option_menu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range, unsigned int step,
-                               const char *unit);
+        add_submenu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range, unsigned int step,
+                           const char *unit);
     };
 
 } // display

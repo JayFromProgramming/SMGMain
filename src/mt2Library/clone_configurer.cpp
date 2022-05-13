@@ -102,9 +102,9 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     for (int i = 0; i <= 0x48; i++) {
         int health = mt2::health_lookup(static_cast<mt2::respawn_health>(i));
         String health_str = String(health) + " HP";
-        display::lcdDriver::add_option_menu_item(menu, health_str.c_str());
+        display::lcdDriver::add_submenu_item(menu, health_str.c_str());
         if (i == clone->respawn_health)
-            display::lcdDriver::option_menu_set_selected(menu, i);
+            display::lcdDriver::submenu_set_selected(menu, i);
     }
 
     // Damage per shot
@@ -112,9 +112,9 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     for (int i = 0; i <= 0x0F; i++) {
         int damage = mt2::damage_table_lookup(static_cast<mt2::damage_table>(i));
         String damage_str = String(damage) + " DMG";
-        display::lcdDriver::add_option_menu_item(menu, damage_str.c_str());
+        display::lcdDriver::add_submenu_item(menu, damage_str.c_str());
         if (i == clone->damage_per_shot)
-            display::lcdDriver::option_menu_set_selected(menu, i);
+            display::lcdDriver::submenu_set_selected(menu, i);
     }
 
     // Firerate
@@ -122,64 +122,64 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     for (int i = 0; i <= 0x0B; i++) {
         int firerate = mt2::fire_rate_table_lookup(static_cast<mt2::fire_rate_table>(i));
         String firerate_str = String(firerate) + " RPM";
-        display::lcdDriver::add_option_menu_item(menu, firerate_str.c_str());
+        display::lcdDriver::add_submenu_item(menu, firerate_str.c_str());
         if (i == clone->cyclic_rpm)
-            display::lcdDriver::option_menu_set_selected(menu, i);
+            display::lcdDriver::submenu_set_selected(menu, i);
     }
 
     // Firemode
     menu = display::lcdDriver::add_submenu(clone_menu, "Fire selector", edit_fire_mode);
-    display::lcdDriver::add_option_menu_item(menu, "Single shot");
-    display::lcdDriver::add_option_menu_item(menu, "Burst fire");
-    display::lcdDriver::add_option_menu_item(menu, "Full Auto");
-    display::lcdDriver::option_menu_set_selected(menu, clone->fire_selector);
+    display::lcdDriver::add_submenu_item(menu, "Single shot");
+    display::lcdDriver::add_submenu_item(menu, "Burst fire");
+    display::lcdDriver::add_submenu_item(menu, "Full Auto");
+    display::lcdDriver::submenu_set_selected(menu, clone->fire_selector);
 
 
     // Burst size
     menu = display::lcdDriver::add_submenu(clone_menu, "Burst size", edit_burst_size);
-    display::lcdDriver::add_option_menu_values(menu, 30, 1);
-    display::lcdDriver::option_menu_set_selected(menu, clone->burst_size);
+    display::lcdDriver::add_submenu_values(menu, 30, 1);
+    display::lcdDriver::submenu_set_selected(menu, clone->burst_size);
 
     // Reload time
     menu = display::lcdDriver::add_submenu(clone_menu, "Reload Time", edit_reload_time);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, "Seconds");
-    display::lcdDriver::option_menu_set_selected(menu, clone->reload_time);
+    display::lcdDriver::add_submenu_values(menu, 0xFF, 1, "Seconds");
+    display::lcdDriver::submenu_set_selected(menu, clone->reload_time);
 
     // Respawn delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Respawn Delay", respawn_delay);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF * 10, 10, "Seconds");
-    display::lcdDriver::option_menu_set_selected(menu, clone->respawn_delay / 10);
+    display::lcdDriver::add_submenu_values(menu, 0xFF * 10, 10, "Seconds");
+    display::lcdDriver::submenu_set_selected(menu, clone->respawn_delay / 10);
 
     // Max respawns
     menu = display::lcdDriver::add_submenu(clone_menu, "Max Respawns", max_respawns);
-    display::lcdDriver::add_option_menu_values(menu, 0xFE, 1, "Times");
-    display::lcdDriver::add_option_menu_item(menu, "Unlimited");
-    display::lcdDriver::option_menu_set_selected(menu, clone->max_respawns);
+    display::lcdDriver::add_submenu_values(menu, 0xFE, 1, "Times");
+    display::lcdDriver::add_submenu_item(menu, "Unlimited");
+    display::lcdDriver::submenu_set_selected(menu, clone->max_respawns);
 
     // Clips from ammo box
     menu = display::lcdDriver::add_submenu(clone_menu, "Ammobox quant.",
                                            edit_clips_from_ammobox);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Clips");
-    display::lcdDriver::option_menu_set_selected(menu, clone->clips_from_ammo_box);
+    display::lcdDriver::add_submenu_values(menu, 0xFF, 1, " Clips");
+    display::lcdDriver::submenu_set_selected(menu, clone->clips_from_ammo_box);
 //
     // Clip size
     menu = display::lcdDriver::add_submenu(clone_menu, "Clip size",
                                            edit_clip_size);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Bullets");
-    display::lcdDriver::option_menu_set_selected(menu, clone->clip_size);
+    display::lcdDriver::add_submenu_values(menu, 0xFF, 1, " Bullets");
+    display::lcdDriver::submenu_set_selected(menu, clone->clip_size);
 
     // Number of clips
     menu = display::lcdDriver::add_submenu(clone_menu, "Number of clips",
                                                edit_number_of_clips);
-    display::lcdDriver::add_option_menu_values(menu, 0xCA-1, 1, " Clips");
-    display::lcdDriver::add_option_menu_item(menu, "Unlimited");
-    display::lcdDriver::option_menu_set_selected(menu, clone->number_of_clips);
+    display::lcdDriver::add_submenu_values(menu, 0xCA - 1, 1, " Clips");
+    display::lcdDriver::add_submenu_item(menu, "Unlimited");
+    display::lcdDriver::submenu_set_selected(menu, clone->number_of_clips);
 
     // hit_led_timout_seconds
     menu = display::lcdDriver::add_submenu(clone_menu, "Hit LED timeout",
                                                edit_hit_led_timeout);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
-    display::lcdDriver::option_menu_set_selected(menu, clone->hit_led_timout_seconds);
+    display::lcdDriver::add_submenu_values(menu, 0xFF, 1, " Seconds");
+    display::lcdDriver::submenu_set_selected(menu, clone->hit_led_timout_seconds);
 
     // hit_delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Hit delay",
@@ -187,35 +187,35 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     for (int i = 0; i < 0x17; i++) {
         float hit_delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
         String hit_delay_str = String(hit_delay) + " Seconds";
-        display::lcdDriver::add_option_menu_item(menu, hit_delay_str.c_str());
+        display::lcdDriver::add_submenu_item(menu, hit_delay_str.c_str());
         if (i == clone->hit_delay)
-            display::lcdDriver::option_menu_set_selected(menu, i);
+            display::lcdDriver::submenu_set_selected(menu, i);
     }
 
     // Start delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Start delay",
                                                        edit_start_delay);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
-    display::lcdDriver::option_menu_set_selected(menu, clone->start_delay);
+    display::lcdDriver::add_submenu_values(menu, 0xFF, 1, " Seconds");
+    display::lcdDriver::submenu_set_selected(menu, clone->start_delay);
 
     // Death delay
     menu = display::lcdDriver::add_submenu(clone_menu, "Death delay",
                                                        edit_death_delay);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Seconds");
-    display::lcdDriver::option_menu_set_selected(menu, clone->death_delay);
+    display::lcdDriver::add_submenu_values(menu, 0xFF, 1, " Seconds");
+    display::lcdDriver::submenu_set_selected(menu, clone->death_delay);
 
     // Armor value
     menu = display::lcdDriver::add_submenu(clone_menu, "Armor value",
                                                            edit_armor_value);
-    display::lcdDriver::add_option_menu_values(menu, 0xFF, 1, " Points");
-    display::lcdDriver::option_menu_set_selected(menu, clone->armour_value);
+    display::lcdDriver::add_submenu_values(menu, 0xFF, 1, " Points");
+    display::lcdDriver::submenu_set_selected(menu, clone->armour_value);
 //
 //    for (int i = 0 ; i < 0x17; i++) {
 //        float delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
 //        String delay_str = String(delay) + " Seconds";
-//        display::lcdDriver::add_option_menu_item(menu, delay_str.c_str());
+//        display::lcdDriver::add_submenu_item(menu, delay_str.c_str());
 //        if (i == clone->hit_delay)
-//            display::lcdDriver::option_menu_set_selected(menu, i);
+//            display::lcdDriver::submenu_set_selected(menu, i);
 //    }
 
     display::lcdDriver::add_menu_item(clone_menu, "Save", save_config);

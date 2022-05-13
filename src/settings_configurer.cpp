@@ -32,32 +32,32 @@ display::menu_holder *create_settings_config_menu(void (*boot_menu_callback)()) 
 
     for (int i = 0; i < MT2_MAX_PLAYERS; i++) {
         String id = "Tagger " + String(i) + " (" + *mt2::get_player_name(i) + ")";
-        display::lcdDriver::add_option_menu_item(menu, id.c_str());
+        display::lcdDriver::add_submenu_item(menu, id.c_str());
     }
 
-    display::lcdDriver::option_menu_set_selected(menu, configs->device_id);
+    display::lcdDriver::submenu_set_selected(menu, configs->device_id);
 
     // Screen Orientation
     menu = display::lcdDriver::add_submenu(settings_menu, "Screen Orientation", nullptr);
-    display::lcdDriver::add_option_menu_item(menu, "Up");
-    display::lcdDriver::add_option_menu_item(menu, "Down");
-    display::lcdDriver::add_option_menu_item(menu, "Left");
-    display::lcdDriver::add_option_menu_item(menu, "Right");
-    display::lcdDriver::option_menu_set_selected(menu, configs->screen_orientation);
+    display::lcdDriver::add_submenu_item(menu, "Up");
+    display::lcdDriver::add_submenu_item(menu, "Down");
+    display::lcdDriver::add_submenu_item(menu, "Left");
+    display::lcdDriver::add_submenu_item(menu, "Right");
+    display::lcdDriver::submenu_set_selected(menu, configs->screen_orientation);
 
     // Radio Frequency
     menu = display::lcdDriver::add_submenu(settings_menu, "Radio Frequency", nullptr);
-    display::lcdDriver::add_option_menu_item(menu, "850 MHz");
-    display::lcdDriver::add_option_menu_item(menu, "885 MHz");
-    display::lcdDriver::add_option_menu_item(menu, "915 MHz");
-    display::lcdDriver::add_option_menu_item(menu, "935 MHz");
-    display::lcdDriver::add_option_menu_item(menu, "950 MHz");
-    display::lcdDriver::option_menu_set_selected(menu, configs->radio_channel);
+    display::lcdDriver::add_submenu_item(menu, "850 MHz");
+    display::lcdDriver::add_submenu_item(menu, "885 MHz");
+    display::lcdDriver::add_submenu_item(menu, "915 MHz");
+    display::lcdDriver::add_submenu_item(menu, "935 MHz");
+    display::lcdDriver::add_submenu_item(menu, "950 MHz");
+    display::lcdDriver::submenu_set_selected(menu, configs->radio_channel);
 
     // Radio Power
     menu = display::lcdDriver::add_submenu(settings_menu, "Radio Power", nullptr);
-    display::lcdDriver::add_option_menu_values(menu, 14, 20, 1, "dBi");
-    display::lcdDriver::option_menu_set_selected(menu, configs->radio_power);
+    display::lcdDriver::add_submenu_values(menu, 14, 20, 1, "dBi");
+    display::lcdDriver::submenu_set_selected(menu, configs->radio_power);
 
 
 

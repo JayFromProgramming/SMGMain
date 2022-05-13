@@ -88,7 +88,7 @@ namespace wireless {
         void check_for_data();
         bool sendEvent(GunEvents event, uint8_t data, uint8_t data2) const;
         transmissionReceipt_t last_transmission;
-        void
+
         void update_loop();
 
         void radio_send(uint8_t *data, uint8_t len);

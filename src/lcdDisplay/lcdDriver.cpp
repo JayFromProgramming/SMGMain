@@ -546,7 +546,7 @@ namespace display {
         return item;
     }
 
-    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step) {
+    void lcdDriver::add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step) {
         for (unsigned int i = 0; i < range; i += step) {
             delete sub_menu->option_names[sub_menu->num_options];
             auto *name = new String(i);
@@ -555,7 +555,7 @@ namespace display {
         }
     }
 
-    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, uint32_t start, unsigned int range, unsigned int step) {
+    void lcdDriver::add_submenu_values(menu_option_item *sub_menu, uint32_t start, unsigned int range, unsigned int step) {
         for (uint32_t i = start; i < range; i += step) {
             delete sub_menu->option_names[sub_menu->num_options];
             auto *name = new String(i);
@@ -564,8 +564,8 @@ namespace display {
         }
     }
 
-    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step,
-                                           const char* unit) {
+    void lcdDriver::add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step,
+                                       const char* unit) {
         for (unsigned int i = 0; i < range; i += step) {
             delete sub_menu->option_names[sub_menu->num_options];
             auto *name = new String(String(i) + " " + String(unit));
@@ -574,8 +574,8 @@ namespace display {
         }
     }
 
-    void lcdDriver::add_option_menu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range,
-                                           unsigned int step, const char* unit) {
+    void lcdDriver::add_submenu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range,
+                                       unsigned int step, const char* unit) {
         for (uint32_t i = start; i < range; i += step) {
             delete sub_menu->option_names[sub_menu->num_options];
             auto *name = new String(String(i) + " " + String(unit));
@@ -584,14 +584,14 @@ namespace display {
         }
     }
 
-    void lcdDriver::add_option_menu_item(menu_option_item *sub_menu, const char *name_new) {
+    void lcdDriver::add_submenu_item(menu_option_item *sub_menu, const char *name_new) {
         delete sub_menu->option_names[sub_menu->num_options];
         auto *name = new String(name_new);
         sub_menu->option_names[sub_menu->num_options] = name;
         sub_menu->num_options++;
     }
 
-    void lcdDriver::option_menu_set_selected(menu_option_item *menu, unsigned int selected) {
+    void lcdDriver::submenu_set_selected(menu_option_item *menu, unsigned int selected) {
         if (selected < menu->num_options) {
             menu->selected_option = selected;
         } else {

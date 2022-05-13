@@ -12,6 +12,7 @@
 #include <mt2Library/clone_configurer.h>
 #include <lcdDisplay/lcdDriver.h>
 //#include <radio/radioInterface.h>
+#include "settings_configurer.h"
 
 #define TRIGGER_PIN_NUMBER 3
 #define RELOAD_PIN_NUMBER 2
@@ -250,6 +251,21 @@ void boot_mode_clone_config(){
 
 void boot_mode_options(){
 
+    if (boot_mode != BOOT_MODE_GUN_CONFIG){
+        set_temp_boot_mode(BOOT_MODE_GUN_CONFIG);
+        SCB_AIRCR = 0x05FA0004;
+        return;
+    }
+
+    auto* menu = create_settings_config_menu(boot_mode_options);
+    hud.load_and_display_menu(menu);
+
+    clear_io_actions();
+    io_actions.trigger_method = select_menu;
+    io_actions.reload_method = increment_menu;
+    io_actions.select_method = decrement_menu;
+
+
 }
 
 void boot_mode_set_defaults(){
@@ -349,6 +365,11 @@ void setup() {
     if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW) {
         boot_mode = BOOT_MODE_UNKNOWN;
         // to start the main loop
+    }
+
+    // If the trigger and reload are held down on startup, display the factory reset menu
+    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW && digitalReadFast(RELOAD_PIN_NUMBER) == LOW ) {
+        boot_mode = BOOT_MODE_SET_DEFAULTS;
     }
 
     // Else check the eeprom to see what the last boot mode was and run the appropriate boot mode

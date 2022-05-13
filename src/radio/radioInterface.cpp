@@ -11,7 +11,7 @@ RH_RF69 radio(RADIO_CHIP_SELECT_PIN, RADIO_CHIP_INTERRUPT_PIN);
 
 namespace wireless {
 
-    void pass_radio_event_handles(){
+    void pass_sys_data(){
 
     }
 
@@ -46,8 +46,13 @@ namespace wireless {
         return event_handlers_;
     }
 
-    void acknowledgement_processor(acknowledgement_message *message) {
 
+    void radioInterface::keep_alive_processor(keep_alive_message *message) {
+        auto reply = new acknowledgement_message;
+        reply->sender_type = this->device_type;
+        reply->recipient_type = message->sender_type;
+
+        radio_send((uint8_t *)reply, sizeof(acknowledgement_message));
     }
 
     void system_command_processor(command_message *message) {
@@ -60,12 +65,7 @@ namespace wireless {
 
     void radioInterface::update_loop(){
         check_for_data();
-        if (last_controller_contact > 10 * 1000) {
-            // No controller contact for 10 seconds
-            keep_alive_message message;
-            message.sender_type = device_type;
-            radio.send()
-        }
+
     }
 
     void radioInterface::check_for_data() {
@@ -98,6 +98,12 @@ namespace wireless {
                                 system_command_processor(cmd);
                             }
                             break;
+                            case wireless::MessageTypes::keep_alive: {
+                                // Load the event into a struct
+                                auto *msg = (keep_alive_message *) buf;
+                                // Process the event
+                                keep_alive_processor(msg);
+                            }
                             default:
                                 break;
                         }
@@ -105,6 +111,13 @@ namespace wireless {
                 }
             }
         }
+    }
+
+    void radioInterface::radio_send(uint8_t *data, uint8_t len) {
+        if(this->last_transmission.acked){
+
+        }
+        radio.send(data, len);
     }
 
 } // radio

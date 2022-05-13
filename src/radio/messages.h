@@ -71,7 +71,6 @@ namespace wireless {
         GunEvents event_type = GunEvents::not_yet_defined;
         uint8_t event_data_1 = 0;
         uint8_t event_data_2 = 0;
-        uint8_t ack_id = 0;
     } __attribute__((packed));
 
     struct command_message {
@@ -85,14 +84,12 @@ namespace wireless {
         MessageTypes message_type = MessageTypes::keep_alive;
         DeviceTypes recipient_type = DeviceTypes::all_devices;
         DeviceTypes sender_type = DeviceTypes::not_defined_yet;
-        uint8_t ack_id = 1; // The id of this message
     } __attribute__((packed));
 
     struct acknowledgement_message {
         MessageTypes message_type = MessageTypes::acknowledgement;
         DeviceTypes recipient_type = DeviceTypes::not_defined_yet; // Address values are initialized when the message is sent
         DeviceTypes sender_type = DeviceTypes::not_defined_yet;
-        uint8_t ack_id = 0; // The id of the message that was acknowledged
     } __attribute__((packed));
 
 

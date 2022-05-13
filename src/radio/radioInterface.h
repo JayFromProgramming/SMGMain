@@ -27,14 +27,21 @@ namespace wireless {
             "OVERHEAT"
     };
 
+    typedef struct queuedMessage{
+        MessageTypes type; // Type of message
+        void* message; // Pointer to the message
+        bool sent; // Whether the message has been sent
+
+    } queuedMessage_t;
+
     // Wrapper for all different message types
-    typedef struct receipt{
+    typedef struct transmissionReceipt{
         MessageTypes type; // Type of message
         void* message; // Pointer to the message
         elapsedMillis age;
         uint8_t ack_id;
         bool acked; // true if the message has been acknowledged
-    } receipt_t;
+    } transmissionReceipt_t;
 
     struct radio_event_handlers {
         void (*on_fault)(RadioStates fault);
@@ -74,14 +81,19 @@ namespace wireless {
         DeviceTypes device_type = DeviceTypes::player_gun;
         game_event_handlers *event_handlers_ = nullptr;
         RadioStates state = RadioStates::UNKNOWN;
-        receipt_t receipts[];
+
     public:
         void init(DeviceTypes type, uint8_t id);
         game_event_handlers* get_handlers();
         void check_for_data();
         bool sendEvent(GunEvents event, uint8_t data, uint8_t data2) const;
-
+        transmissionReceipt_t last_transmission;
+        void
         void update_loop();
+
+        void radio_send(uint8_t *data, uint8_t len);
+
+        void keep_alive_processor(keep_alive_message *message);
     };
 
 } // radio

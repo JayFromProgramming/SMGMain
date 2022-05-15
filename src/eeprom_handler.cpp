@@ -13,6 +13,10 @@
 
 device_configs* device_config = nullptr;
 
+
+/**
+ * @brief A more compressed and optimized version of clone for storage in EEPROM
+ */
 typedef struct eeprom_preset {
     char name[14]{"Unnamed Clone"}; // Preset name used for display, max 14 characters
     teams team_id = mt2::NONE; // Team ID
@@ -40,11 +44,12 @@ typedef struct eeprom_preset {
     unsigned char parity_hit_delay = 0x00; // 3 bits of parity data plus the hit delay data
 } eeprom_preset;
 
-FLASHMEM int eepromPresetSize() {
-    return sizeof(eeprom_preset);
-}
-
-FLASHMEM int calcAddress(int index) {
+/**
+ * @brief Calculates the position of a given preset in EEPROM
+ * @param index - The index of the preset to calculate the position of
+ * @return The EEPROM address of the preset
+ */
+FLASHMEM int calculate_preset_index(int index) {
     unsigned short addr = index * (int) sizeof(clone) + PRESET_START_ADDRESS;
     if (addr + sizeof(clone) > EEPROM.length()) {
         return -1;
@@ -52,7 +57,12 @@ FLASHMEM int calcAddress(int index) {
     return addr;
 }
 
-FLASHMEM int calcParity(eeprom_preset *preset) {
+/**
+ * Calculates the checksum of a preset
+ * @param preset - The preset to calculate the checksum of
+ * @return The checksum of the preset
+ */
+FLASHMEM int calculate_checksum(eeprom_preset *preset) {
     int parity = 0;
     for (int i = 0; i < sizeof(eeprom_preset); i++) {
         // Make sure we don't count the parity byte
@@ -63,11 +73,23 @@ FLASHMEM int calcParity(eeprom_preset *preset) {
     return (parity % B111) << 5; // Parity is stored as ppp00000 where p is the parity
 }
 
-FLASHMEM char checkParity(eeprom_preset *preset) {
-    int parity = calcParity(preset);
+/**
+ * @brief Checks if the checksum of a preset is valid
+ * @param preset - The preset to check the checksum of
+ * @return True if the checksum is valid, false otherwise
+ */
+FLASHMEM bool check_checksum(eeprom_preset *preset) {
+    int parity = calculate_checksum(preset);
     return (char) (((preset->parity_hit_delay & B11100000) == parity) ? 1 : -1);
 }
 
+/**
+ * @brief Converts a compressed EEPROM optimized preset to a full preset
+ * @param raw - The raw EEPROM preset to convert
+ * @return A pointer to the full preset
+ * @warning The returned pointer must be freed by the caller
+ * @warning The passed eeprom_preset* is freed by this method
+ */
 FLASHMEM clone* eeprom_to_preset(eeprom_preset* raw){
     auto* preset = new clone();
     stpcpy(preset->name, raw->name);
@@ -100,12 +122,17 @@ FLASHMEM clone* eeprom_to_preset(eeprom_preset* raw){
     preset->time_limit = raw->time_limit;
     preset->max_respawns = raw->max_respawns;
     preset->hit_delay = static_cast<hit_delays>(raw->parity_hit_delay & B00011111);
-    preset->checksum_valid = checkParity(raw);
+    preset->checksum_valid = check_checksum(raw);
     delete raw; // Free the eeprom_preset struct as it is no longer needed
     return preset;
 }
 
-
+/**
+ * @brief Converts a full preset to a compressed EEPROM optimized preset
+ * @param preset - The full preset to convert
+ * @return A pointer to the compressed EEPROM preset
+ * @warning The returned pointer must be freed by the caller
+ */
 FLASHMEM eeprom_preset* preset_to_eeprom(clone* preset){
     auto* raw = new eeprom_preset();
     stpcpy(raw->name, preset->name);
@@ -134,15 +161,20 @@ FLASHMEM eeprom_preset* preset_to_eeprom(clone* preset){
     raw->death_delay = preset->death_delay;
     raw->time_limit = preset->time_limit;
     raw->max_respawns = preset->max_respawns;
-    char parity = calcParity(raw);
+    char parity = calculate_checksum(raw);
     raw->parity_hit_delay = parity | preset->hit_delay;
     return raw;
 }
 
-
+/**
+ * @brief Loads a preset from EEPROM
+ * @param preset_num - The preset number to load
+ * @return A pointer to the loaded preset
+ * @warning The returned pointer must be freed by the caller
+ */
 FLASHMEM clone* load_preset(uint8_t preset_num){
     auto* raw_preset = new eeprom_preset();
-    EEPROM.get(calcAddress(preset_num), *raw_preset);
+    EEPROM.get(calculate_preset_index(preset_num), *raw_preset);
     auto* preset = eeprom_to_preset(raw_preset);
     if (preset->checksum_valid == -1) {
 //        delete preset;
@@ -152,18 +184,28 @@ FLASHMEM clone* load_preset(uint8_t preset_num){
     return preset;
 }
 
+/**
+ * @brief Saves a preset to EEPROM
+ * @param preset_num - The preset number to save
+ * @param preset* - A pointer to the preset to save
+ */
 FLASHMEM void save_preset(uint8_t preset_num, clone* preset){
     auto* raw_preset = preset_to_eeprom(preset);
-    if (checkParity(raw_preset) == 1){
-        EEPROM.put(calcAddress(preset_num), *raw_preset);
+    if (check_checksum(raw_preset) == 1){
+        EEPROM.put(calculate_preset_index(preset_num), *raw_preset);
     }else{
         Serial.println("Parity calculation error");
     }
-    EEPROM.put(calcAddress(preset_num), *raw_preset);
+    EEPROM.put(calculate_preset_index(preset_num), *raw_preset);
     delete raw_preset;
 }
 
-
+/**
+ * @brief Loads all available presets from EEPROM
+ * @param length* - A pointer to an integer to store the length of the array
+ * @return A pointer to an array of preset pointers
+ * @warning The returned presets must be freed by the caller, and the array must be freed by the caller
+ */
 FLASHMEM clone** load_presets(int* length){
     auto* presets = new clone*[TOTAL_PRESETS];
     for (int i = 0; i < TOTAL_PRESETS; i++) {
@@ -173,6 +215,9 @@ FLASHMEM clone** load_presets(int* length){
     return presets;
 }
 
+/**
+ * @brief Sets all presets and system settings to their default values
+ */
 FLASHMEM void set_defaults(){ // Set all memory settings to default values and restart
     auto* default_preset = new clone();
 
@@ -188,67 +233,103 @@ FLASHMEM void set_defaults(){ // Set all memory settings to default values and r
     device_config->current_preset = 0;
     device_config->current_team = mt2::RED;
 
-    EEPROM.put(calcAddress(1), *device_config);
+    EEPROM.put(calculate_preset_index(1), *device_config);
 
     SCB_AIRCR = 0x05FA0004;
 }
 
+/**
+ * @breif Calculates the remaining space in EEPROM
+ * @return An integer representing the remaining space in EEPROM
+ */
 FLASHMEM int get_remaining_space(){
-    int start = calcAddress(0);
-    int end = calcAddress(TOTAL_PRESETS - 1);
+    int start = calculate_preset_index(0);
+    int end = calculate_preset_index(TOTAL_PRESETS - 1);
 
     int used_space = end - start;
     return EEPROM.length() - used_space;
 }
 
+/**
+ * @breif Returns the current boot mode
+ * @return A byte representing the current boot mode
+ */
 FLASHMEM unsigned char get_boot_mode(){
     if (device_config->temp_boot_mode != 0xFF) {
         unsigned char boot_mode = device_config->temp_boot_mode;
         device_config->temp_boot_mode = 0xFF;
-        EEPROM.put(calcAddress(1), *device_config);
+        EEPROM.put(1, *device_config);
         return boot_mode;
     } else {
         return device_config->boot_mode;
     }
 }
 
+/**
+ * @brief Sets the current boot mode
+ * @param boot_mode - A byte representing the new boot mode
+ */
 FLASHMEM void set_boot_mode(unsigned char mode) {
     device_config->boot_mode = mode;
-    EEPROM.put(calcAddress(1), *device_config);
+    EEPROM.put(1, *device_config);
 }
 
+/**
+ * @brief Sets a temporary boot mode to apply to the next boot cycle
+ * @param mode - A byte representing the new boot mode
+ */
 FLASHMEM void set_temp_boot_mode(unsigned char mode) {
     device_config->temp_boot_mode = mode;
-    EEPROM.put(calcAddress(1), *device_config);
+    EEPROM.put(1, *device_config);
 }
 
+/**
+ * @brief Gets the current device ID
+ * @return - A byte representing the current device ID
+ */
 FLASHMEM unsigned short get_device_id(){
     return device_config->device_id;
 }
 
+/**
+ * @brief Sets the current device ID
+ * @param id - A byte representing the new device ID
+ */
 FLASHMEM void set_device_id(unsigned short id) {
     device_config->device_id = id;
-    EEPROM.put(calcAddress(1), *device_config);
+    EEPROM.put(1, *device_config);
 }
 
+/**
+ * @brief Gets the current device configuration
+ * @return A pointer to a device_config struct
+ * @warning The returned device_config struct must be freed by the caller
+ */
 FLASHMEM device_configs* get_device_configs(){
     return device_config;
 }
-
+/**
+ * @brief Sets the current device configuration
+ * @param configs - A pointer to a device_config struct
+ */
 FLASHMEM void set_device_configs(device_configs* configs) {
-    EEPROM.put(calcAddress(1), *configs);
+    EEPROM.put(1, *configs);
 }
 
+/**
+ * @brief Initializes the device EEPROM
+ * @details On first boot or EEPROM format change, the EEPROM is initialized with default values
+ * otherwise all values are preserved
+ */
 FLASHMEM void init_eeprom(){
     EEPROM.begin();
-    if (EEPROM.read(calcAddress(0)) == EEPROM_RESET_FLAG) { // If the first byte is 0xFF,
-        // then the EEPROM has not been initialized on this board
+    if (EEPROM.read(0) != EEPROM_RESET_FLAG) { // If the first byte is not the correct flag set defaults
         set_defaults();
-        EEPROM.write(calcAddress(0), EEPROM_RESET_FLAG);
+        EEPROM.write(0, EEPROM_RESET_FLAG);
     }
 
     device_config = new device_configs();
-    EEPROM.get(calcAddress(1), *device_config);
+    EEPROM.get(0, *device_config);
 
     if (sizeof (device_configs) + 1 > PRESET_START_ADDRESS){
         #ifdef DEBUG

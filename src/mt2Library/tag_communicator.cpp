@@ -10,7 +10,7 @@
 using namespace mt2;
 
 event_handlers* handlers;
-unsigned char preShot[2];
+unsigned char pre_shot[2];
 
 void IR_init(){
     handlers = new event_handlers();
@@ -21,12 +21,19 @@ event_handlers* get_handlers(){
     return handlers;
 }
 
+/**
+ *  This is a method called by the main loop to check for new data from the IR receiver.
+ */
 void signalScan(){
-    if(IRScan()){
+    if(IR_available()){
         decodeMT2Data(get_buffer());
     }
 }
 
+/**
+ * Sends a MT2 encoded system command
+ * @param command - the command to be sent
+ */
 void sendCommand(system_commands command){
     unsigned char command_data[2];
     command_data[0] = SYSTEM_COMMAND;
@@ -35,6 +42,12 @@ void sendCommand(system_commands command){
     send(command_data, (unsigned short) 2);
 }
 
+/**
+ * Sends a MT2 encoded IR shot
+ * @param playerID - The ID of the player we are shooting as
+ * @param teamID - The ID of the team we are shooting for
+ * @param dmg - The amount of damage to be dealt
+ */
 void sendShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     unsigned char shot[2];
     shot[0] = B01111111 & playerID;
@@ -42,30 +55,46 @@ void sendShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     send(shot, (unsigned int) 14);
 }
 
+/**
+ * Builds a shot packet and stores it in a buffer, so it doesn't have to be rebuilt every shot
+ * @param playerID - The ID of the player we are shooting as
+ * @param teamID - The ID of the team we are shooting for
+ * @param dmg - The amount of damage to be dealt
+ */
 void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
-    preShot[0] = B01111111 & playerID;
-    preShot[1] = teamID << 6 | dmg << 2;
+    pre_shot[0] = B01111111 & playerID;
+    pre_shot[1] = teamID << 6 | dmg << 2;
 }
 
-// Use precalculated shot data to send shot instead of building it (disables interrupts)
+/**
+ * Sends a shot packet stored in the pre_shot buffer
+ * @return true if shot was sent, false if shot was not sent
+ */
 bool shoot(){
     noInterrupts();
-    return send(preShot, (unsigned int) 14);
+    return send(pre_shot, (unsigned int) 14);
     interrupts();
 }
 
-// Sends a clone object over IR
-FLASHMEM void sendClone(clone *clone){
+/**
+ * Sends a clone config over IR to any device that is listening
+ * @param clone - the clone to be sent
+ */
+void sendClone(clone *clone){
     unsigned char* array = build_clone_array(clone);
     send(array, (unsigned short) 40);
     delete array; // Array is no longer needed, release memory allocated to it
 }
 
-FLASHMEM void printClone(clone *clone){
+void printClone(clone *clone){
     print_clone_values(clone);
 }
 
-// Processes system commands and executes their assigned handler if one exists
+/**
+ * Processes any system commands received from the IR receiver,
+ * and calls the appropriate handler.
+ * @param command - the command to be processed
+ */
 void process_sys_command(const unsigned char command) {
     switch (command) {
         case ADMIN_KILL:
@@ -127,7 +156,11 @@ void process_sys_command(const unsigned char command) {
     }
 }
 
-void decodeMT2Data(unsigned char* data){
+/**
+ * Processes data received from the IR receiver, and calls the appropriate handlers.
+ * @param data* - A pointer to the IR receiver buffer
+ */
+void decodeMT2Data(uint8_t* data){
     uint_least8_t messageByte = data[0];
     // Check if the highest (first) bit of the first message byte is a 0
     if (messageByte & 0x80) { // This is a shot packet
@@ -143,10 +176,10 @@ void decodeMT2Data(unsigned char* data){
     } else { // This is where system packets are processed
         switch (messageByte){
             case ADD_HEALTH:
-                if (handlers->on_add_health != nullptr) handlers->on_add_health();
+                if (handlers->on_add_health != nullptr) handlers->on_add_health(data[1]);
                 break;
             case ADD_ROUNDS:
-                if (handlers->on_add_rounds != nullptr) handlers->on_add_rounds();
+                if (handlers->on_add_rounds != nullptr) handlers->on_add_rounds(data[1]);
                 break;
             case SYSTEM_DATA:
                 switch(data[1]){
@@ -163,13 +196,13 @@ void decodeMT2Data(unsigned char* data){
                 process_sys_command(data[1]);
                 break;
             case CLIP_PICKUP:
-                if (handlers->on_clip_pickup != nullptr) handlers->on_clip_pickup();
+                if (handlers->on_clip_pickup != nullptr) handlers->on_clip_pickup(data[1]);
                 break;
             case HEALTH_PICKUP:
-                if (handlers->on_health_pickup != nullptr) handlers->on_health_pickup();
+                if (handlers->on_health_pickup != nullptr) handlers->on_health_pickup(data[1]);
                 break;
             case FLAG_PICKUP:
-                if (handlers->on_flag_pickup != nullptr) handlers->on_flag_pickup();
+                if (handlers->on_flag_pickup != nullptr) handlers->on_flag_pickup(data[1]);
                 break;
             default:
                 break;
@@ -177,7 +210,13 @@ void decodeMT2Data(unsigned char* data){
     }
 }
 
-
+/**
+ * Helper function, sets game boolean flags
+ * @param preset - The clone struct to have its flags set
+ * @param flag -   The flag bitmask to use
+ * @param val -    The value to set the flag to
+ * @flag_select -  Which flag byte to set
+ */
 void set_game_flag(clone* preset, unsigned char flag, unsigned char val,
                    unsigned char flag_select){
     game_flag_setter(preset, flag, val, flag_select);

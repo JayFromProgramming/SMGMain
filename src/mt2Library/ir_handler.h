@@ -5,7 +5,9 @@
 #ifndef SMGMAIN_IR_HANDLER_H
 #define SMGMAIN_IR_HANDLER_H
 
-unsigned char * get_buffer();
+#include <cstdint>
+
+uint8_t* get_buffer();
 
 void transmitter_init();
 void receiver_init();
@@ -14,8 +16,8 @@ bool send(const unsigned char *data, unsigned int bits);
 
 bool send(const unsigned char *data, unsigned short bytes);
 
-char IRScan();
+bool IR_available();
 
 void transmitter_test();
 
-#endif //TLTPROJECT1_IR_HANDLER_H
+#endif //SMGMAIN_IR_HANDLER_H

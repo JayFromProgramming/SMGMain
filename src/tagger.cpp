@@ -26,7 +26,13 @@ void move_life_scores();
 // 1 = Just pulled, 0 = Released, -1 = Not released but is being held
 short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has been called
 
-FLASHMEM void configure_from_clone(mt2::clone* newClone){
+/**
+ * @brief Sets the taggers internal config states
+ * @details Sets internal config states to the values in the new configuration
+ * @usage This function is called when the tagger is first initialized, and when the gun gets cloned by a referee
+ * @param newClone - The new config to set the tagger to
+ */
+void configure_from_clone(mt2::clone* newClone){
     game_state->currentConfig = newClone;
 
     // The config firerate is stored as Rounds per minute, so we need to calculate the delay in milliseconds
@@ -42,8 +48,12 @@ FLASHMEM void configure_from_clone(mt2::clone* newClone){
     game_state->started = false;
 }
 
+/**
+ * @brief Processes reload requests from the user
+ * @details Called by the IO debouncer when the reload button is depressed, when reload is allowed it sets the reload
+ * flag and sets the reload timer to time the reload should be completed in milliseconds
+ */
 void on_reload(){
-    // Clear the interrupt flag
     if (game_state->reloading) {
         return;
     }
@@ -317,6 +327,12 @@ void restart_gun(){
 
 // End event handlers
 
+
+/**
+ * @brief Main tagger processing loop
+ * @details This function is called repeatedly by the main loop. It is responsible for processing received IR data, and
+ * for timed events that don't have an interval timer or associated interrupt.
+ */
 void tagger_loop(){
     // Called by loop() this is where main code logic goes
 
@@ -352,18 +368,36 @@ void tagger_loop(){
     signalScan();
 }
 
+/**
+ * @brief Provides a pointer to the current game state
+ * @return A pointer to the tagger_state struct
+ */
 FLASHMEM tagger_state* get_tagger_data_ptr(){
     return game_state;
 }
 
+/**
+ * @breief Provides a pointer to the event_handlers struct
+ * @return A pointer to the event_handlers struct
+ */
 FLASHMEM event_handlers* get_event_handler_ptr(){
     return handles;
 }
 
+/**
+ * @brief Provides a pointer to the score_data struct
+ * @return A pointer to the score data struct
+ */
 FLASHMEM score_data* get_score_data_ptr(){
     return score_data_ptr;
 }
 
+/**
+ * @brief This function is called to initialize the tagger
+ * @details This function is called once at the beginning of the program. It is responsible for initializing the tagger
+ * and setting up the event handlers and other data structures.
+ * @param audioPtr - Pointer to the audio interface
+ */
 FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     IR_init();
     audio_ptr = audioPtr;
@@ -404,7 +438,5 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
 
     // Load the current configuration
     configure_from_clone(load_preset(0));
-
-
 }
 

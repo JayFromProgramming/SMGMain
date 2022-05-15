@@ -63,6 +63,9 @@ bool backlight = true;
 
 namespace display {
 
+    /**
+     * @brief Initialize the LCD display
+     */
     void lcdDriver::displayInit() {
         lcd.init(240, 240, SPI_MODE3);
         pinMode(BACKLIGHT_PIN, OUTPUT);
@@ -80,6 +83,12 @@ namespace display {
 //        digitalWriteFast(BACKLIGHT_PIN, LOW);
     }
 
+    /**
+     * @brief Pass game data pointers to the display driver
+     * @param data - Pointer to a tagger_state struct
+     * @param score_t - Pointer to score_data struct
+     * @see tagger_state, score_data
+     */
     void lcdDriver::pass_data_ptr(tagger_state *data, score_data *score_t) {
         clips_str = static_cast<char *>(malloc(sizeof(char) * 10));
         ammo_str  = static_cast<char *>(malloc(sizeof(char) * 10));
@@ -93,8 +102,11 @@ namespace display {
     }
 
 
-    // Runs a hud update check to see if the hud needs to be updated if so it will update the hud
-    // This method has a variable execution time depending on if an update is needed or not
+    /**
+     * @brief Updates the display during the game loop
+     * @details This function is called every cycle of the game loop, but only updates the parts of the display that
+     * have changed since the last update. This reduces the amount of SPI traffic and makes the system more readable.
+     */
     void lcdDriver::update_hud() {
         // Check if any game state values have changed to determine if we need to update the screen
 
@@ -136,6 +148,14 @@ namespace display {
         }
     }
 
+    /**
+     * @brief Draws a timed progress circle, can be used to represent reloading and respawn time, etc.
+     * @details This function draws 2 circles one inside the other, the inner circle is black to allow the time text
+     * to be readable. The outer circle is slowly overwritten by lines of green to allow for a slowly moving line to
+     * fill the circle.
+     * @param remaining_time - The time remaining in the animation
+     * @param total_time   - The total time of the animation
+     */
     void lcdDriver::progress_circle(float remaining_time, float total_time) {
         if (this->already_progressing) {
             float remaining_reload_percent =  remaining_time / total_time;
@@ -183,10 +203,16 @@ namespace display {
         return (float)game_state->health / (float) game_state->max_health;
     }
 
+    /**
+     * Clears the entire screen
+     */
     void lcdDriver::clear_screen() {
         lcd.fillScreen(ST77XX_BLACK);
     }
 
+    /**
+     * Displayed when the game has not started yet
+     */
     void lcdDriver::tagger_init_screen() {
         lcd.fillScreen(ST77XX_BLACK);
         lcd.setCursor(0, 0);
@@ -214,6 +240,9 @@ namespace display {
 //        lcd.print(this->game_state->last_shot);
     }
 
+    /**
+     * @brief Draws the death screen containing the game over message and the score
+     */
     void lcdDriver::draw_death_screen() {
         clear_screen();
         lcd.fillScreen(ST77XX_RED);
@@ -239,6 +268,9 @@ namespace display {
         lcd.print(death_str);
     }
 
+    /**
+     * @brief Draws the health bar at the top of the screen
+     */
     void lcdDriver::draw_health_bar() {
         lcd.fillRect(0, 0, 128, 10, ST77XX_BLACK);
         lcd.setCursor(0, 0);
@@ -260,6 +292,9 @@ namespace display {
         }
     }
 
+    /**
+     * @brief Draws the ammo count
+     */
     void lcdDriver::draw_ammo_count() {
         sprintf(ammo_str, "%02d", game_state->ammo_count);
         lcd.setCursor(AMMO_TEXT_START_X, AMMO_TEXT_START_Y);
@@ -275,6 +310,9 @@ namespace display {
         lcd.print(ammo_str);
     }
 
+    /**
+     * @brief Draws the clip count
+     */
     void lcdDriver::draw_clip_count() {
         lcd.setCursor(CLIP_TEXT_START_X, CLIP_TEXT_START_Y);
         lcd.setTextSize(CLIP_TEXT_SIZE);
@@ -294,6 +332,9 @@ namespace display {
         lcd.print(clips_str);
     }
 
+    /**
+     * @brief Clears the area occupied by the ammo count
+     */
     void lcdDriver::clear_ammo_count() {
         int16_t  x1, y1;
         uint16_t w, h;
@@ -302,6 +343,9 @@ namespace display {
         lcd.fillRect(x1, y1, w, h, ST77XX_BLACK);
     }
 
+    /**
+     * @brief Clears the area occupied by the clip count
+     */
     void lcdDriver::clear_clip_count() {
         int16_t  x1, y1;
         uint16_t w, h;
@@ -310,6 +354,9 @@ namespace display {
         lcd.fillRect(x1, y1, w, h, ST77XX_BLACK);
     }
 
+    /**
+     * @brief Draws the progress circles remaining time string
+     */
     void lcdDriver::clear_reload_str() {
         int16_t x1, y1;
         uint16_t w, h;
@@ -323,20 +370,32 @@ namespace display {
         this->clear_screen();
     }
 
+    /**
+     * @brief Toggles the LCD backlight
+     */
     void lcdDriver::toggle_backlight() {
         digitalToggleFast(BACKLIGHT_PIN);
     }
 
     // ------------------------------------------------------MENU METHODS----------------------------------------------------//
 
+    /**
+     * Clears the display buffer
+     */
     void lcdDriver::clear_canvas(){
         canvas.fillScreen(ST77XX_BLACK);
     }
 
+    /**
+     * @brief Draws the display buffer to the LCD
+     */
     void lcdDriver::draw_canvas() { // Draws the canvas without blanking the screen
        lcd.drawRGBBitmap(0, 0, canvas.getBuffer(), 240, 240);
     }
 
+    /**
+     * @brief Draws the current menu to the display buffer
+     */
     void lcdDriver::draw_menu(){ // Draws the currently loaded menu
         clear_canvas();
         canvas.fillScreen(current_menu->background_color);
@@ -400,19 +459,36 @@ namespace display {
         draw_canvas();
     }
 
+    /**
+     * @details Loads a new menu and draws it on the screen.
+     * @param menu - A menu_holder pointer to the menu to be loaded.
+     * @note This menu makes a copy of the menu passed to it the original menu is not freed.
+     */
     void lcdDriver::load_free_display_menu(menu_holder* menu) {
         free_menu(current_menu);
         current_menu = new menu_holder(*menu);
         draw_menu();
     }
 
+    /**
+     * @details Loads a new menu and draws it on the screen.
+     * @param menu - A menu_holder pointer to the menu to be loaded.
+     * @note This menu makes a copy of the menu passed to it the original menu is not freed.
+     * @warning The old menu is not freed and will be lost if not freed before calling this method.
+     * @deprecated This method is prone to memory leaks and should not be used.
+     */
     void lcdDriver::load_and_display_menu(menu_holder *menu) {
-//        free_menu(current_menu);
-        // Make a copy of the new menu otherwise if the old menu is ceased to exist the
         this->current_menu = menu;
         this->draw_menu();
     }
 
+    /**
+     * @details Creates a new menu holder and returns a pointer to it.
+     * @param name - A string pointer to the name of the menu.
+     * @param text_color  - The color of the text in the menu.
+     * @param background_color  - The color of the background of the menu.
+     * @return A pointer to the newly created menu holder.
+     */
     menu_holder *lcdDriver::make_menu(const char *name, uint16_t text_color, uint16_t background_color) {
         auto *menu = new menu_holder;
         char* name_ptr = new char[strlen(name) + 1];
@@ -426,10 +502,22 @@ namespace display {
         return menu;
     }
 
+    /**
+     * @details Creates a new menu holder and returns a pointer to it.
+     * @param name - A string pointer to the name of the menu.
+     * @return A pointer to the newly created menu holder.
+     */
     menu_holder *lcdDriver::make_menu(const char *name) {
         return lcdDriver::make_menu(name, ST77XX_WHITE, ST77XX_BLACK);
     }
 
+    /**
+     * @details Creates a new menu item and returns a pointer to it.
+     * @param menu - A menu_holder pointer to the menu to which the item belongs.
+     * @param name - A string pointer to the name of the item.
+     * @param func - A function pointer to the function to be called when the item is selected.
+     * @return A pointer to the newly created menu item.
+     */
     void lcdDriver::add_menu_item(menu_holder *menu, const char *name, void (*func)()) {
         if (menu->num_items < MAX_MENU_ITEMS) {
             char* name_ptr = new char[strlen(name) + 1];
@@ -442,6 +530,14 @@ namespace display {
         }
     }
 
+    /**
+     * @details Creates a new menu item and returns a pointer to it.
+     * @param menu - A menu_holder pointer to the menu to which the item belongs.
+     * @param name - A string pointer to the name of the item.
+     * @param func - A function pointer with an int argument to be called when the item is selected.
+     * @param arg -  The argument to be passed to the function when it is called.
+     * @return A pointer to the newly created menu item.
+     */
     void lcdDriver::add_menu_item(menu_holder *menu, const char *name, void (*func)(int), int arg){
         if (menu->num_items < MAX_MENU_ITEMS) {
             char* name_ptr = new char[strlen(name) + 1];
@@ -455,6 +551,12 @@ namespace display {
         }
     }
 
+    /**
+     * @details Creates a new menu item and returns a pointer to it.
+     * @param menu - A menu_holder pointer to the menu to which the item belongs.
+     * @param name - A string pointer to the name of the item.
+     * @return A pointer to the newly created menu item.
+     */
     void lcdDriver::add_menu_item(menu_holder *menu, const char *name) {
         if (menu->num_items < MAX_MENU_ITEMS) {
             char* name_ptr = new char[strlen(name) + 1];
@@ -467,6 +569,9 @@ namespace display {
         }
     }
 
+    /**
+     * @details Increments what item is currently selected
+     */
     void lcdDriver::menu_increment() {
         if (current_menu->items[current_menu->selected_item].sub_menu != nullptr &&
             current_menu->items[current_menu->selected_item].sub_menu->is_active){
@@ -485,6 +590,9 @@ namespace display {
         draw_menu();
     }
 
+    /**
+     * @details Decrements what item is currently selected
+     */
     void lcdDriver::menu_decrement() {
         // Check if the current item has a sub menu, if so, go cycle through the sub menu items instead
         if (current_menu->items[current_menu->selected_item].sub_menu != nullptr &&
@@ -507,6 +615,10 @@ namespace display {
         draw_menu();
     }
 
+    /**
+     * @details Executes the function of the currently selected item, or it will select the sub menu if it exists
+     * @param select - A boolean values to indicate falling or rising edge
+     */
     void lcdDriver::menu_select(bool select) {
         if (select) {
             if (current_menu->items[current_menu->selected_item].sub_menu != nullptr) {
@@ -527,8 +639,17 @@ namespace display {
         }
     }
 
+    /**
+     * @details Adds a new submenu to the passed menu
+     * @param menu - The menu to add the sub menu to
+     * @param name - The name of the sub menu
+     * @param func - The function (int) to execute when the sub menu is exited
+     * @return A pointer to the new sub menu, nullptr if the sub menu could not be added
+     */
     menu_option_item *lcdDriver::add_submenu(menu_holder *menu, const char* name, void (*func)(int)) {
-
+        if (menu->num_items >= MAX_MENU_ITEMS) {
+            return nullptr;
+        }
         char* name_ptr = new char[strlen(name) + 1];
         strcpy(name_ptr, name);
         menu->items[menu->num_items].name = name_ptr;
@@ -546,6 +667,12 @@ namespace display {
         return item;
     }
 
+    /**
+     * @details Adds options to the passed sub menu in a range
+     * @param sub_menu* - The sub menu to add the options to
+     * @param range - The end of the range of options to add
+     * @param step  - The step size of the range
+     */
     void lcdDriver::add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step) {
         for (unsigned int i = 0; i < range; i += step) {
             delete sub_menu->option_names[sub_menu->num_options];
@@ -555,6 +682,13 @@ namespace display {
         }
     }
 
+    /**
+     * @details Adds options to the passed sub menu in a range
+     * @param sub_menu* - A pointer to the sub menu to add the options to
+     * @param start - The start of the range of options to add
+     * @param range - The end of the range of options to add
+     * @param step  - The step size of the range
+     */
     void lcdDriver::add_submenu_values(menu_option_item *sub_menu, uint32_t start, unsigned int range, unsigned int step) {
         for (uint32_t i = start; i < range; i += step) {
             delete sub_menu->option_names[sub_menu->num_options];
@@ -564,6 +698,13 @@ namespace display {
         }
     }
 
+    /**
+     * @details Adds options to the passed sub menu in a range
+     * @param sub_menu - A pointer to the sub menu to add the options to
+     * @param range - The end of the range of options to add
+     * @param step - The step size of the range
+     * @param unit - A unit string to append to the end of the option value
+     */
     void lcdDriver::add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step,
                                        const char* unit) {
         for (unsigned int i = 0; i < range; i += step) {
@@ -574,6 +715,14 @@ namespace display {
         }
     }
 
+    /**
+     * @details Adds options to the passed sub menu in a range
+     * @param sub_menu - A pointer to the sub menu to add the options to
+     * @param start - The start of the range of options to add
+     * @param range - The end of the range of options to add
+     * @param step - The step size of the range
+     * @param unit - A unit string to append to the end of the option value
+     */
     void lcdDriver::add_submenu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range,
                                        unsigned int step, const char* unit) {
         for (uint32_t i = start; i < range; i += step) {
@@ -584,6 +733,11 @@ namespace display {
         }
     }
 
+    /**
+     * @details Adds a single option to the passed sub menu
+     * @param sub_menu - A pointer to the sub menu to add the option to
+     * @param name_new - The name of the option to add
+     */
     void lcdDriver::add_submenu_item(menu_option_item *sub_menu, const char *name_new) {
         delete sub_menu->option_names[sub_menu->num_options];
         auto *name = new String(name_new);
@@ -591,6 +745,11 @@ namespace display {
         sub_menu->num_options++;
     }
 
+    /**
+     * Sets the default selected option for the passed sub menu
+     * @param menu  - A pointer to the sub menu to set the default option for
+     * @param selected - The index of the option to set as the default
+     */
     void lcdDriver::submenu_set_selected(menu_option_item *menu, unsigned int selected) {
         if (selected < menu->num_options) {
             menu->selected_option = selected;
@@ -599,6 +758,11 @@ namespace display {
         }
     }
 
+    /**
+     * @detals Frees the memory allocated to a menu_holder and all of its associated pointers
+     * @param menu - A pointer to the menu_holder to free
+     * @bug It just doesn't work :(
+     */
     void lcdDriver::free_menu(menu_holder *menu) {
         if (menu != nullptr) {
             for (unsigned int i = 0; i < menu->num_items; i++) {

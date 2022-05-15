@@ -158,7 +158,7 @@ void boot_mode_game(){
     io_actions.select_method =  &display::lcdDriver::toggle_backlight;
 
     hud.pass_data_ptr(get_tagger_data_ptr(), get_score_data_ptr()); // pass the tagger data pointer to the lcd driver
-    tagger_events = get_event_handler_ptr() ; // get the tagger event pointer
+    tagger_events = get_event_handler_ptr(); // get the tagger event pointer
 //    digitalWrite(LED_BUILTIN, LOW);
     hud.clear();
 }

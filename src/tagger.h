@@ -42,6 +42,9 @@
 #include <mt2Library/tag_communicator.h>
 #include <Bounce.h>
 
+/**
+ * @brief This struct contains current game state values.
+ */
 struct tagger_state {
     mt2::clone *currentConfig = nullptr;
     elapsedMillis last_shot;
@@ -63,6 +66,9 @@ struct tagger_state {
     volatile uint8_t respawns_remaining = 0;
 };
 
+/**
+ * @brief This struct contains the current game scoring values.
+ */
 struct score_data {
     volatile uint16_t      rounds_fired_game = 0;
     volatile uint16_t      rounds_fired_life = 0;

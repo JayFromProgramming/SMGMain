@@ -5,16 +5,14 @@
 
 #include "ir_handler.h"
 #include "mt2_protocol.h"
+#include <pinout.h>
 
-#define IR_PIN 8
 #define IR_FREQ 56000
 #define IR_DUTY_CYCLE 128
 
-#define RECEIVE_PIN 14
-
 #define IR_RECEIVE_EOM_TIMEOUT 3400 // How long after an IR pulse to determine it's the end of the message
 
-uint16_t transmission_buffer[1024];
+uint_fast16_t transmission_buffer[1024];
 IntervalTimer transmission_timer; // Timer for sending IR signals
 volatile uint_fast16_t  transmission_position = 0; // Used to count where in the buffer we are
 volatile uint_fast16_t  transmission_length;
@@ -33,7 +31,7 @@ void receive_pulse();
 
 
 FLASHMEM void transmitter_init() {
-    pinMode(IR_PIN, OUTPUT);
+    pinMode(MUZZLE_IR_FLASH, OUTPUT);
     transmission_position = 0;
     transmission_length = 0;
     transmission_in_progress = false;
@@ -41,22 +39,23 @@ FLASHMEM void transmitter_init() {
 
 void receiver_attach(){
     // Attach interrupts to the reception pin for falling and rising edges of the signal pulses
-    attachInterrupt(RECEIVE_PIN, receive_pulse, CHANGE);
+    attachInterrupt(IR_IN, receive_pulse, CHANGE);
 }
 
 void receiver_detach(){
-    detachInterrupt(RECEIVE_PIN);
+    detachInterrupt(IR_IN);
 }
 
 FLASHMEM void receiver_init() {
-    pinMode(RECEIVE_PIN, INPUT);
+    pinMode(MUZZLE_IR_FLASH, INPUT);
     receiver_attach();
 }
 
-/*
- *  This function is used to decode the IR signal
+/**
+ * @brief Decodes received IR pulses into valid mt2 data
+ * @param total_pulses Total pulses received
+ * @return True if a valid mt2 signal was received false if signal was invalid
  */
-
 FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
 //    Serial.println("Decoding possible MT2 signal"); // decodePulseWidthData might work if this doesn't
 
@@ -78,7 +77,7 @@ FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
     MT2_SPACE_LENGTH - MT2_TOLERANCE) {
 //        Serial.println("Valid space after header, continuing");
     } else {
-        Serial.println("Invalid space after header, aborting");
+//        Serial.println("Invalid space after header, aborting");
         return false;
     }
 
@@ -131,10 +130,13 @@ FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
 }
 
 
-/*
- * This function is used to encode the binary data into IR pulse timings for the IR transmitter.
+/**
+ * @brief Encodes data bytes into mt2 timed pulses
+ * @param data An array of bytes to transmit
+ * @param bits Total bits to transmit
+ * @return Returns the total pulses to transmit
  */
-uint16_t encodeMT2(const unsigned char *data, unsigned int bits){
+uint16_t encodeMT2(const uint8_t *data, uint_fast32_t bits){
 //    Serial.println("Calculating timings...");
     transmission_length = 2;
     transmission_buffer[0] = MT2_HEADER_LENGTH; // Header pulse is 2400us on
@@ -157,19 +159,31 @@ uint16_t encodeMT2(const unsigned char *data, unsigned int bits){
     return transmission_length - 1; // Return the length of the transmission_buffer minus last space
 }
 
-// This function is used to send the IR signal to the IR transmitter in bytes
-bool send(const unsigned char *data, unsigned short bytes){
-    return send(data, (unsigned int) bytes*8);
+/**
+ * @brief Sends data over the IR transmitter
+ * @param data An array of bytes to transmit
+ * @param bytes Total bytes to send
+ * @return True if transmission started, false if transmitter was busy
+ * @note A returned value of true does not mean transmission was successful, only that it has started
+ */
+bool send(const uint8_t *data, uint16_t bytes){
+    return send(data, (uint32_t) bytes*8);
 }
 
 
-// Send data in a bit count
-bool send(const unsigned char *data, unsigned int bits){
+/**
+ * @brief Sends data over the IR transmitter
+ * @param data An array of bytes to transmit
+ * @param bits Total bits to send
+ * @return True if transmission started, false if transmitter was busy
+ * @note A returned value of true does not mean transmission was successful, only that it has started
+ */
+bool send(const uint8_t *data, uint32_t bits){
     // Flush the transmission buffer
     if (transmission_in_progress){
         return false;
     }
-    for (unsigned short & i : transmission_buffer){
+    for (uint_fast16_t & i : transmission_buffer){
         i = 0;
     }
     int trans_length = encodeMT2(data, bits);
@@ -189,19 +203,20 @@ bool send(const unsigned char *data, unsigned int bits){
 }
 
 void transmit_finished(){
-    analogWrite(IR_PIN, 0);
+    noTone(MUZZLE_IR_FLASH);
     transmission_in_progress = false;
     if (on_transmission_complete != nullptr) on_transmission_complete();
+    receiver_attach(); // Reattach the receiver
 }
 
 // Custom IR transmitter method using interval timer
-FASTRUN void transmit_method(){
-    noInterrupts(); // Prevent interrupts while we are changing output state of the IR transmitter
+void transmit_method(){
+    cli(); // Prevent interrupts while we are changing output state of the IR transmitter
     if (transmission_position % 2){
         // Connect the IR pin to the PWM generator
-        tone(IR_PIN, IR_FREQ);
+        tone(MUZZLE_IR_FLASH, IR_FREQ);
     } else {
-        noTone(IR_PIN);
+        noTone(MUZZLE_IR_FLASH);
     }
     if (transmission_position >= transmission_length){
         transmission_timer.end();
@@ -209,7 +224,7 @@ FASTRUN void transmit_method(){
     }
     transmission_timer.update(transmission_buffer[transmission_position]);
     transmission_position++;
-    interrupts(); // Re-enable interrupts
+    sei(); // Re-enable interrupts
 }
 
 void transmit_start(){
@@ -217,7 +232,8 @@ void transmit_start(){
 //    analogWriteFrequency(IR_PIN, IR_FREQ * 9);
 //    analogWriteResolution(8);
 //    analogWrite(IR_PIN, IR_DUTY_CYCLE);
-    tone(IR_PIN, IR_FREQ);
+    tone(MUZZLE_IR_FLASH, IR_FREQ);
+    receiver_detach(); // Detach the IR receiver during transmission
     // Set the IR_PIN to output a high voltage
     transmission_timer.priority(1); // Set the timer to the highest priority
     transmission_in_progress = true;
@@ -229,7 +245,7 @@ void transmitter_test(){
     // Send a 56khz carrier signal for 5ms
 
     // Flush the transmission buffer
-    for (unsigned short & i : transmission_buffer){
+    for (uint_fast16_t & i : transmission_buffer){
         i = 0;
     }
 
@@ -254,7 +270,7 @@ uint8_t* get_buffer(){
 
 // This method is called when the IR receiver changes state
 FASTRUN void receive_pulse(){
-    noInterrupts() // Prevent interrupts while we are logging the pulse
+    cli() // Prevent interrupts while we are logging the pulse
     if(!received_pulse_position){
         received_pulse_buffer[received_pulse_position] = received_pulse_timer; // Store the current timer value in the buffer
         received_pulse_position++; // Increment the position in the buffer
@@ -262,11 +278,11 @@ FASTRUN void receive_pulse(){
         received_pulse_position = 0; // Reset the receive position to the start of the buffer
     }
     received_pulse_timer = 0; // Reset the timer to 0 (As the timer is always counting up)
-    interrupts() // Re-enable interrupts
+    sei() // Re-enable interrupts
 }
 
 void flush_pulse_buffer(){
-    for (unsigned short & i : received_pulse_buffer){
+    for (uint_fast16_t & i : received_pulse_buffer){
         i = 0;
     }
     received_pulse_position = 0;

@@ -39,7 +39,7 @@ void sendCommand(system_commands command){
     command_data[0] = SYSTEM_COMMAND;
     command_data[1] = command;
 //    command_data[2] = TERMINATION_LITERAL;
-    send(command_data, (unsigned short) 2);
+    send(command_data, (uint16_t) 2);
 }
 
 /**
@@ -52,7 +52,7 @@ void sendShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     unsigned char shot[2];
     shot[0] = B01111111 & playerID;
     shot[1] = teamID << 6 | dmg << 2;
-    send(shot, (unsigned int) 14);
+    send(shot, (uint32_t) 14);
 }
 
 /**
@@ -72,7 +72,7 @@ void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
  */
 bool shoot(){
     noInterrupts();
-    return send(pre_shot, (unsigned int) 14);
+    return send(pre_shot, (uint32_t) 14);
     interrupts();
 }
 
@@ -85,7 +85,10 @@ void sendClone(clone *clone){
     send(array, (unsigned short) 40);
     delete array; // Array is no longer needed, release memory allocated to it
 }
-
+/**
+ * @deprecated
+ * @param clone
+ */
 void printClone(clone *clone){
     print_clone_values(clone);
 }

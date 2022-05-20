@@ -394,4 +394,4 @@ void print_clone_values(clone* preset) {
     Serial.printf(F("Max respawns: %d\n"), preset->max_respawns);
 }
 
-#endif //TLTPROJECT1_CLONE_PRESET_BUILDER_H
+#endif //SMGMAIN_CLONE_PRESET_BUILDER_H

@@ -14,15 +14,9 @@
 //#include <radio/radioInterface.h>
 #include "settings_configurer.h"
 
-#define TRIGGER_PIN_NUMBER 3
-#define RELOAD_PIN_NUMBER 2
-#define SELECT_PIN_NUMBER 20
+#include <pinout.h>
 
-#define BATTERY_PIN_NUMBER 5
-
-#define DEVICE_ID 0x01
-
-extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype
+extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype for cpu throttling
 
 void boot_mode_game();
 void boot_mode_ref();
@@ -31,26 +25,32 @@ void boot_mode_sys_info();
 void boot_mode_clone_config();
 void boot_menu();
 
+display::lcdDriver hud = display::lcdDriver();
+//wireless::radioInterface radio = wireless::radioInterface();
+audio_interface::audio_interface audio = audio_interface::audio_interface();
+uint16_t next_loop_time = 0;
+event_handlers* tagger_events = nullptr;
 
 //IntervalTimer io_refresh_timer;
 
-Bounce trigger_button = Bounce(TRIGGER_PIN_NUMBER, 5);
-Bounce reload_button = Bounce(RELOAD_PIN_NUMBER, 5);
-Bounce select_button = Bounce(SELECT_PIN_NUMBER, 5);
+Bounce trigger_button = Bounce(IO_TRIGGER, 5);
+Bounce reload_button = Bounce(IO_RELOAD, 5);
+Bounce mode_button = Bounce(IO_MODE, 5);
 
 struct button_methods {
   void (*trigger_method)(bool state) = nullptr;
   void (*shot_check_method)(Bounce* passthrough) = nullptr;
   void (*reload_method)()  = nullptr;
-  void (*select_method)()  = nullptr;
+  void (*mode_method)()  = nullptr;
 };
 
 button_methods io_actions;
 
 void clear_io_actions() {
+    // Read button states to clear any waiting
     io_actions.trigger_method = nullptr;
     io_actions.reload_method = nullptr;
-    io_actions.select_method = nullptr;
+    io_actions.mode_method = nullptr;
 }
 
 enum boot_modes: uint8_t {
@@ -80,7 +80,7 @@ volatile boot_modes boot_mode;
 void io_refresh(){ // Called every .25 ms
   trigger_button.update();
   reload_button.update();
-  select_button.update();
+  mode_button.update();
   if (io_actions.shot_check_method != nullptr) {
         io_actions.shot_check_method(&trigger_button);
   }
@@ -99,19 +99,12 @@ void io_refresh(){ // Called every .25 ms
         io_actions.reload_method();
       }
   }
-  if (select_button.fallingEdge()){
-      if (io_actions.select_method != nullptr){
-        io_actions.select_method();
+  if (mode_button.fallingEdge()){
+      if (io_actions.mode_method != nullptr){
+        io_actions.mode_method();
       }
   }
 }
-
-
-display::lcdDriver hud = display::lcdDriver();
-//wireless::radioInterface radio = wireless::radioInterface();
-audio_interface::audio_interface audio = audio_interface::audio_interface();
-uint16_t next_loop_time = 0;
-event_handlers* tagger_events = nullptr;
 
 void increment_menu(){
     hud.menu_increment();
@@ -126,20 +119,38 @@ void select_menu(bool select){
 }
 
 float read_battery_voltage(){
-    float batVal = analogRead(BATTERY_PIN_NUMBER);
+    float batVal = analogRead(BATT_VOLT);
     float batVoltage = (batVal * 3.3f) / 1024;
     return batVoltage;
 }
 
-//void overheat_method() {
-//    // In the event of the main cpu overheating we reduce the system clock to .75MHz and stop the main loop.
-//    // We will also attach a low temp interrupt to the main cpu to restart the system clock once the cpu has cooled down.
-//    set_arm_clock(750000);
-//    hud.override_text((String *) "Main CPU Overheating\nShutting Down");
-//
-//}
+void overheat_method() {
+    // In the event of the main cpu overheating we reduce the system clock to .75MHz and stop the main loop.
+    // We will also attach a low temp interrupt to the main cpu to restart the system clock once the cpu has cooled down.
 
-//#define DEBUG_MODE
+    char format_text[124];
+
+    sprintf(format_text, "CPU TEMP: %.2f\n"
+                         "MAX TEMP: 70C\n", InternalTemperatureClass::readTemperatureC());
+
+    String info(format_text);
+
+    hud.display_alert((String *) "CPU OVERHEATING", &info);
+    set_arm_clock(750000);
+}
+
+void bad_battery_method(float_t battery_volts){
+    char format_text[124];
+
+    sprintf(format_text, "VOLTAGE: %.2f Volts\n"
+                         "Min Volts: %.2f Volts\n"
+                         "Max Volts: %.2f Volts", battery_volts, 7.f, 9.f);
+
+    String info(format_text);
+
+    hud.display_alert((String *) "BAD BATTERY!", &info);
+    set_arm_clock(750000);
+}
 
 void boot_mode_game(){
 
@@ -155,7 +166,7 @@ void boot_mode_game(){
     io_actions.trigger_method = nullptr;
     io_actions.shot_check_method = &shot_check;
     io_actions.reload_method =  &on_reload;
-    io_actions.select_method =  &display::lcdDriver::toggle_backlight;
+    io_actions.mode_method =  &display::lcdDriver::toggle_backlight;
 
     hud.pass_data_ptr(get_tagger_data_ptr(), get_score_data_ptr()); // pass the tagger data pointer to the lcd driver
     tagger_events = get_event_handler_ptr(); // get the tagger event pointer
@@ -164,8 +175,9 @@ void boot_mode_game(){
 }
 
 void transmit_clone(int clone_id){
-//    load_preset(clone_id);
-      hud.clear();
+    auto* to_send = load_preset(clone_id);
+    sendClone(to_send);
+    hud.clear();
 }
 
 void boot_mode_clone(){
@@ -186,7 +198,7 @@ void boot_mode_clone(){
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 
 }
 
@@ -212,7 +224,7 @@ void boot_mode_ref(){
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 
 }
 
@@ -224,7 +236,7 @@ void launch_clone_config_menu(int clone_id){
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 }
 
 void boot_mode_clone_config(){
@@ -245,7 +257,7 @@ void boot_mode_clone_config(){
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 
 }
 
@@ -263,7 +275,7 @@ void boot_mode_options(){
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 
 
 }
@@ -285,7 +297,7 @@ void boot_mode_set_defaults(){
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 }
 
 void boot_menu(){
@@ -308,7 +320,7 @@ void boot_menu(){
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 }
 
 void boot_mode_sys_info() { // Display system information, does not override current boot mode
@@ -340,7 +352,7 @@ void boot_mode_sys_info() { // Display system information, does not override cur
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;
-    io_actions.select_method = decrement_menu;
+    io_actions.mode_method = decrement_menu;
 
     boot_mode = BOOT_MODE_SYS_INFO;
 }
@@ -351,24 +363,30 @@ void setup() {
     Serial.println("Starting...");
 #endif
     init_eeprom();
-    pinMode(TRIGGER_PIN_NUMBER, INPUT_PULLUP);
-    pinMode(RELOAD_PIN_NUMBER, INPUT_PULLUP);
-    pinMode(SELECT_PIN_NUMBER, INPUT_PULLUP);
-    pinMode(BATTERY_PIN_NUMBER, INPUT);
+    pinMode(IO_TRIGGER, INPUT_PULLUP);
+    pinMode(IO_MODE, INPUT_PULLUP);
+    pinMode(IO_RELOAD, INPUT_PULLUP);
+    pinMode(IO_SELECT, INPUT_PULLUP);
+    pinMode(BATT_VOLT, INPUT);
+    // Make sure all spi cs pins are high before initialization
+    digitalWriteFast(DISPLAY_CHIP_SELECT, HIGH);
+    digitalWriteFast(RADIO_CHIP_SELECT, HIGH);
 
     display::lcdDriver::displayInit(); // Initialize the LCD display
 //    io_refresh_timer.begin(io_refresh, 250);
 
+    InternalTemperatureClass::attachHighTempInterruptCelsius(70.f, overheat_method);
+
     boot_mode = static_cast<boot_modes>(get_boot_mode());
 
     // If the trigger is held down on startup, display the boot menu
-    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW) {
+    if (digitalReadFast(IO_TRIGGER) == LOW) {
         boot_mode = BOOT_MODE_UNKNOWN;
         // to start the main loop
     }
 
     // If the trigger and reload are held down on startup, display the factory reset menu
-    if (digitalReadFast(TRIGGER_PIN_NUMBER) == LOW && digitalReadFast(RELOAD_PIN_NUMBER) == LOW ) {
+    if (digitalReadFast(IO_TRIGGER) == LOW && digitalReadFast(IO_RELOAD) == LOW ) {
         boot_mode = BOOT_MODE_SET_DEFAULTS;
     }
 
@@ -422,32 +440,20 @@ int split(const String& command, String pString[4], int i, char delimiter, int m
 // Main loop this runs once every 20ms or 50Hz while the tagger and hud updates run audio interrupts are disabled
 void loop() {
     next_loop_time = micros() + (20 * 1000);
-    io_refresh();
 
     switch (boot_mode){
         case BOOT_MODE_GAME:
             tagger_loop(); // Run all main tagger functions
             hud.update_hud(); // Update the HUD
             break;
-        case BOOT_MODE_REF: // All Ref functions are interrupt based so no loop is required
-            break;
+        case BOOT_MODE_REF: // All these boot modes are menu based so no loop is required
         case BOOT_MODE_CLONE_CONFIG:
-            // Not implemented
-            break;
         case BOOT_MODE_CLONE_GUN:
-            // Not implemented
-            break;
         case BOOT_MODE_GUN_CONFIG:
-            // Not implemented
-            break;
         case BOOT_MODE_SYS_INFO:
-            // Not implemented
-            break;
         case BOOT_MODE_UNKNOWN:
-            break;
         default:
             break;
-            // Do nothing if no boot mode is selected
     }
 
 
@@ -474,7 +480,5 @@ void loop() {
         }
     }
 
-    while (micros() < next_loop_time) {
-    }
-
+    while (micros() < next_loop_time) io_refresh(); // Just check IO while waiting for next loop
 }

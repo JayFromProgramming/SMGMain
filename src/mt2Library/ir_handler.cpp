@@ -21,7 +21,7 @@ volatile uint_fast16_t  transmission_length;
 bool transmission_in_progress = false; // Used to determine if we are currently sending IR signals
 void (*on_transmission_complete)() = nullptr;
 
-uint16_t received_pulse_buffer[1024];
+uint_fast16_t received_pulse_buffer[1024];
 volatile uint_fast16_t  received_pulse_position = 0; // Used to count where in the buffer we are
 elapsedMicros received_pulse_timer; // Timer for receiving IR signals
 

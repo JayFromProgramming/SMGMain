@@ -368,7 +368,7 @@ void setup() {
     pinMode(IO_RELOAD, INPUT_PULLUP);
     pinMode(IO_SELECT, INPUT_PULLUP);
     pinMode(BATT_VOLT, INPUT);
-    // Make sure all spi cs pins are high before initialization
+//     Make sure all spi cs pins are high before initialization
     digitalWriteFast(DISPLAY_CHIP_SELECT, HIGH);
     digitalWriteFast(RADIO_CHIP_SELECT, HIGH);
 
@@ -378,6 +378,10 @@ void setup() {
     InternalTemperatureClass::attachHighTempInterruptCelsius(70.f, overheat_method);
 
     boot_mode = static_cast<boot_modes>(get_boot_mode());
+
+//    boot_mode = BOOT_MODE_UNKNOWN;
+
+    boot_mode = BOOT_MODE_GAME;
 
     // If the trigger is held down on startup, display the boot menu
     if (digitalReadFast(IO_TRIGGER) == LOW) {
@@ -479,6 +483,6 @@ void loop() {
             display::lcdDriver::toggle_backlight();
         }
     }
-
+    io_refresh();
     while (micros() < next_loop_time) io_refresh(); // Just check IO while waiting for next loop
 }

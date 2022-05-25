@@ -49,7 +49,7 @@
 #define MAX_OPTION_MENU_OPTIONS  300
 #define MAX_OPTION_LENGTH   32
 
-Adafruit_ST7789 lcd = Adafruit_ST7789(DISPLAY_CHIP_SELECT, DISPLAY_DC, DISPLAY_RST);
+Adafruit_ST7789 lcd = Adafruit_ST7789(DISPLAY_CHIP_SELECT, DISPLAY_DC, -1);
 
 // Define a canvas
 GFXcanvas16 canvas(240, 240);
@@ -62,7 +62,7 @@ namespace display {
      * @brief Initialize the LCD display
      */
     void lcdDriver::displayInit() {
-        lcd.init(240, 240, SPI_MODE0);
+        lcd.init(240, 240, SPI_MODE3);
         pinMode(DISPLAY_BACKLIGHT, OUTPUT);
         digitalWriteFast(DISPLAY_BACKLIGHT, HIGH);
         lcd.setRotation(2);

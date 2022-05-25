@@ -6,7 +6,7 @@
 
 #include <EEPROM.h>
 
-#define EEPROM_RESET_FLAG 0x1E // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
+#define EEPROM_RESET_FLAG 0x1C // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
 
 #define PRESET_START_ADDRESS 0x1F // EEPROM address where presets start ( 0x1F = 31 )
 #define TOTAL_PRESETS 12
@@ -324,12 +324,12 @@ FLASHMEM void set_device_configs(device_configs* configs) {
 FLASHMEM void init_eeprom(){
     EEPROM.begin();
     if (EEPROM.read(0) != EEPROM_RESET_FLAG) { // If the first byte is not the correct flag set defaults
-        set_defaults();
         EEPROM.write(0, EEPROM_RESET_FLAG);
+        set_defaults();
     }
 
     device_config = new device_configs();
-    EEPROM.get(0, *device_config);
+    EEPROM.get(1, *device_config);
 
     if (sizeof (device_configs) + 1 > PRESET_START_ADDRESS){
         #ifdef DEBUG

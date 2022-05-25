@@ -67,7 +67,6 @@ void on_reload(){
 }
 
 void shot_check(Bounce *bounce_ptr){
-
     if (bounce_ptr->fallingEdge()) {
         trigger_down = 1;
     } else if (bounce_ptr->risingEdge()) {
@@ -75,6 +74,7 @@ void shot_check(Bounce *bounce_ptr){
     } else {
         if (trigger_down == 1) trigger_down = -1;
     }
+
     game_state->currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
     if (game_state->last_shot > game_state->shot_interval && !game_state->reloading) {
         if (game_state->ammo_count > 0) {

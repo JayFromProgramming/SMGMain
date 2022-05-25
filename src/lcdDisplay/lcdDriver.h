@@ -39,6 +39,7 @@ namespace display {
     class lcdDriver {
 
     private:
+        bool displaying_alert = false;
         tagger_state* game_state = nullptr;
         score_data* score = nullptr;
 
@@ -80,7 +81,6 @@ namespace display {
         float calc_health_percentage();
 
     public:
-
         static void displayInit();
 
         void pass_data_ptr(tagger_state *data, score_data *score_t);
@@ -89,7 +89,9 @@ namespace display {
 
         void clear(); // Clears the display
 
-//        void override_text(String* text);
+        void display_alert(String *title, String *info);
+
+        void clear_alert();
 
         static void toggle_backlight();
 
@@ -145,6 +147,7 @@ namespace display {
         static void
         add_submenu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range, unsigned int step,
                            const char *unit);
+
     };
 
 } // display

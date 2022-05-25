@@ -9,18 +9,13 @@
 //                             ST77XX_GREEN);
 
 #include "lcdDriver.h"
+#include <pinout.h>
 #include "../../.pio/libdeps/teensylc/Adafruit GFX Library/Adafruit_GFX.h"
 
 #include "Adafruit-ST7735-Library-master/Adafruit_ST7789.h"
 //#include <Adafruit_GFX.h>
 #include <SPI.h>
 #include <gfxfont.h>
-
-#define TFT_CS        10
-#define TFT_RST       9 // Or set to -1 and connect to Arduino RESET pin
-#define TFT_DC        14
-
-#define BACKLIGHT_PIN 15
 
 #define LCD_HEIGHT    240
 
@@ -54,7 +49,7 @@
 #define MAX_OPTION_MENU_OPTIONS  300
 #define MAX_OPTION_LENGTH   32
 
-Adafruit_ST7789 lcd = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ST7789 lcd = Adafruit_ST7789(DISPLAY_CHIP_SELECT, DISPLAY_DC, DISPLAY_RST);
 
 // Define a canvas
 GFXcanvas16 canvas(240, 240);
@@ -67,9 +62,9 @@ namespace display {
      * @brief Initialize the LCD display
      */
     void lcdDriver::displayInit() {
-        lcd.init(240, 240, SPI_MODE3);
-        pinMode(BACKLIGHT_PIN, OUTPUT);
-        digitalWriteFast(BACKLIGHT_PIN, HIGH);
+        lcd.init(240, 240, SPI_MODE0);
+        pinMode(DISPLAY_BACKLIGHT, OUTPUT);
+        digitalWriteFast(DISPLAY_BACKLIGHT, HIGH);
         lcd.setRotation(2);
         lcd.fillScreen(ST77XX_RED);
         lcd.fillScreen(ST77XX_GREEN);
@@ -109,6 +104,8 @@ namespace display {
      */
     void lcdDriver::update_hud() {
         // Check if any game state values have changed to determine if we need to update the screen
+
+        if (displaying_alert) return; // Don't display the hud if an alert is being displayed
 
         if (this->game_state->reloading) {
             float remaining_time = ((float) this->game_state->reload_time - (float) millis()) / 1000;
@@ -368,13 +365,32 @@ namespace display {
 
     void lcdDriver::clear() {
         this->clear_screen();
+        this->last_health = -1;
+        this->last_ammo_count = -1;
+        this->last_clip_count = -1;
     }
 
     /**
      * @brief Toggles the LCD backlight
      */
     void lcdDriver::toggle_backlight() {
-        digitalToggleFast(BACKLIGHT_PIN);
+        digitalToggleFast(DISPLAY_BACKLIGHT);
+    }
+
+    void lcdDriver::display_alert(String* title, String* info){
+        this->displaying_alert = true;
+        this->clear();
+        lcd.setCursor(0, 0);
+        lcd.setTextSize(6);
+        lcd.setTextColor(ST77XX_RED);
+        lcd.print(title->c_str());
+
+    }
+
+    void lcdDriver::clear_alert(){
+        this->displaying_alert = false;
+        this->clear();
+
     }
 
     // ------------------------------------------------------MENU METHODS----------------------------------------------------//

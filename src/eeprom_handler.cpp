@@ -6,7 +6,7 @@
 
 #include <EEPROM.h>
 
-#define EEPROM_RESET_FLAG 0x1F // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
+#define EEPROM_RESET_FLAG 0x1E // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
 
 #define PRESET_START_ADDRESS 0x1F // EEPROM address where presets start ( 0x1F = 31 )
 #define TOTAL_PRESETS 12

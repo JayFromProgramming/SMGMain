@@ -156,9 +156,9 @@ void on_killed(uint_least8_t killer_id) {
             }
         }
     }
-    if (max_damage_id != killer_id) {
+    if (max_damage_id != killer_id || max_damage != 0) {
         score_data_ptr->assist_name = mt2::get_player_name(max_damage_id); // Set the assist name
-    }
+    } else score_data_ptr->assist_name = nullptr; // No assist
 
     score_data_ptr->last_alive_time = score_data_ptr->alive_time;
 }
@@ -166,8 +166,12 @@ void on_killed(uint_least8_t killer_id) {
 // This section contains the event handlers for the game
 
 void on_clone(mt2::clone* clone){
-    save_preset(0, clone);
-    configure_from_clone(clone);
+    if (clone->checksum_valid){
+        save_preset(0, clone);
+        configure_from_clone(clone);
+        audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+    }
+    // audio_ptr->play_sound(audio_interface::S);
 }
 
 // Called when the player is hit
@@ -296,7 +300,7 @@ void respawn(){ // Called when a player respawns
 
 void admin_kill(){ // Called when an admin kills a player
     score_data_ptr->last_killed_by = GAME_ADMIN_ID;
-    on_killed(GAME_ADMIN_ID);
+    score_data_ptr->last_alive_time = score_data_ptr->alive_time;
     score_data_ptr->killer_name = (String *) "Admin";
     score_data_ptr->assist_name = nullptr;
     game_state->health = 0;

@@ -82,6 +82,10 @@ void edit_burst_size(int size) {
     temp_clone->burst_size = size;
 }
 
+void edit_friendly_fire(int value) {
+    set_game_flag(temp_clone, GAME_FRIENDLY_FIRE, value, 0);
+}
+
 display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id, void (*config_menu_callback)()) {
     // Due to the nature of adding a bunch of different items to a menu this method is very large
 
@@ -106,6 +110,12 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
         if (i == clone->respawn_health)
             display::lcdDriver::submenu_set_selected(menu, i);
     }
+
+    // Friendly fire (True/False)
+    menu = display::lcdDriver::add_submenu(clone_menu, "Team Damage", edit_friendly_fire);
+    display::lcdDriver::add_submenu_item(menu, "False");
+    display::lcdDriver::add_submenu_item(menu, "True");
+    display::lcdDriver::submenu_set_selected(menu,temp_clone->game_bool_flags_1 & GAME_FRIENDLY_FIRE);
 
     // Damage per shot
     menu = display::lcdDriver::add_submenu(clone_menu, "Shot Damage", edit_damage);

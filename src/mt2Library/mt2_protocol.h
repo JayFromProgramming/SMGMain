@@ -224,7 +224,7 @@ namespace mt2 {
         unsigned char armour_value = 0x00;
         unsigned char game_bool_flags_1 = B00001010; // See section 2.3.10
         unsigned char game_bool_flags_2 = B01001100; // See section 2.3.11
-        hit_delays hit_delay = ONE_QUARTER_SECOND; // See section 2.3.12
+        hit_delays hit_delay = NO_DELAY; // See section 2.3.12
         unsigned char start_delay = 0x00; // In seconds
         unsigned char death_delay = 0x00; // In seconds
         unsigned char time_limit = 0x00; // In minutes

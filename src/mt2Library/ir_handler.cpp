@@ -20,7 +20,7 @@ bool transmission_in_progress = false; // Used to determine if we are currently 
 void (*on_transmission_complete)() = nullptr;
 
 uint_fast16_t received_pulse_buffer[1024];
-volatile uint_fast16_t  received_pulse_position = 0; // Used to count where in the buffer we are
+volatile int_fast16_t  received_pulse_position = -1; // Used to count where in the buffer we are
 elapsedMicros received_pulse_timer; // Timer for receiving IR signals
 
 uint8_t received_bytes[1024];
@@ -35,6 +35,7 @@ FLASHMEM void transmitter_init() {
     transmission_position = 0;
     transmission_length = 0;
     transmission_in_progress = false;
+    receiver_init();
 }
 
 void receiver_attach(){
@@ -47,7 +48,7 @@ void receiver_detach(){
 }
 
 FLASHMEM void receiver_init() {
-    pinMode(MUZZLE_IR_FLASH, INPUT);
+    pinMode(IR_IN, INPUT);
     receiver_attach();
 }
 
@@ -59,27 +60,35 @@ FLASHMEM void receiver_init() {
 FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
 //    Serial.println("Decoding possible MT2 signal"); // decodePulseWidthData might work if this doesn't
 
-    int header_mark = 0;
-    for (int i = 0; i < total_pulses; i++){ // Look for header
-       uint16_t time = received_pulse_buffer[i];
-       if (time < MT2_HEADER_LENGTH + MT2_TOLERANCE && time > MT2_HEADER_LENGTH - MT2_TOLERANCE) {
-           header_mark = i;
-           break;
-       }
-    }
-
-    if (header_mark == 0) {
+//    int header_mark = 0;
+//    for (int i = 0; i < total_pulses; i++){ // Look for header
+//       uint16_t time = received_pulse_buffer[i];
+//       if (time < MT2_HEADER_LENGTH + MT2_TOLERANCE && time > MT2_HEADER_LENGTH - MT2_TOLERANCE) {
+//           header_mark = i;
+//           break;
+//       }
+//    }
+//
+//    if (header_mark == 0) {
 //        Serial.println("No header found - not MT2 signal");
-        return false;
-    }
+//        return false;
+//    }
 
-    if (received_pulse_buffer[header_mark + 1] < MT2_SPACE_LENGTH + MT2_TOLERANCE && received_pulse_buffer[header_mark + 1] >
-    MT2_SPACE_LENGTH - MT2_TOLERANCE) {
+    // Print out the buffer for debugging
+//    Serial.print("Received pulses:\n");
+//    for (int i = 0; i < total_pulses; i++) {
+//        Serial.print(received_pulse_buffer[i]);
+//        Serial.print("\n");
+//    }
+
+    uint16_t header_mark = 0;
+//    if (received_pulse_buffer[header_mark + 1] < MT2_SPACE_LENGTH + MT2_TOLERANCE && received_pulse_buffer[header_mark + 1] >
+//    MT2_SPACE_LENGTH - MT2_TOLERANCE) {
 //        Serial.println("Valid space after header, continuing");
-    } else {
+//    } else {
 //        Serial.println("Invalid space after header, aborting");
-        return false;
-    }
+//        return false;
+//    }
 
     uint32_t received_bit = 0;
     received_length = 0;
@@ -118,13 +127,28 @@ FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
     }
 
     if (received_bit != 0){
-//        Serial.println("Warning: ByteBuilder is not empty at the end of the message");
+        received_bytes[received_length] = 0; // Clear the byte
+        for (int j = 0; j < 8; j++) { // Add the bits to the byte
+//            Serial.print(byte_builder[j]);
+            received_bytes[received_length] += byte_builder[j] << (7 - j); // Shift the bits to the right
+        }
+//        Serial.printf("Decoded byte %d: %d\n", received_length, received_bytes[received_length]);
+        received_length++; // Increment the length of the received_bytes array
+        received_bit = 0; // Reset the bit counter
     }
 
     if (received_length == 0) {
-//        Serial.println("No data found - not MT2 signal");
+        Serial.println("No data found - not MT2 signal");
         return false;
     }
+
+//    Serial.println("Decoded MT2 signal");
+//    // Print out the bytes for debugging
+//    Serial.print("Received bytes:\n");
+//    for (int i = 0; i < received_length; i++) {
+//        Serial.print(received_bytes[i]);
+//        Serial.print("\n");
+//    }
 
     return true;
 }
@@ -269,15 +293,14 @@ uint8_t* get_buffer(){
 }
 
 // This method is called when the IR receiver changes state
-FASTRUN void receive_pulse(){
+FASTRUN void receive_pulse() {
     cli() // Prevent interrupts while we are logging the pulse
-    if(!received_pulse_position){
-        received_pulse_buffer[received_pulse_position] = received_pulse_timer; // Store the current timer value in the buffer
+    if (received_pulse_timer > 100){ // If the pulse is too short, ignore it
+        if (received_pulse_position != -1) received_pulse_buffer[received_pulse_position] = received_pulse_timer;
+        // Store the current timer value in the buffer
         received_pulse_position++; // Increment the position in the buffer
-    } else {
-        received_pulse_position = 0; // Reset the receive position to the start of the buffer
+        received_pulse_timer = 0; // Reset the timer to 0 (As the timer is always counting up)
     }
-    received_pulse_timer = 0; // Reset the timer to 0 (As the timer is always counting up)
     sei() // Re-enable interrupts
 }
 
@@ -285,7 +308,7 @@ void flush_pulse_buffer(){
     for (uint_fast16_t & i : received_pulse_buffer){
         i = 0;
     }
-    received_pulse_position = 0;
+    received_pulse_position = -1;
 }
 
 /*

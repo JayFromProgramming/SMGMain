@@ -166,16 +166,17 @@ void process_sys_command(const unsigned char command) {
 void decodeMT2Data(uint8_t* data){
     uint_least8_t messageByte = data[0];
     // Check if the highest (first) bit of the first message byte is a 0
-    if (messageByte & 0x80) { // This is a shot packet
+    if (!(messageByte & 0x80)) { // This is a shot packet
+
         uint_least8_t player_id = messageByte & B01111111;
         uint_least8_t team_id = (data[1] & B11000000) >> 6;
         uint_least8_t damage = (data[1] & B00111100) >> 2;
         if (handlers->on_hit != nullptr) handlers->on_hit(player_id, static_cast<teams>(team_id),
                                                           static_cast<damage_table>(damage));
-//        Serial.printf("Received shot packet\n"
-//                      "Player ID: %d\n"
-//                      "Team ID: %d\n"
-//                      "Damage: %d\n", player_id, team_id, damage);
+        Serial.printf("Received shot packet\n"
+                      "Player ID: %d\n"
+                      "Team ID: %d\n"
+                      "Damage: %d\n", player_id, team_id, damage);
     } else { // This is where system packets are processed
         switch (messageByte){
             case ADD_HEALTH:
@@ -196,6 +197,7 @@ void decodeMT2Data(uint8_t* data){
                         break;
                 }
             case SYSTEM_COMMAND:
+                Serial.printf("Received system command: %d\n", data[1]);
                 process_sys_command(data[1]);
                 break;
             case CLIP_PICKUP:

@@ -58,7 +58,7 @@ void on_reload(){
         return;
     }
 
-    if (game_state->clip_count >= 1){
+    if (game_state->clip_count >= 1 && game_state->ammo_count < game_state->clip_size) {
         game_state->reloading = true;
         // Set the reload_time to the current time + the reload_time (in seconds)
         game_state->reload_time = millis() + (game_state->currentConfig->reload_time * 1000);
@@ -295,11 +295,12 @@ void respawn(){ // Called when a player respawns
 }
 
 void admin_kill(){ // Called when an admin kills a player
-    game_state->health = 0;
     score_data_ptr->last_killed_by = GAME_ADMIN_ID;
     on_killed(GAME_ADMIN_ID);
     score_data_ptr->killer_name = (String *) "Admin";
     score_data_ptr->assist_name = nullptr;
+    game_state->health = 0;
+    audio_ptr->play_sound(audio_interface::SOUND_DEATH); // Make a scream of death
 }
 
 void pause_unpause(){

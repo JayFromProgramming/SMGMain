@@ -246,11 +246,13 @@ namespace display {
         lcd.setCursor(DEATH_TEXT_START_X, DEATH_TEXT_START_Y);
         lcd.setTextSize(DEATH_TEXT_SIZE);
         lcd.setTextColor(ST77XX_WHITE);
+        Serial.println("Rendering death screen\nCalculating time alive");
         uint32_t time_alive = this->score->last_alive_time;
         uint32_t time_alive_seconds = time_alive / 1000;
         uint32_t time_alive_minutes = time_alive_seconds / 60;
         sprintf(time_alive_str, "%lu:%02lu", time_alive_minutes, time_alive_seconds % 60);
         String killer;
+        Serial.println("Calculating killer");
         if (this->score->killer_name != nullptr && this->score->assist_name != nullptr) {
             killer = String(*this->score->killer_name + " + " + *this->score->assist_name);
         } else if (this->score->killer_name != nullptr) {
@@ -258,10 +260,11 @@ namespace display {
         } else
             killer = String("Unknown");
 
+        Serial.println("Drawing death screen");
         sprintf(death_str, "GAME OVER!\n"
                            "Shots fired:\n%d\n"
-                           "Time alive:\n%13s\n"
-                           "Killed by:\n%s", score->rounds_fired_game, time_alive_str, killer.c_str());
+                           "Time active:\n%13s\n"
+                           "Eliminated by:\n%s", score->rounds_fired_game, time_alive_str, killer.c_str());
         lcd.print(death_str);
     }
 

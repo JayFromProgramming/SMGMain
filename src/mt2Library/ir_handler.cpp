@@ -10,7 +10,7 @@
 #define IR_FREQ 56000
 #define IR_DUTY_CYCLE 128
 
-#define IR_RECEIVE_EOM_TIMEOUT 3400 // How long after an IR pulse to determine it's the end of the message
+#define IR_RECEIVE_EOM_TIMEOUT  // How long after an IR pulse to determine it's the end of the message
 
 uint_fast16_t transmission_buffer[1024];
 IntervalTimer transmission_timer; // Timer for sending IR signals
@@ -81,6 +81,13 @@ FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
 //        Serial.print("\n");
 //    }
 
+    // Check if the first pulse is a header
+    if (!(received_pulse_buffer[0] < MT2_HEADER_LENGTH + MT2_TOLERANCE &&
+    received_pulse_buffer[0] > MT2_HEADER_LENGTH - MT2_TOLERANCE)) {
+        Serial.println("First pulse is not a header - not MT2 signal");
+        return false;
+    }
+
     uint16_t header_mark = 0;
 //    if (received_pulse_buffer[header_mark + 1] < MT2_SPACE_LENGTH + MT2_TOLERANCE && received_pulse_buffer[header_mark + 1] >
 //    MT2_SPACE_LENGTH - MT2_TOLERANCE) {
@@ -138,7 +145,7 @@ FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
     }
 
     if (received_length == 0) {
-        Serial.println("No data found - not MT2 signal");
+//        Serial.println("No data found - not MT2 signal");
         return false;
     }
 
@@ -321,7 +328,9 @@ void flush_pulse_buffer(){
  * @return true if the buffer contains a valid message
  */
 bool IR_available(){
-    if (received_pulse_timer > IR_RECEIVE_EOM_TIMEOUT && received_pulse_position > 0){
+    if (((int) received_pulse_timer > 5000) && (received_pulse_position > 0)){
+        Serial.printf("Received message with %d pulses, last pulse %d\n", received_pulse_position,
+                      (int) received_pulse_timer);
         // We have received a message
         // Check if the message is valid
 

@@ -301,7 +301,7 @@ void respawn(){ // Called when a player respawns
 void admin_kill(){ // Called when an admin kills a player
     score_data_ptr->last_killed_by = GAME_ADMIN_ID;
     score_data_ptr->last_alive_time = score_data_ptr->alive_time;
-    score_data_ptr->killer_name = (String *) "Admin";
+    score_data_ptr->killer_name = mt2::get_player_name(GAME_ADMIN_ID);
     score_data_ptr->assist_name = nullptr;
     game_state->health = 0;
     audio_ptr->play_sound(audio_interface::SOUND_DEATH); // Make a scream of death

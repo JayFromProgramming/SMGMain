@@ -381,7 +381,7 @@ void setup() {
 
 //    boot_mode = BOOT_MODE_UNKNOWN;
 
-    boot_mode = BOOT_MODE_GAME;
+//    boot_mode = BOOT_MODE_GAME;
 
     // If the trigger is held down on startup, display the boot menu
     if (digitalReadFast(IO_TRIGGER) == LOW) {

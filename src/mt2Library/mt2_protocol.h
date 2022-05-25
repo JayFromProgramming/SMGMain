@@ -35,7 +35,7 @@
 
 #define SYSTEM_PLAYER_ID 0x31 // Player ID for the system "Dozer"
 
-#define GAME_ADMIN_ID 0x31 // Player ID for the system "Admin"
+#define GAME_ADMIN_ID 59 // Player ID for the system "Admin"
 
 #include <Arduino.h>
 

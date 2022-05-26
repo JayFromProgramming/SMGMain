@@ -6,6 +6,7 @@
 //#include "mt2Library/tag_communicator.h"
 #include <eeprom_handler.h>
 #include <Bounce.h>
+#include <pinout.h>
 
 tagger_state *game_state = nullptr;
 
@@ -18,7 +19,7 @@ audio_interface::audio_interface *audio_ptr = nullptr;
 uint32_t hit_led_timer = 0;
 uint32_t muzzle_flash_timer = 0;
 
-uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH_PIN_NUMBER;
+uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH;
 
 
 void move_life_scores();
@@ -36,7 +37,7 @@ void configure_from_clone(mt2::clone* newClone){
     game_state->currentConfig = newClone;
 
     // The config firerate is stored as Rounds per minute, so we need to calculate the delay in milliseconds
-    game_state->shot_interval = ((1 / mt2::fire_rate_table_lookup(newClone->cyclic_rpm)) * 60) * 1000;
+    game_state->shot_interval = ((float) (1.f / (float) mt2::fire_rate_table_lookup(newClone->cyclic_rpm)) * 60.f) * 1000;
 
     game_state->hit_delay_ms = mt2::hit_delay_to_micros(game_state->currentConfig->hit_delay);
 
@@ -67,6 +68,7 @@ void on_reload(){
 }
 
 void shot_check(Bounce *bounce_ptr){
+
     if (bounce_ptr->fallingEdge()) {
         trigger_down = 1;
     } else if (bounce_ptr->risingEdge()) {
@@ -76,7 +78,7 @@ void shot_check(Bounce *bounce_ptr){
     }
 
     game_state->currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
-    if (game_state->last_shot > game_state->shot_interval && !game_state->reloading) {
+    if ((int) game_state->last_shot > game_state->shot_interval && !game_state->reloading) {
         if (game_state->ammo_count > 0) {
             // Check what fire mode we are in
             switch (game_state->currentConfig->fire_selector) {
@@ -120,7 +122,7 @@ void shot_check(Bounce *bounce_ptr){
                 case mt2::FIRE_MODE_AUTO:
                     if (trigger_down != 0) {
                         if (shoot()) { // If the IR transmitter is not busy preform shot actions
-                            audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
+//                            audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                             game_state->last_shot = 0;
                             game_state->ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
@@ -323,6 +325,13 @@ void stunned(){
 
 void test_sensors(){
     digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE);
+    digitalWriteFast(MUZZLE_RED_FLASH, MUZZLE_FLASH_ACTIVE);
+    digitalWriteFast(MUZZLE_BLU_FLASH, MUZZLE_FLASH_ACTIVE);
+    sendShot(0, mt2::teams::GREEN, 0);
+    delayMicroseconds(1000);
+    digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
+    digitalWriteFast(MUZZLE_RED_FLASH, MUZZLE_FLASH_INACTIVE);
+    digitalWriteFast(MUZZLE_BLU_FLASH, MUZZLE_FLASH_INACTIVE);
     hit_led_timer = millis() + 2000;
 }
 

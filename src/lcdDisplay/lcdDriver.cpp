@@ -264,7 +264,7 @@ namespace display {
         sprintf(death_str, "GAME OVER!\n"
                            "Shots fired:\n%d\n"
                            "Time active:\n%13s\n"
-                           "Eliminated by:\n%s", score->rounds_fired_game, time_alive_str, killer.c_str());
+                           "Eliminated by\n%s", score->rounds_fired_game, time_alive_str, killer.c_str());
         lcd.print(death_str);
     }
 

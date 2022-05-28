@@ -64,6 +64,7 @@ struct tagger_state {
     volatile uint32_t reload_time = 0.0; //!< If reloading, the time the reload will be completed, in milliseconds
     volatile bool paused = false; //!< Whether the tagger is paused
     volatile bool started = true; //!< Whether the tagger game has started
+    volatile bool disarmed = false; //!< Whether the tagger is disarmed (triggered by admin)
     volatile uint8_t max_respawns = 0; //!< The maximum number of respawns the tagger can have
     volatile uint8_t respawns_remaining = 0; //!< The number of respawns the tagger has remaining
     volatile uint32_t auto_respawn_time = 0; //!< The time the tagger will respawn, in milliseconds (if auto-respawn is enabled)
@@ -77,7 +78,7 @@ struct score_data {
     volatile uint16_t      rounds_fired_life = 0; //!< The number of rounds fired in the current life
     volatile uint16_t      total_hits_game = 0; //!< The total number of hits in the game
     volatile uint16_t      total_hits_life = 0; //!< The total number of hits in the current life
-    elapsedMillis          game_time;  //!< The time the game has been running, in milliseconds
+    elapsedMillis          game_elapsed_time; //!< The elapsed time of the game, in milliseconds
     elapsedMillis          alive_time; //!< The time the tagger has been alive, in milliseconds
     volatile uint32_t      last_alive_time = 0; //!< How long the tagger survived during the last life, in milliseconds
     volatile uint16_t      respawn_count = 0; //!< The number of respawns the tagger has had

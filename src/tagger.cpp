@@ -25,6 +25,28 @@ display::lcdDriver *display_ptr = nullptr;
 
 void move_life_scores();
 
+void add_health(uint8_t value);
+
+void add_ammo(uint8_t value);
+
+void flag_pickup(uint8_t value);
+
+void clip_pickup(uint8_t value);
+
+void health_pickup(uint8_t value);
+
+void reset_clock();
+
+void full_armor();
+
+void disarm_player();
+
+void stun_player();
+
+void explode_player();
+
+void restore_defaults();
+
 // 1 = Just pulled, 0 = Released, -1 = Not released but is being held
 short trigger_down = 0; // Flag to indicate if the trigger_pull_interrupt has been called
 
@@ -447,40 +469,106 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr, display::l
     trigger_down = 0;
 
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
-    handles->on_hit =           on_hit;
-    handles->on_clone =         on_clone;
-    handles->on_respawn =       respawn;
-    handles->on_admin_kill =    admin_kill;
-    handles->on_full_health =   full_health;
-    handles->on_clear_scores =  clear_scores;
-    handles->on_start_game =    start_game;
-    handles->on_new_game =      new_game;
-    handles->on_end_game =      end_game;
-    handles->on_pause_unpause = pause_unpause;
-    handles->on_stun =          stunned;
-    handles->on_init_player =   restart_gun; // Crashes the program and forces a restart of the teensy
-    handles->on_test_sensors =  test_sensors;
-    handles->on_add_health =    add_health;
-    handles->on_add_rounds =    add_ammo;
-    handles->on_flag_pickup =   flag_pickup;
-    handles->on_clip_pickup =   clip_pickup;
-    handles->on_health_pickup = health_pickup;
+    handles->on_hit =               on_hit;
+    handles->on_clone =             on_clone;
+    handles->on_respawn =           respawn;
+    handles->on_admin_kill =        admin_kill;
+    handles->on_full_health =       full_health;
+    handles->on_clear_scores =      clear_scores;
+    handles->on_start_game =        start_game;
+    handles->on_new_game =          new_game;
+    handles->on_end_game =          end_game;
+    handles->on_pause_unpause =     pause_unpause;
+    handles->on_stun =              stunned;
+    handles->on_init_player =       restart_gun; // Crashes the program and forces a restart of the teensy
+    handles->on_test_sensors =      test_sensors;
+    handles->on_add_health =        add_health;
+    handles->on_add_rounds =        add_ammo;
+    handles->on_flag_pickup =       flag_pickup;
+    handles->on_clip_pickup =       clip_pickup;
+    handles->on_health_pickup =     health_pickup;
+    handles->on_reset_clock =       reset_clock;
+    handles->on_full_armor =        full_armor;
+    handles->on_disarm_player =     disarm_player;
+    handles->on_stun =              stun_player;
+    handles->on_explode =           explode_player;
+    handles->on_restore_defaults =  restore_defaults;
 
-
-
-//    pinMode(TRIGGER_PIN_NUMBER, TRIGGER_PIN_MODE);
-//    pinMode(RELOAD_PIN_NUMBER, RELOAD_PIN_MODE);
 
     pinMode(HIT_LED_PIN_NUMBER, HIT_LED_PIN_MODE);
 
-    // Attach interrupts on the trigger and reload pins
-//    attachInterrupt(digitalPinToInterrupt(RELOAD_PIN_NUMBER), reload_interrupt, RELOAD_INTERRUPT_MODE);
-
-    #ifdef USE_INTERRUPT_ON_TRIGGER
-    attachInterrupt(digitalPinToInterrupt(TRIGGER_PIN_NUMBER), trigger_interrupt, TRIGGER_INTERRUPT_MODE);
-    #endif
-
     // Load the current configuration
     configure_from_clone(load_preset(0));
+}
+
+void restore_defaults() {
+    configure_from_clone(load_preset(0));
+}
+
+/**
+ * @brief Causes the tagger to explode
+ */
+void explode_player() {
+
+}
+
+void stun_player() {
+
+}
+
+void disarm_player() {
+    game_state->disarmed = !game_state->disarmed;
+}
+
+void full_armor() {
+    game_state->shield_health = game_state->currentConfig->armour_value;
+    audio_ptr->play_sound(audio_interface::SOUND_CLONE_OK);
+}
+
+void reset_clock() {
+    score_data_ptr->game_elapsed_time = 0;
+    audio_ptr->play_sound(audio_interface::SOUND_CLONE_OK);
+}
+
+void health_pickup(uint8_t value) {
+    if (game_state->health < game_state->currentConfig->respawn_health) {
+        game_state->health += value;
+        if (game_state->health > game_state->currentConfig->respawn_health) {
+            game_state->health = game_state->currentConfig->respawn_health;
+        }
+
+    }
+    audio_ptr->play_sound(audio_interface::SOUND_ADD_HEALTH);
+}
+
+void clip_pickup(uint8_t value) {
+    if (game_state->clip_count < game_state->currentConfig->number_of_clips) {
+        game_state->clip_count++;
+    }
+    audio_ptr->play_sound(audio_interface::SOUND_ADD_AMMO);
+}
+
+/**
+ * @note Not Implemented
+ * @param value Flag ID
+ */
+void flag_pickup(uint8_t value) {
+//    audio_ptr->play_sound(audio_interface::SOUND_);
+}
+
+void add_ammo(uint8_t value) {
+    game_state->ammo_count += value;
+    if (game_state->ammo_count > game_state->currentConfig->clip_size) {
+        game_state->ammo_count = game_state->currentConfig->clip_size;
+    }
+    audio_ptr->play_sound(audio_interface::SOUND_ADD_AMMO);
+}
+
+void add_health(uint8_t value) {
+    game_state->health += mt2::health_lookup(static_cast<respawn_health>(value));
+    if (game_state->health > game_state->currentConfig->respawn_health) {
+        game_state->health = game_state->currentConfig->respawn_health;
+    }
+    audio_ptr->play_sound(audio_interface::SOUND_ADD_HEALTH);
 }
 

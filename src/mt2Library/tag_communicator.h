@@ -31,7 +31,7 @@ struct event_handlers {
     void (*on_add_rounds)(uint8_t value) = nullptr; //!< Called when an add rounds signal is received.
     void (*on_restore_defaults)() = nullptr; //!< Called when a restore defaults signal is received.
     void (*on_reset_clock)() = nullptr; //!< Called when a reset clock signal is received.
-    void (*on_init_player)() = nullptr; //!< Called when a reset clock signal is received.
+    void (*on_init_player)() = nullptr; //!< Called when a init tagger signal is received.
     void (*on_full_armor)() = nullptr; //!< Called when a full armor signal is received.
     void (*on_clear_scores)() = nullptr; //!< Called when a clear scores signal is received.
     void (*on_test_sensors)() = nullptr; //!< Called when a test sensors signal is received.

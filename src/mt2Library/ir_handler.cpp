@@ -172,7 +172,7 @@ uint16_t encodeMT2(const uint8_t *data, uint_fast32_t bits){
     transmission_length = 2;
     transmission_buffer[0] = MT2_HEADER_LENGTH; // Header pulse is 2400us on
     transmission_buffer[1] = MT2_SPACE_LENGTH; // Inter-pulse gap is 600us off
-    unsigned char byte_to_encode = '\0';
+    uint8_t byte_to_encode = 0; //!< A working byte that is being encoded
     // Extract each bit from the data array and calculate the pulse timings
     for (uint32_t i = 0; i < bits; i++){
         if (i % 8 == 0){ // If we are at the start of a new byte, get the byte
@@ -201,34 +201,19 @@ bool send(const uint8_t *data, uint16_t bytes){
     return send(data, (uint32_t) bytes*8);
 }
 
-
 /**
  * @brief Sends data over the IR transmitter
  * @param data An array of bytes to transmit
  * @param bits Total bits to send
- * @return True if transmission started, false if transmitter was busy
+ * @return True if transmission started, false if transmitter or the receiver was busy
  * @note A returned value of true does not mean transmission was successful, only that it has started
  */
 bool send(const uint8_t *data, uint32_t bits){
     // Flush the transmission buffer
-    if (transmission_in_progress){
-        return false;
+    if (transmission_in_progress || received_pulse_position != -1){
+        return false; // If the transmitter is busy or the receiver is receiving, return false
     }
-    for (uint_fast16_t & i : transmission_buffer){
-        i = 0;
-    }
-    int trans_length = encodeMT2(data, bits);
-//    analogWriteResolution(11);
-//    analogWriteFrequency(IR_PIN, MT2_FREQUENCY);
-    unsigned long expected_trans_time = 0;
-    for (int i = 0; i < trans_length; i++){
-//        if (!(i % 2)) Serial.printf("%d ", transmission_buffer[i]);
-        expected_trans_time += transmission_buffer[i];
-    }
-//    Serial.printf("\nExpected time in microseconds %d\n", expected_trans_time);
-//    Serial.printf("Total length is %d\n", transmission_length);
-//    irsend.sendRaw(transmission_buffer, transmission_length,
-//                   56);
+    encodeMT2(data, bits); // Encode the data into the transmission buffer
     transmit_start();
     return true;
 }
@@ -260,9 +245,6 @@ void transmit_method(){
 
 void transmit_start(){
     // Set IR_PIN to generate a PWM frequency modulated to IR_FREQ
-//    analogWriteFrequency(IR_PIN, IR_FREQ * 9);
-//    analogWriteResolution(8);
-//    analogWrite(IR_PIN, IR_DUTY_CYCLE);
     tone(MUZZLE_IR_FLASH, IR_FREQ);
     receiver_detach(); // Detach the IR receiver during transmission
     // Set the IR_PIN to output a high voltage

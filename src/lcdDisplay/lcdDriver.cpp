@@ -88,14 +88,13 @@ namespace display {
         clips_str = static_cast<char *>(malloc(sizeof(char) * 10));
         ammo_str  = static_cast<char *>(malloc(sizeof(char) * 10));
         reload_str = static_cast<char *>(malloc(sizeof(char) * 10));
-        old_reload_str = static_cast<char *>(malloc(sizeof(char) * 10));
+        old_progress_str = static_cast<char *>(malloc(sizeof(char) * 10));
         health_str = static_cast<char *>(malloc(sizeof(char) * 10));
         death_str = static_cast<char *>(malloc(sizeof(char) * 64));
         time_alive_str = static_cast<char *>(malloc(sizeof(char) * 14));
         this->game_state = data;
         this->score = score_t;
     }
-
 
     /**
      * @brief Updates the display during the game loop
@@ -107,42 +106,34 @@ namespace display {
 
         if (displaying_alert) return; // Don't display the hud if an alert is being displayed
 
-        if (this->game_state->reloading) {
-            float remaining_time = ((float) this->game_state->reload_time - (float) millis()) / 1000;
-            this->progress_circle(remaining_time, (float) this->game_state->currentConfig->reload_time);
-        } else {
-            if (!this->game_state->started){
-//                tagger_init_screen();
-            }
-            if (already_progressing) { // Stop reloading animation
-                already_progressing = false;
-                last_angle = -90.0f;
-                lcdDriver::clear_screen();
-                this->last_health = -1;
-                this->last_clip_count = -1;
-                this->last_ammo_count = -1;
-            }
-            if (this->game_state->health != this->last_health && this->last_health == 0) {
-                clear_screen();
-                this->draw_clip_count();
-                this->draw_ammo_count();
-            }
-            if (this->game_state->health != this->last_health) {
-                this->draw_health_bar();
-                this->last_health = this->game_state->health;
-            }
-            if (this->game_state->clip_count != this->last_clip_count) {
-                this->clear_clip_count();
-                this->draw_clip_count();
-                this->last_clip_count = this->game_state->clip_count;
-            }
-            if (this->game_state->ammo_count != this->last_ammo_count) {
-                this->clear_ammo_count();
-                this->draw_ammo_count();
-                this->last_ammo_count = this->game_state->ammo_count;
-            }
-            this->draw_dynamic_elements();
+        if (display_progress_circle){
+
         }
+        if (this->game_state->health != this->last_health && this->last_health == 0) {
+            clear_screen();
+            this->draw_clip_count();
+            this->draw_ammo_count();
+        }
+        if (this->game_state->health != this->last_health) {
+            this->draw_health_bar();
+            this->last_health = this->game_state->health;
+        }
+        if (this->game_state->clip_count != this->last_clip_count) {
+            this->clear_clip_count();
+            this->draw_clip_count();
+            this->last_clip_count = this->game_state->clip_count;
+        }
+        if (this->game_state->ammo_count != this->last_ammo_count) {
+            this->clear_ammo_count();
+            this->draw_ammo_count();
+            this->last_ammo_count = this->game_state->ammo_count;
+        }
+        this->draw_system_elements();
+
+    }
+
+    void lcdDriver::start_progress_circle(uint32_t total_milliseconds) {
+        start_progress_circle(total_milliseconds, nullptr);
     }
 
     /**
@@ -150,50 +141,75 @@ namespace display {
      * @details This function draws 2 circles one inside the other, the inner circle is black to allow the time text
      * to be readable. The outer circle is slowly overwritten by lines of green to allow for a slowly moving line to
      * fill the circle.
-     * @param remaining_time - The time remaining in the animation
-     * @param total_time   - The total time of the animation
+     * @param total_milliseconds - The total time in milliseconds that the circle will take to fill
+     * @param header - The header text to display above the circle
      */
-    void lcdDriver::progress_circle(float remaining_time, float total_time) {
-        if (this->already_progressing) {
-            float remaining_reload_percent =  remaining_time / total_time;
-            if (remaining_reload_percent > 1.0f) remaining_reload_percent = 1.0f;
-            float remaining_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
-            // Sweep the circle with a line based on the remaining reload time to make a full circle
-            // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle
-            for (float angle = last_angle; angle < remaining_angle; angle += 0.1f) {
-                int x = RELOAD_CENTER_X + RELOAD_RADIUS * cos(angle * M_PI / 180);
-                int y = RELOAD_CENTER_Y + RELOAD_RADIUS * sin(angle * M_PI / 180);
-                int x2 = RELOAD_CENTER_X + RELOAD_INNER_RADIUS * cos(angle * M_PI / 180);
-                int y2 = RELOAD_CENTER_Y + RELOAD_INNER_RADIUS * sin(angle * M_PI / 180);
-                lcd.drawLine(x, y, x2, y2, ST77XX_GREEN);
-            }
-            last_angle = remaining_angle;
-
-            // Print the remaining reload time in seconds
-            if (remaining_time < 10) {
-                sprintf(reload_str, "%.1f", remaining_time);
-            } else if (remaining_time < 99) {
-                sprintf(reload_str, "99");
-            } else sprintf(reload_str, "%d", (unsigned short) remaining_time);
-
-            last_reload_time = (unsigned short) remaining_time;
-
-            if (strcmp(reload_str, old_reload_str) != 0) {
-                lcd.setCursor(RELOAD_CENTER_X + RELOAD_TEXT_X_OFFSET, RELOAD_CENTER_Y + RELOAD_TEXT_Y_OFFSET);
-                lcd.setTextSize(RELOAD_TEXT_SIZE);
-                lcd.setTextColor(ST77XX_GREEN);
-                this->clear_reload_str();
-                lcd.print(reload_str);
-                strcpy(old_reload_str, reload_str);
-            }
-
-        } else { // Start reloading animation
-            already_progressing = true;
-            this->clear_clip_count();
-            this->clear_ammo_count();
-            lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_RADIUS, ST77XX_YELLOW);
-            lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_INNER_RADIUS, ST77XX_BLACK);
+    void lcdDriver::start_progress_circle(uint32_t total_milliseconds, String* header){
+        display_progress_circle = true;
+        this->progress_circle_total_time = total_milliseconds;
+        this->progress_circle_timer = 0;
+        this->clear_clip_count();
+        this->clear_ammo_count();
+        if (header != nullptr) {
+            clear_screen();
+            lcd.setTextCursor(RELOAD_CENTER_X - RELOAD_RADIUS, RELOAD_CENTER_Y - RELOAD_RADIUS);
+            lcd.setTextSize(RELOAD_TEXT_SIZE);
+            lcd.setTextColor(ST77XX_WHITE);
+            lcd.print(*header->c_str());
         }
+        lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_RADIUS, ST77XX_YELLOW);
+        lcd.fillCircle(RELOAD_CENTER_X, RELOAD_CENTER_Y, RELOAD_INNER_RADIUS, ST77XX_BLACK);
+    }
+
+
+    void lcdDriver::cancel_progress_circle() {
+        display_progress_circle = false;
+        last_angle = -90.0f;
+        lcdDriver::clear_screen();
+        this->last_health = -1;
+        this->last_clip_count = -1;
+        this->last_ammo_count = -1;
+        clear_screen();
+    }
+
+    void lcdDriver::progress_circle() {
+        float remaining_time = ((float) progress_circle_total_time - (float) progress_circle_timer) / 1000.0f;
+        float remaining_reload_percent =  (float) progress_circle_timer / (float) progress_circle_total_time;
+        if (remaining_reload_percent > 1.0f) remaining_reload_percent = 1.0f;
+        float remaining_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
+        // Sweep the circle with a line based on the remaining reload time to make a full circle
+        // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle
+        for (float angle = last_angle; angle < remaining_angle; angle += 0.1f) {
+            int x = RELOAD_CENTER_X + RELOAD_RADIUS * cos(angle * M_PI / 180);
+            int y = RELOAD_CENTER_Y + RELOAD_RADIUS * sin(angle * M_PI / 180);
+            int x2 = RELOAD_CENTER_X + RELOAD_INNER_RADIUS * cos(angle * M_PI / 180);
+            int y2 = RELOAD_CENTER_Y + RELOAD_INNER_RADIUS * sin(angle * M_PI / 180);
+            lcd.drawLine(x, y, x2, y2, ST77XX_GREEN);
+        }
+        last_angle = remaining_angle;
+
+        // Print the remaining reload time in seconds
+        if (remaining_time < 10) {
+            sprintf(reload_str, "%.1f", remaining_time);
+        } else if (remaining_time < 99) {
+            sprintf(reload_str, "99");
+        } else sprintf(reload_str, "%d", (unsigned short) remaining_time);
+
+        last_progress_time = (unsigned short) remaining_time;
+
+        if (strcmp(reload_str, old_progress_str) != 0) {
+            lcd.setCursor(RELOAD_CENTER_X + RELOAD_TEXT_X_OFFSET, RELOAD_CENTER_Y + RELOAD_TEXT_Y_OFFSET);
+            lcd.setTextSize(RELOAD_TEXT_SIZE);
+            lcd.setTextColor(ST77XX_GREEN);
+            this->clear_reload_str();
+            lcd.print(reload_str);
+            strcpy(old_progress_str, reload_str);
+        }
+
+        if (progress_circle_timer > progress_circle_total_time) {
+            cancel_progress_circle(); // Stop the progress circle if the time is up
+        }
+
     }
 
     float lcdDriver::calc_health_percentage() {
@@ -226,7 +242,7 @@ namespace display {
     }
 
     // These are elements that are always changing
-    void lcdDriver::draw_dynamic_elements() {
+    void lcdDriver::draw_system_elements() {
 //        lcd.setCursor(0, 45);
 //        lcd.setTextSize(1);
 //        int16_t x, y;
@@ -393,7 +409,6 @@ namespace display {
     void lcdDriver::clear_alert(){
         this->displaying_alert = false;
         this->clear();
-
     }
 
     // ------------------------------------------------------MENU METHODS----------------------------------------------------//

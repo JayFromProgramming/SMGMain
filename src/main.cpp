@@ -159,7 +159,7 @@ void boot_mode_game(){
         SCB_AIRCR = 0x05FA0004;
     }
 
-    tagger_init(&audio); // Initialize the tagger
+    tagger_init(&audio, &hud); // Initialize the tagger
 
     // Initialize all debounced IO methods
     clear_io_actions();

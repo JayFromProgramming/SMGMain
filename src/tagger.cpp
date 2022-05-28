@@ -21,6 +21,7 @@ uint32_t muzzle_flash_timer = 0;
 
 uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH;
 
+display::lcdDriver *display_ptr = nullptr;
 
 void move_life_scores();
 
@@ -64,6 +65,7 @@ void on_reload(){
         // Set the reload_time to the current time + the reload_time (in seconds)
         game_state->reload_time = millis() + (game_state->currentConfig->reload_time * 1000);
         audio_ptr->play_sound(audio_interface::SOUND_RELOAD);
+        display_ptr->start_progress_circle(game_state->currentConfig->reload_time * 1000);
     }
 }
 
@@ -163,6 +165,14 @@ void on_killed(uint_least8_t killer_id) {
     } else score_data_ptr->assist_name = nullptr; // No assist
 
     score_data_ptr->last_alive_time = score_data_ptr->alive_time;
+
+    if (game_state->currentConfig->respawn_delay > 0 && game_state->respawns_remaining > 0) {
+        // Set the respawn timer to the current time + the respawn_delay (in ten second increments)
+        game_state->auto_respawn_time = millis() + (game_state->currentConfig->respawn_delay * 10000);
+        display_ptr->start_progress_circle(game_state->currentConfig->respawn_delay * 10000,
+                                           (String *) "Auto Respawning in");
+    }
+
 }
 
 // This section contains the event handlers for the game
@@ -171,6 +181,8 @@ void on_clone(mt2::clone* clone){
     if (clone->checksum_valid){
         save_preset(0, clone);
         configure_from_clone(clone);
+        audio_ptr->play_sound(audio_interface::SOUND_CLONE_OK);
+    } else {
         audio_ptr->play_sound(audio_interface::SOUND_BEEP);
     }
     // audio_ptr->play_sound(audio_interface::S);
@@ -186,21 +198,25 @@ void on_hit(uint_least8_t playerID, mt2::teams teamID, mt2::damage_table dmg){
 
     // Check if friendly fire is enabled, if so check if the hit was on a friendly team and if so ignore the hit
     if (game_state->currentConfig->game_bool_flags_1 & GAME_FRIENDLY_FIRE || teamID != game_state->currentConfig->team_id) {
-        game_state->health = max(0, game_state->health - mt2::damage_table_lookup(dmg));
-        game_state->last_hit = millis(); // Set the last hit time
-        score_data_ptr->hits_from_players_life[playerID]++;;
-        score_data_ptr->damage_from_players_life[playerID] +=
-                mt2::damage_table_lookup(dmg);
-        score_data_ptr->total_hits_life++;
-    }
-
-    // Check if we are dead
-    if (game_state->health <= 0) {
-        on_killed(playerID);
-    } else {
-        audio_ptr->play_sound(audio_interface::SOUND_HIT);
-        digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE); // Turn on the hit led
-        hit_led_timer = millis() + 250; // Set the hit led timer
+        if (game_state->shield_health > 0){
+            game_state->shield_health = max(0, game_state->shield_health - mt2::damage_table_lookup(dmg));
+            audio_ptr->play_sound(audio_interface::SOUND_SHIELD_HIT);
+        } else {
+            game_state->health = max(0, game_state->health - mt2::damage_table_lookup(dmg));
+            game_state->last_hit = millis(); // Set the last hit time
+            score_data_ptr->hits_from_players_life[playerID]++;;
+            score_data_ptr->damage_from_players_life[playerID] +=
+                    mt2::damage_table_lookup(dmg);
+            score_data_ptr->total_hits_life++;
+            // Check if we are dead
+            if (game_state->health <= 0) {
+                on_killed(playerID);
+            } else {
+                audio_ptr->play_sound(audio_interface::SOUND_HIT);
+                digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE); // Turn on the hit led
+                hit_led_timer = millis() + 250; // Set the hit led timer
+            }
+        }
     }
 }
 // Called when the player is killed, transfers score data from this life to the game score data
@@ -257,7 +273,7 @@ void new_game(){
     game_state->last_hit = 0;
     game_state->max_respawns = game_state->respawns_remaining;
     clear_scores();
-    audio_ptr->play_sound(audio_interface::SOUND_RELOADED);
+    audio_ptr->play_sound(audio_interface::SOUND_BEEP);
 }
 
 void end_game(){
@@ -271,7 +287,7 @@ void end_game(){
 
 void start_game(){
     if (game_state->started) {
-        audio_ptr->play_sound(audio_interface::SOUND_BEEP);
+        audio_ptr->play_sound(audio_interface::SOUND_RELOADED);
     } else {
         new_game();
     }
@@ -284,7 +300,7 @@ void full_health(){
 
 void respawn(){ // Called when a player respawns
     // Called when a player respawns
-    if (game_state->respawns_remaining > 0 || game_state->currentConfig->game_bool_flags_1 & GAME_RESPAWN_ENABLE) {
+    if (game_state->respawns_remaining > 0 || game_state->currentConfig->game_bool_flags_1 & GAME_UNLIMITED_RESPAWN) {
         if (game_state->currentConfig->game_bool_flags_2 & GAME_FULL_AMMO_ON_RESPAWN) {
             game_state->ammo_count = game_state->clip_size;
             game_state->clip_count = game_state->currentConfig->number_of_clips;
@@ -296,7 +312,7 @@ void respawn(){ // Called when a player respawns
         game_state->reload_time = 0;
         score_data_ptr->respawn_time = millis();
         move_life_scores(); // Move the life scores to the game scores
-        game_state->respawns_remaining--;
+        if (!(game_state->currentConfig->game_bool_flags_1 & GAME_UNLIMITED_RESPAWN)) game_state->respawns_remaining--;
     }
 }
 
@@ -367,6 +383,12 @@ void tagger_loop(){
             game_state->last_shot = 0;
         }
     }
+    if (game_state->auto_respawn_time != 0){
+        if (millis() >= game_state->auto_respawn_time){
+            respawn();
+            game_state->auto_respawn_time = 0;
+        }
+    }
 
     if (hit_led_timer < millis() && hit_led_timer != 0) {
         digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
@@ -412,9 +434,10 @@ FLASHMEM score_data* get_score_data_ptr(){
  * and setting up the event handlers and other data structures.
  * @param audioPtr - Pointer to the audio interface
  */
-FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
+FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr, display::lcdDriver *lcdPtr){
     IR_init();
     audio_ptr = audioPtr;
+    display_ptr = lcdPtr;
     game_state = new tagger_state();
     game_state->started = true;
     score_data_ptr = new score_data();
@@ -437,6 +460,13 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr){
     handles->on_stun =          stunned;
     handles->on_init_player =   restart_gun; // Crashes the program and forces a restart of the teensy
     handles->on_test_sensors =  test_sensors;
+    handles->on_add_health =    add_health;
+    handles->on_add_rounds =    add_ammo;
+    handles->on_flag_pickup =   flag_pickup;
+    handles->on_clip_pickup =   clip_pickup;
+    handles->on_health_pickup = health_pickup;
+
+
 
 //    pinMode(TRIGGER_PIN_NUMBER, TRIGGER_PIN_MODE);
 //    pinMode(RELOAD_PIN_NUMBER, RELOAD_PIN_MODE);

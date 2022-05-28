@@ -264,7 +264,7 @@ FLASHMEM char* get_game_flags(unsigned char flags1, unsigned char flags2){
         strcat(buffer,"\n\tCTF Display: Enabled");
     else
         strcat(buffer,"\n\tCTF Display: Disabled");
-    if (GAME_RESPAWN_ENABLE & flags2)
+    if (GAME_UNLIMITED_RESPAWN & flags2)
         strcat(buffer,"\n\tRespawns: Enabled");
     else
         strcat(buffer,"\n\tRespawns: Disabled");

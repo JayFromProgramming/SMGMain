@@ -43,12 +43,14 @@ namespace display {
         tagger_state* game_state = nullptr;
         score_data* score = nullptr;
 
-        unsigned short last_health = -1;
-        unsigned char last_ammo_count = -1;
-        unsigned char last_clip_count = -1;
-        float last_angle = -90.0f;
-        unsigned short last_reload_time = -1;
-        bool already_progressing = false;
+        uint16_t last_health = -1; //!< The last health value displayed on the LCD
+        uint8_t last_ammo_count = -1; //!< The last ammo count displayed on the LCD
+        uint8_t last_clip_count = -1; //!< The last clip count displayed on the LCD
+        float last_angle = -90.0f; //!< The last angle of the progress circle displayed on the LCD
+        uint8_t last_progress_time = -1; //!< The last progress time displayed on the LCD
+        bool display_progress_circle = false; //!< Whether the progress circle is currently being displayed on the LCD
+        elapsedMillis progress_circle_timer; //!< The timer for the progress circle
+        uint32_t progress_circle_total_time = 0; //!< The total time for the progress circle
 
         bool backlight_on = true;
 
@@ -57,7 +59,7 @@ namespace display {
         char* ammo_str = nullptr;
         char* health_str = nullptr;
         char* reload_str = nullptr;
-        char* old_reload_str = nullptr;
+        char* old_progress_str = nullptr;
         char* death_str = nullptr;
         char* time_alive_str = nullptr;
 
@@ -134,9 +136,9 @@ namespace display {
         static void
         add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step, const char *unit);
 
-        void draw_dynamic_elements();
+        void draw_system_elements();
 
-        void progress_circle(float remaining_time, float total_time);
+        void progress_circle();
 
         static void clear_canvas();
 
@@ -148,6 +150,13 @@ namespace display {
         add_submenu_values(menu_option_item *sub_menu, uint32_t start, uint32_t range, unsigned int step,
                            const char *unit);
 
+        void progress_circle(float remaining_time, float total_time, String *header);
+
+        void start_progress_circle(uint32_t total_milliseconds);
+
+        void start_progress_circle(uint32_t total_milliseconds, String *header);
+
+        void cancel_progress_circle();
     };
 
 } // display

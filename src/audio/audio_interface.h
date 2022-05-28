@@ -18,7 +18,20 @@ namespace audio_interface {
         SOUND_RELOAD,
         SOUND_RELOADED,
         SOUND_EMPTY,
-        SOUND_BEEP
+        SOUND_BEEP,
+        SOUND_CLONE_OK,
+        SOUND_EXPLOSION,
+        SOUND_ADD_HEALTH,
+        SOUND_ADD_AMMO,
+        SOUND_ADD_SHIELD,
+        SOUND_SHIELD_HIT,
+        SOUND_SENSOR_FAIL,
+        SOUND_LOW_BATTERY,
+        SOUND_ZOMBIE_1,
+        SOUND_ZOMBIE_2,
+        SOUND_STUNNED,
+        SOUND_BUZZ,
+
     };
 
     enum actions{
@@ -60,7 +73,19 @@ namespace audio_interface {
                         case SOUND_RELOAD: player->play(2); break;
                         case SOUND_RELOADED: player->play(3); break;
                         case SOUND_EMPTY: player->play(1); break;
-                        case SOUND_BEEP: player->play(18); break;
+                        case SOUND_BEEP: player->play(8); break;
+                        case SOUND_SENSOR_FAIL: player->play(19); break;
+                        case SOUND_LOW_BATTERY: player->play(26); break;
+                        case SOUND_ZOMBIE_1: player->play(27); break;
+                        case SOUND_ZOMBIE_2: player->play(28); break;
+                        case SOUND_STUNNED: player->play(29); break;
+                        case SOUND_BUZZ: player->play(30); break;
+                        case SOUND_EXPLOSION: player->play(14); break;
+                        case SOUND_ADD_HEALTH: player->play(10); break;
+                        case SOUND_ADD_AMMO: player->play(12); break;
+                        case SOUND_ADD_SHIELD: player->play(13); break;
+                        case SOUND_SHIELD_HIT: player->play(15); break;
+                        case SOUND_CLONE_OK: player->play(18); break;
                         default: break;
                     }
                     break;

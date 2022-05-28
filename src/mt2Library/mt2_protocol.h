@@ -27,7 +27,7 @@
 #define GAME_GAMEBOX_UNLIMITED_USE 0x80 // Game Flag to enable gamebox unlimited use
 // Game flags second byte
 #define GAME_CTF_DISPLAY_ENABLE 0x04 // Game Flag to enable CTF display
-#define GAME_RESPAWN_ENABLE 0x08 // Game Flag to enable respawn
+#define GAME_UNLIMITED_RESPAWN 0x08 // Game Flag to enable respawn
 #define GAME_DISPLAY_NICKNAMES 0x10 // Game Flag to enable display of nicknames
 #define GAME_OLD_IR_LEVELS 0x20 // Game Flag to enable old IR levels
 #define GAME_FULL_AMMO_ON_RESPAWN 0x40 // Game Flag to enable full ammo on respawn

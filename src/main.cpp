@@ -369,7 +369,7 @@ void setup() {
     pinMode(IO_SELECT, INPUT_PULLUP);
     pinMode(BATT_VOLT, INPUT);
 //     Make sure all spi cs pins are high before initialization
-    digitalWriteFast(DISPLAY_CHIP_SELECT, HIGH);
+//    digitalWriteFast(DISPLAY_CHIP_SELECT, LOW);
     digitalWriteFast(RADIO_CHIP_SELECT, HIGH);
 
     display::lcdDriver::displayInit(); // Initialize the LCD display

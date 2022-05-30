@@ -62,7 +62,7 @@ namespace display {
      * @brief Initialize the LCD display
      */
     void lcdDriver::displayInit() {
-        lcd.init(240, 240, SPI_MODE3);
+        lcd.init(240, 240, SPI_MODE0);
         pinMode(DISPLAY_BACKLIGHT, OUTPUT);
         digitalWriteFast(DISPLAY_BACKLIGHT, HIGH);
         lcd.setRotation(2);
@@ -107,7 +107,7 @@ namespace display {
         if (displaying_alert) return; // Don't display the hud if an alert is being displayed
 
         if (display_progress_circle){
-
+            progress_circle();
         }
         if (this->game_state->health != this->last_health && this->last_health == 0) {
             clear_screen();
@@ -152,7 +152,7 @@ namespace display {
         this->clear_ammo_count();
         if (header != nullptr) {
             clear_screen();
-            lcd.setTextCursor(RELOAD_CENTER_X - RELOAD_RADIUS, RELOAD_CENTER_Y - RELOAD_RADIUS);
+            lcd.setCursor(RELOAD_CENTER_X - RELOAD_RADIUS, RELOAD_CENTER_Y - RELOAD_RADIUS);
             lcd.setTextSize(RELOAD_TEXT_SIZE);
             lcd.setTextColor(ST77XX_WHITE);
             lcd.print(*header->c_str());

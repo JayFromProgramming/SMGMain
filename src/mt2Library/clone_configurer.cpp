@@ -82,8 +82,8 @@ void edit_burst_size(int size) {
     temp_clone->burst_size = size;
 }
 
-void edit_friendly_fire(int value) {
-    set_game_flag(temp_clone, GAME_FRIENDLY_FIRE, value, 0);
+void edit_friendly_fire(int value) { // TODO: Fix
+//    set_game_flag(temp_clone, GAME_FRIENDLY_FIRE, value, 0);
 }
 
 display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id, void (*config_menu_callback)()) {

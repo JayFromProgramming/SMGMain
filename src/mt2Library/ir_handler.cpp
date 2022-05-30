@@ -251,7 +251,7 @@ void transmit_start(){
     transmission_timer.priority(1); // Set the timer to the highest priority
     transmission_in_progress = true;
     transmission_position = 1;
-    transmission_timer.begin(transmit_method, transmission_buffer[0]);
+    transmission_timer.begin(transmit_method, transmission_buffer[0] / 2);
 }
 
 void transmitter_test(){

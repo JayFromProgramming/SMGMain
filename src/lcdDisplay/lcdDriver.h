@@ -5,8 +5,10 @@
 #ifndef SMGMAIN_LCDDRIVER_H
 #define SMGMAIN_LCDDRIVER_H
 
-
-#include "tagger.h"
+#include <Arduino.h>
+#include <mt2Library/state_structs.h>
+#include "lcdDisplay/Adafruit-ST7735-Library-master/Adafruit_ST7789.h"
+//#include "tagger.h"
 
 #define CALL_MEMBER_FN(object, ptrToMember)  ((object).*(ptrToMember))
 
@@ -42,7 +44,6 @@ namespace display {
         bool displaying_alert = false;
         tagger_state* game_state = nullptr;
         score_data* score = nullptr;
-
         uint16_t last_health = -1; //!< The last health value displayed on the LCD
         uint8_t last_ammo_count = -1; //!< The last ammo count displayed on the LCD
         uint8_t last_clip_count = -1; //!< The last clip count displayed on the LCD

@@ -106,13 +106,13 @@ FLASHMEM String* get_soundset_name(sounds_set set){
 
 FLASHMEM String* get_team_name(teams team){
     switch(team){
-        case RED:
+        case TEAM_RED:
             return (String *) "Red";
-        case BLUE:
+        case TEAM_BLUE:
             return (String *) "Blue";
-        case YELLOW:
+        case TEAM_YELLOW:
             return (String *) "Yellow";
-        case GREEN:
+        case TEAM_GREEN:
             return (String *) "Green";
         default:
             return (String *) "Unknown";

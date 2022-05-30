@@ -35,9 +35,9 @@ void init_eeprom();
 
 typedef struct device_configs {
     uint8_t boot_mode;
-    uint8_t temp_boot_mode; // Indicates if the device is temporarily in switching boot modes
+    uint8_t temp_boot_mode; //!< Indicates if the device is temporarily in switching boot modes
 
-    uint8_t screen_orientation; // 0 for left, 1 for right, 2 for up, 3 for down
+    uint8_t screen_orientation; //!< 0 for left, 1 for right, 2 for up, 3 for down
     uint8_t device_type; // Will be used by the radio library once it's implemented
     uint8_t device_id; // Used by the radio to identify the device and by IR shots
 

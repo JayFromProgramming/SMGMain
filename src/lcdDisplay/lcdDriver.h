@@ -42,8 +42,9 @@ namespace display {
 
     private:
         bool displaying_alert = false;
-        tagger_state* game_state = nullptr;
-        score_data* score = nullptr;
+
+        tagger_state_struct* game_state = nullptr;
+        score_data_struct* score = nullptr;
         uint16_t last_health = -1; //!< The last health value displayed on the LCD
         uint8_t last_ammo_count = -1; //!< The last ammo count displayed on the LCD
         uint8_t last_clip_count = -1; //!< The last clip count displayed on the LCD
@@ -52,8 +53,6 @@ namespace display {
         bool display_progress_circle = false; //!< Whether the progress circle is currently being displayed on the LCD
         elapsedMillis progress_circle_timer; //!< The timer for the progress circle
         uint32_t progress_circle_total_time = 0; //!< The total time for the progress circle
-
-        bool backlight_on = true;
 
         // String holders
         char* clips_str = nullptr;
@@ -86,7 +85,7 @@ namespace display {
     public:
         static void displayInit();
 
-        void pass_data_ptr(tagger_state *data, score_data *score_t);
+        void pass_data_ptr(tagger_state_struct *data, score_data_struct *score_t);
 
         void update_hud(); // Runs the update checks for the display
 
@@ -158,6 +157,10 @@ namespace display {
         void start_progress_circle(uint32_t total_milliseconds, String *header);
 
         void cancel_progress_circle();
+
+        static void force_backlight(bool value, bool force);
+
+        static void force_backlight(bool force);
     };
 
 } // display

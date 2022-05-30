@@ -42,11 +42,11 @@
 namespace mt2 {
 
     enum teams : uint8_t {
-        RED = 0x00,
-        BLUE = 0x01,
-        YELLOW = 0x02,
-        GREEN = 0x03,
-        NONE = 0x04,
+        TEAM_RED = 0x00,
+        TEAM_BLUE = 0x01,
+        TEAM_YELLOW = 0x02,
+        TEAM_GREEN = 0x03,
+        TEAM_NONE = 0x04,
         PASSTHROUGH = 0x05 // Used to indicate that the team should remain unchanged (used in clones only)
     };
 
@@ -54,7 +54,8 @@ namespace mt2 {
         FIRE_MODE_SINGLE = 0x00,
         FIRE_MODE_BURST = 0x01,
         FIRE_MODE_AUTO = 0x02,
-        FIRE_MODE_SELECT = 0x03 // Allow user to select fire mode
+        FIRE_MODE_SELECT_BURST = 0x03, // Allow user to select fire mode
+        FIRE_MODE_SELECT_AUTO = 0x04 // Allow user to select fire mode
     };
 
     enum sounds_set : uint8_t {
@@ -203,7 +204,7 @@ namespace mt2 {
 
     typedef struct clone { // Clone Structure, with default values set
         char name[15] = "Default preset"; // Preset name used for display, max 14 characters
-        teams team_id = NONE; // See section 2.3.1
+        teams team_id = TEAM_NONE; // See section 2.3.1
         unsigned char clips_from_ammo_box = 0x00;
         unsigned char health_from_medic_box = 0x00;
         unsigned char hit_led_timout_seconds = 0xFF;

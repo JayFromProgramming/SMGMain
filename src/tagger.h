@@ -53,10 +53,10 @@ void tagger_init(audio_interface::audio_interface* audio_interface, display::lcd
 
 void tagger_loop();
 
-tagger_state* get_tagger_data_ptr();
+tagger_state_struct* get_tagger_data_ptr();
 
 event_handlers* get_event_handler_ptr();
 
-score_data* get_score_data_ptr();
+score_data_struct* get_score_data_ptr();
 
 #endif //SMGMAIN_TAGGER_H

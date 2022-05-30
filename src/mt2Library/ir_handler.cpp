@@ -32,6 +32,7 @@ void receive_pulse();
 
 FLASHMEM void transmitter_init() {
     pinMode(MUZZLE_IR_FLASH, OUTPUT);
+    digitalWriteFast(MUZZLE_IR_FLASH, HIGH);
     transmission_position = 0;
     transmission_length = 0;
     transmission_in_progress = false;
@@ -220,6 +221,7 @@ bool send(const uint8_t *data, uint32_t bits){
 
 void transmit_finished(){
     noTone(MUZZLE_IR_FLASH);
+    digitalWriteFast(MUZZLE_IR_FLASH, HIGH); // Due to the MOSFET the output is inverted
     transmission_in_progress = false;
     if (on_transmission_complete != nullptr) on_transmission_complete();
     receiver_attach(); // Reattach the receiver

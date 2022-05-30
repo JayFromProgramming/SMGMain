@@ -36,12 +36,14 @@ event_handlers* tagger_events = nullptr;
 Bounce trigger_button = Bounce(IO_TRIGGER, 5);
 Bounce reload_button = Bounce(IO_RELOAD, 5);
 Bounce mode_button = Bounce(IO_MODE, 5);
+Bounce select_button = Bounce(IO_SELECT, 5);
 
 struct button_methods {
   void (*trigger_method)(bool state) = nullptr;
   void (*shot_check_method)(Bounce* passthrough) = nullptr;
   void (*reload_method)()  = nullptr;
   void (*mode_method)()  = nullptr;
+  void (*select_method)()  = nullptr;
 };
 
 button_methods io_actions;
@@ -369,7 +371,7 @@ void setup() {
     pinMode(IO_SELECT, INPUT_PULLUP);
     pinMode(BATT_VOLT, INPUT);
 //     Make sure all spi cs pins are high before initialization
-//    digitalWriteFast(DISPLAY_CHIP_SELECT, LOW);
+    digitalWriteFast(DISPLAY_CHIP_SELECT, LOW);
     digitalWriteFast(RADIO_CHIP_SELECT, HIGH);
 
     display::lcdDriver::displayInit(); // Initialize the LCD display
@@ -469,9 +471,9 @@ void loop() {
 
         if (command_array[0] == "hit") {
 
-            tagger_events->on_hit(0, mt2::BLUE, mt2::DAMAGE_25);
+            tagger_events->on_hit(0, mt2::TEAM_BLUE, mt2::DAMAGE_25);
             delayMicroseconds(2500);
-            tagger_events->on_hit(1, mt2::BLUE, mt2::DAMAGE_25);
+            tagger_events->on_hit(1, mt2::TEAM_BLUE, mt2::DAMAGE_25);
             Serial.printf("hit! Remaining health: %d\n", get_tagger_data_ptr()->health);
         } else if (command_array[0] == "test_sensors") {
             Serial.println("sensor test");

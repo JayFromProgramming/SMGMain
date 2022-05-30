@@ -55,6 +55,7 @@ Adafruit_ST7789 lcd = Adafruit_ST7789(DISPLAY_CHIP_SELECT, DISPLAY_DC, -1);
 GFXcanvas16 canvas(240, 240);
 
 bool backlight = true;
+bool backlight_forced = false;
 
 namespace display {
 
@@ -80,11 +81,11 @@ namespace display {
 
     /**
      * @brief Pass game data pointers to the display driver
-     * @param data - Pointer to a tagger_state struct
-     * @param score_t - Pointer to score_data struct
-     * @see tagger_state, score_data
+     * @param data - Pointer to a tagger_state_struct struct
+     * @param score_t - Pointer to score_data_struct struct
+     * @see tagger_state_struct, score_data_struct
      */
-    void lcdDriver::pass_data_ptr(tagger_state *data, score_data *score_t) {
+    void lcdDriver::pass_data_ptr(tagger_state_struct *data, score_data_struct *score_t) {
         clips_str = static_cast<char *>(malloc(sizeof(char) * 10));
         ammo_str  = static_cast<char *>(malloc(sizeof(char) * 10));
         reload_str = static_cast<char *>(malloc(sizeof(char) * 10));
@@ -389,11 +390,28 @@ namespace display {
         this->last_clip_count = -1;
     }
 
+    void lcdDriver::force_backlight(bool value, bool force) {
+        backlight_forced = force;
+        digitalWriteFast(DISPLAY_BACKLIGHT, value ? LOW : HIGH);
+        if (!force) backlight = value;
+    }
+
+    void lcdDriver::force_backlight(bool force) {
+        if (backlight_forced){
+            digitalWriteFast(DISPLAY_BACKLIGHT, backlight ? LOW : HIGH);
+        }
+        backlight_forced = force;
+    }
+
     /**
      * @brief Toggles the LCD backlight
      */
     void lcdDriver::toggle_backlight() {
-        digitalToggleFast(DISPLAY_BACKLIGHT);
+        if (backlight_forced) {
+            return;
+        }
+        backlight = !backlight;
+        digitalWriteFast(DISPLAY_BACKLIGHT, backlight ? LOW : HIGH);
     }
 
     void lcdDriver::display_alert(String* title, String* info){

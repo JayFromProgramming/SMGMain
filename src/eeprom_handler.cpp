@@ -19,7 +19,7 @@ device_configs* device_config = nullptr;
  */
 typedef struct eeprom_preset {
     char name[14]{"Unnamed Clone"}; // Preset name used for display, max 14 characters
-    teams team_id = mt2::NONE; // Team ID
+    teams team_id = mt2::TEAM_NONE; // Team ID
     unsigned char clips_from_ammo_box = 0x00;
     unsigned char health_from_medic_box = 0x00;
     unsigned char hit_led_timout_seconds = 0xFF;
@@ -231,7 +231,7 @@ FLASHMEM void set_defaults(){ // Set all memory settings to default values and r
 
     device_config->boot_mode = 0;
     device_config->current_preset = 0;
-    device_config->current_team = mt2::RED;
+    device_config->current_team = mt2::TEAM_RED;
 
     EEPROM.put(calculate_preset_index(1), *device_config);
 

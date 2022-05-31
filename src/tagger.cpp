@@ -21,7 +21,7 @@ eventTimer muzzle_flash_timer; //!< The timer for the muzzle flash (used to indi
 eventTimer hit_led_timer; //!< The timer for the hit led (used to indicate when the hit led should turn off)
 
 uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH; //!< The current flash bulb pin (used to indicate which flash bulb should be turned on)
-
+float_t temp_increase_per_shot = 0; //!< The temperature increase per shot
 
 void move_life_scores();
 
@@ -73,6 +73,11 @@ void configure_from_clone(mt2::clone* newClone){
     game_state.ammo_count = game_state.clip_size;
     game_state.started = false;
     game_state.team = game_state.currentConfig->team_id;
+    game_state.max_barrel_temp = game_state.currentConfig->overheat_limit;
+
+    if (game_state.max_barrel_temp == 0) {
+        temp_increase_per_shot = 0;
+    } else temp_increase_per_shot = 0.5;
 
     switch (game_state.currentConfig->fire_selector){
         case FIRE_MODE_SINGLE:
@@ -143,6 +148,8 @@ void on_reload(){
         return;
     }
 
+    game_state.jammed = false; // Reset the jammed flag after a reload
+
     if (game_state.clip_count >= 1 && game_state.ammo_count < game_state.clip_size) {
         game_state.reloading = true;
         // Set the reload_time to the current time + the reload_time (in seconds)
@@ -168,7 +175,7 @@ void shot_check(Bounce *bounce_ptr){
 
 //    game_state.currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
     if ((int) game_state.last_shot > game_state.shot_interval && !game_state.reloading) {
-        if (game_state.ammo_count > 0) {
+        if (game_state.ammo_count > 0 && !game_state.jammed) {
             // Check what fire mode we are in
             switch (game_state.fire_selector) {
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
@@ -180,6 +187,7 @@ void shot_check(Bounce *bounce_ptr){
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                             muzzle_flash_timer = 40;
                             score_data.rounds_fired_life++;
+                            game_state.barrel_temp += temp_increase_per_shot;
                         }
                     }
                     break;
@@ -193,6 +201,7 @@ void shot_check(Bounce *bounce_ptr){
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                             muzzle_flash_timer = 40;
                             score_data.rounds_fired_life++;
+                            game_state.barrel_temp += temp_increase_per_shot;
                         }
                     } else if (trigger_down == -1) {
                         if (game_state.current_burst_count > 0) {
@@ -204,6 +213,7 @@ void shot_check(Bounce *bounce_ptr){
                                 digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                                 muzzle_flash_timer = 40;
                                 score_data.rounds_fired_life++;
+                                game_state.barrel_temp += temp_increase_per_shot;
                             }
                         }
                     }
@@ -217,6 +227,7 @@ void shot_check(Bounce *bounce_ptr){
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
                             muzzle_flash_timer = 40;
                             score_data.rounds_fired_life++;
+                            game_state.barrel_temp += temp_increase_per_shot;
                         }
                     }
                     break;
@@ -518,6 +529,15 @@ void tagger_loop(){
             game_state.last_shot = 0;
         }
     }
+
+    if(game_state.barrel_temp > 0){
+        game_state.barrel_temp -= 0.05;
+    }
+
+    if(game_state.barrel_temp > game_state.max_barrel_temp){
+        game_state.jammed = true;
+    }
+
     if (game_state.auto_respawn_time){
         respawn();
     }

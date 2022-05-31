@@ -80,7 +80,7 @@ namespace display {
         static void clear_screen();
 
         // Helper methods for drawing the screen
-        float calc_health_percentage();
+        float_t calc_health_percentage();
 
     public:
         static void displayInit();
@@ -161,6 +161,16 @@ namespace display {
         static void force_backlight(bool value, bool force);
 
         static void force_backlight(bool force);
+
+        void draw_horizontal_percent_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t percent,
+                                         uint16_t mainColor,
+                                         uint16_t secondaryColor);
+
+        static void
+        draw_horizontal_percent_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, float_t percent, uint16_t mainColor,
+                                    uint16_t secondaryColor);
+
+        float_t calc_shield_percentage();
     };
 
 } // display

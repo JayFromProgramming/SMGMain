@@ -24,6 +24,11 @@
 #define HEALTH_BAR_WIDTH    233
 #define HEALTH_BAR_HEIGHT   10
 
+#define SHIELD_BAR_START_X  7
+#define SHIELD_BAR_START_Y  20
+#define SHIELD_BAR_WIDTH    233
+#define SHIELD_BAR_HEIGHT   10
+
 #define CLIP_TEXT_START_X   69
 #define CLIP_TEXT_START_Y   84
 #define CLIP_TEXT_SIZE      4
@@ -213,8 +218,12 @@ namespace display {
 
     }
 
-    float lcdDriver::calc_health_percentage() {
+    float_t lcdDriver::calc_health_percentage() {
         return (float)game_state->health / (float) game_state->max_health;
+    }
+
+    float_t lcdDriver::calc_shield_percentage() {
+        return (float)game_state->shield_health / (float) game_state->max_shield_health;
     }
 
     /**
@@ -299,13 +308,11 @@ namespace display {
         lcd.print(this->game_state->max_health);
         if (this->game_state->health <= 0) {
             draw_death_screen();
-        } else if (this->game_state->health == this->game_state->max_health) {
-            lcd.fillRect(0, 10, 240, 20, ST77XX_GREEN);
         } else {
-            lcd.fillRect((int)(calc_health_percentage() * 240), 10,
-                         240, 20, ST77XX_RED);
-            lcd.fillRect(0, 10,
-                         (int)(calc_health_percentage() * 240), 20, ST77XX_GREEN);
+            draw_horizontal_percent_bar(HEALTH_BAR_START_X, HEALTH_BAR_START_Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT,
+                                        calc_health_percentage(), ST77XX_GREEN, ST77XX_RED);
+            draw_horizontal_percent_bar(SHIELD_BAR_START_X, SHIELD_BAR_START_Y, SHIELD_BAR_WIDTH, SHIELD_BAR_HEIGHT,
+                                        calc_shield_percentage(), ST77XX_BLUE, ST77XX_BLACK);
         }
     }
 
@@ -320,10 +327,9 @@ namespace display {
             lcd.setTextColor(ST77XX_GREEN);
         } else if (game_state->ammo_count > 0) { // If ammo count is below 5 ammo count is yellow
             lcd.setTextColor(ST77XX_YELLOW);
-        } else { // If player has no ammo ammo count is red
+        } else { // If player has no ammo, the ammo count is red
             lcd.setTextColor(ST77XX_RED);
         }
-
         lcd.print(ammo_str);
     }
 
@@ -427,6 +433,23 @@ namespace display {
     void lcdDriver::clear_alert(){
         this->displaying_alert = false;
         this->clear();
+    }
+
+    void lcdDriver::draw_horizontal_percent_bar(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
+                                                float_t percent, uint16_t mainColor, uint16_t secondaryColor){
+        // To minimize draw time we draw the bar in two parts
+        // First we calculate each part's width, height is constant
+
+        if (percent > 1.0f) percent = 1.0f; // Clamp to 1.0f
+        if (percent < 0.0f) percent = 0.0f; // Clamp to 0.0f
+        uint16_t x1 = x; // First part's x
+        uint16_t x2 = x + (uint16_t) (w * percent); // Calculate the second part's x position
+        auto w1 = (uint16_t) (w * percent); // Calculate the first part's width
+        uint16_t w2 = x2 - x; // Calculate the second part's width
+        // First we draw the main part of the bar
+        lcd.fillRect(x1, y, w1, h, mainColor);
+        // Then we draw the secondary part of the bar
+        lcd.fillRect(x2, y, w2, h, secondaryColor);
     }
 
     // ------------------------------------------------------MENU METHODS----------------------------------------------------//

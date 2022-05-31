@@ -187,7 +187,7 @@ namespace mt2 {
         START_GAME = 0x02,
         RESTORE_DEFAULTS = 0x03,
         RESPAWN = 0x04,
-        INIT_NEW_GAME = 0x05,
+        INSTANT_NEW_GAME = 0x05,
         FULL_AMMO = 0x06,
         END_GAME = 0x07,
         RESET_CLOCK = 0x08,

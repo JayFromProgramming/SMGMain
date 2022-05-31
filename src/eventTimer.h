@@ -6,6 +6,8 @@
 #define SMGMAIN_EVENTTIMER_H
 
 #if ARDUINO >= 100
+
+#include <climits>
 #include "Arduino.h"
 #else
 #include "WProgram.h"
@@ -153,7 +155,10 @@ public:
      * @return The remaining time in milliseconds.
      */
     explicit operator long() const{
-        return (long) event_time - millis();
+        if (event_time >= LONG_MAX){ // If the event time is greater than the max value of a long
+            // Subtract the max value of a long from the event time and subtract the max value of a long from the current time
+            return (event_time - LONG_MAX) - (millis() - LONG_MAX); // This way when the result is truncated it will still fit in a long
+        } else return (long) event_time - millis();
     }
 
     /**

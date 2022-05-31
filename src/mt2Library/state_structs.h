@@ -17,11 +17,11 @@ struct tagger_state_struct {
     volatile uint32_t last_hit = 0; //!< The last time a hit was registered, in milliseconds
     volatile uint16_t hit_delay_ms = 0; //!< The delay between hits, in milliseconds
     volatile uint16_t health = 0;  //!< The current health the tagger has
-    volatile uint16_t shield_health = 0; //!< The current shield health the tagger has
+    volatile uint8_t shield_health = 0; //!< The current shield health the tagger has
     volatile uint8_t ammo_count = 0; //!< The current ammo count
     volatile uint8_t clip_count = 0; //!< The current clip count
     volatile uint8_t clip_size = 0; //!< The current clip size
-    volatile uint8_t barrel_temp = 0; //!< The current barrel temperature (in temp units)
+    volatile float_t barrel_temp = 0; //!< The current barrel temperature (in temp units)
     volatile bool reloading = false; //!< Whether the tagger is currently reloading
     volatile uint32_t reload_time = 0.0; //!< If reloading, the time the reload will be completed, in milliseconds
     volatile bool paused = false; //!< Whether the tagger is paused
@@ -29,13 +29,16 @@ struct tagger_state_struct {
     volatile bool disarmed = false; //!< Whether the tagger is disarmed (triggered by admin)
     volatile uint8_t respawns_remaining = 0; //!< The number of respawns the tagger has remaining
     eventTimer auto_respawn_time; //!< The time the tagger will respawn, in milliseconds (if auto-respawn is enabled)
+    volatile bool jammed = false; //!< Whether the tagger is jammed (reload to clear jam)
     volatile uint8_t fire_selector = 0; //!< The current fire selector position
     volatile bool is_zombie = false; //!< Whether the tagger is a zombie (only used in zombie mode)
 
     // Below are static values not updated during game play
     mt2::clone *currentConfig = nullptr; //!< The current clone configuration
     uint16_t max_health = 0; //!< The maximum health the tagger can have
+    uint8_t max_shield_health = 0; //!< The maximum shield health the tagger can have
     uint8_t max_respawns = 0; //!< The maximum number of respawns the tagger can have
+    float_t max_barrel_temp = 0; //!< The maximum barrel temperature the tagger can have
     uint8_t player_id = 0; //!< The player id of the tagger
     uint16_t shot_interval = 0; //!< The interval between shots, in milliseconds
     mt2::teams team = mt2::TEAM_NONE; //!< The team the tagger is on

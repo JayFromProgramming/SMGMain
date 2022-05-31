@@ -164,7 +164,7 @@ void bad_battery_method(float_t battery_volts){
 
     String info(format_text);
 
-    hud.display_alert((String *) "BAD BATTERY!", &info);
+    hud.display_alert((String *) "LOW BATTERY!", &info);
     set_arm_clock(750000);
 }
 

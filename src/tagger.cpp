@@ -3,7 +3,6 @@
 //
 #include <tagger.h>
 #include "audio/audio_interface.h"
-//#include "mt2Library/tag_communicator.h"
 #include <eeprom_handler.h>
 #include <Bounce.h>
 #include <pinout.h>
@@ -74,6 +73,24 @@ void configure_from_clone(mt2::clone* newClone){
     game_state.ammo_count = game_state.clip_size;
     game_state.started = false;
     game_state.team = game_state.currentConfig->team_id;
+
+    switch (game_state.currentConfig->fire_selector){
+        case FIRE_MODE_SINGLE:
+            game_state.fire_selector = FIRE_MODE_SINGLE;
+            break;
+        case FIRE_MODE_BURST:
+            game_state.fire_selector = FIRE_MODE_BURST;
+            break;
+        case FIRE_MODE_AUTO:
+            game_state.fire_selector = FIRE_MODE_AUTO;
+            break;
+        case FIRE_MODE_SELECT_BURST:
+            game_state.fire_selector = digitalReadFast(IO_SELECT) ? FIRE_MODE_BURST : FIRE_MODE_SINGLE;
+            break;
+        case FIRE_MODE_SELECT_AUTO:
+            game_state.fire_selector = digitalReadFast(IO_SELECT) ? FIRE_MODE_AUTO : FIRE_MODE_SINGLE;
+            break;
+    }
 
     if (game_state.team == mt2::PASSTHROUGH || game_state.team == mt2::TEAM_NONE){
         game_state.team = get_device_configs()->current_team;
@@ -149,7 +166,7 @@ void shot_check(Bounce *bounce_ptr){
         if (trigger_down == 1) trigger_down = -1;
     }
 
-    game_state.currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
+//    game_state.currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
     if ((int) game_state.last_shot > game_state.shot_interval && !game_state.reloading) {
         if (game_state.ammo_count > 0) {
             // Check what fire mode we are in
@@ -225,20 +242,17 @@ void on_fire_select(bool value){
         game_state.fire_selector = value ? mt2::FIRE_MODE_SINGLE : mt2::FIRE_MODE_BURST;
     }
 }
-/*
+/**
  * @brief When the mode pin changes state, this function is called
- * @param value - The value of the pin
  */
-void on_mode_select(bool value){
+void on_mode_select(){
     if (game_state.medic_mode){
-        if (value){
-            if ((int) game_state.last_shot > game_state.shot_interval && !game_state.reloading) {
-                sendCommand(mt2::RESPAWN); // Send an admin respawn command
-                game_state.last_shot = 0;
-                digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                muzzle_flash_timer = 50;
-                audio_ptr->play_sound(audio_interface::SOUND_SHOOT); // Temp: Plays shot sound will be a different sound later
-            }
+        if ((int) game_state.last_shot > game_state.shot_interval && !game_state.reloading) {
+            sendCommand(mt2::RESPAWN); // Send an admin respawn command
+            game_state.last_shot = 0;
+            digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
+            muzzle_flash_timer = 50;
+            audio_ptr->play_sound(audio_interface::SOUND_SHOOT); // Temp: Plays shot sound will be a different sound later
         }
     }
 }

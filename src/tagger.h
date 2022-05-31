@@ -49,6 +49,10 @@ void shot_check(Bounce *bounce);
 
 void on_reload();
 
+void on_fire_select(bool value);
+
+void on_mode_select();
+
 void tagger_init(audio_interface::audio_interface* audio_interface, display::lcdDriver *lcdPtr);
 
 void tagger_loop();

@@ -450,64 +450,66 @@ namespace display {
      */
     void lcdDriver::draw_menu(){ // Draws the currently loaded menu
         clear_canvas();
-        canvas.fillScreen(current_menu->background_color);
-        canvas.setCursor(0, 0);
-        canvas.setTextSize(3);
-        canvas.setTextColor(current_menu->text_color);
-        canvas.print(current_menu->name);
-        // Calculate the bounds of the menu name and start the menu items from there
-        int16_t x1, y1;
-        uint16_t w, h;
-        uint16_t w2, h2;
-        canvas.getTextBounds(current_menu->name, 5, 0, &x1, &y1, &w, &h);
-        int16_t start_x = x1 + w + 5;
-        int16_t start_y = y1 + h + 5;
-        canvas.setCursor(0, start_y);
-        canvas.setTextSize(2);
-        // Disable text wraping
-        canvas.setTextWrap(false);
-        // Calculate how many items need to be skipped so that the selected item is on the screen
-        int16_t skip_items = 0;
-        for (int i = 0; i < current_menu->num_items; i++) {
-            // Calculate the bounds of all the items before the selected item
-            canvas.getTextBounds(current_menu->items[i].name, start_x, start_y + i * h, &x1, &y1, &w, &h);
-            if (current_menu->items[i].sub_menu != nullptr) h = h * 2;
-            // If the selected item is not on the screen skip items until it is
-            if (y1 + h >= LCD_HEIGHT - h) {
-                if (i == current_menu->selected_item) {
-                    skip_items = i;
+        if (current_menu != nullptr) {
+            canvas.fillScreen(current_menu->background_color);
+            canvas.setCursor(0, 0);
+            canvas.setTextSize(3);
+            canvas.setTextColor(current_menu->text_color);
+            canvas.print(current_menu->name);
+            // Calculate the bounds of the menu name and start the menu items from there
+            int16_t x1, y1;
+            uint16_t w, h;
+            uint16_t w2, h2;
+            canvas.getTextBounds(current_menu->name, 5, 0, &x1, &y1, &w, &h);
+            int16_t start_x = x1 + w + 5;
+            int16_t start_y = y1 + h + 5;
+            canvas.setCursor(0, start_y);
+            canvas.setTextSize(2);
+            // Disable text wraping
+            canvas.setTextWrap(false);
+            // Calculate how many items need to be skipped so that the selected item is on the screen
+            int16_t skip_items = 0;
+            for (int i = 0; i < current_menu->num_items; i++) {
+                // Calculate the bounds of all the items before the selected item
+                canvas.getTextBounds(current_menu->items[i].name, start_x, start_y + i * h, &x1, &y1, &w, &h);
+                if (current_menu->items[i].sub_menu != nullptr) h = h * 2;
+                // If the selected item is not on the screen skip items until it is
+                if (y1 + h >= LCD_HEIGHT - h) {
+                    if (i == current_menu->selected_item) {
+                        skip_items = i;
+                    }
                 }
             }
-        }
-        char* num_str = new char[3];
-        for (int i = skip_items; i < current_menu->num_items; i++) {
-            canvas.setTextColor(current_menu->text_color);
-            if (i == current_menu->selected_item) {
-                if (current_menu->items[i].func != nullptr || current_menu->items[i].func_param != nullptr) {
-                    sprintf(num_str, "%02d>", i + 1);
-                    canvas.setTextColor(ST77XX_GREEN);
-                } else sprintf(num_str, "%02d-", i + 1);
-            } else sprintf(num_str, "%02d:", i + 1);
-            canvas.print(num_str);
-            canvas.print(current_menu->items[i].name);
-            canvas.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
-            if (current_menu->items[i].sub_menu != nullptr) {
-                canvas.setCursor(0, start_y + h + 3);
-                if (current_menu->items[i].sub_menu->is_active) {
-                    canvas.setTextColor(ST77XX_YELLOW);
-                    canvas.print("=>");
-                } else canvas.print("->");
-                auto* name = current_menu->items[i].sub_menu->option_names
-                        [current_menu->items[i].sub_menu->selected_option]->c_str();
-                canvas.print(name);
-                canvas.getTextBounds(num_str, 0, start_y + i * h + 3, &x1, &y1, &w2, &h2);
+            char *num_str = new char[3];
+            for (int i = skip_items; i < current_menu->num_items; i++) {
+                canvas.setTextColor(current_menu->text_color);
+                if (i == current_menu->selected_item) {
+                    if (current_menu->items[i].func != nullptr || current_menu->items[i].func_param != nullptr) {
+                        sprintf(num_str, "%02d>", i + 1);
+                        canvas.setTextColor(ST77XX_GREEN);
+                    } else sprintf(num_str, "%02d-", i + 1);
+                } else sprintf(num_str, "%02d:", i + 1);
+                canvas.print(num_str);
+                canvas.print(current_menu->items[i].name);
+                canvas.getTextBounds(current_menu->items[i].name, 0, start_y, &x1, &y1, &w, &h);
+                if (current_menu->items[i].sub_menu != nullptr) {
+                    canvas.setCursor(0, start_y + h + 3);
+                    if (current_menu->items[i].sub_menu->is_active) {
+                        canvas.setTextColor(ST77XX_YELLOW);
+                        canvas.print("=>");
+                    } else canvas.print("->");
+                    auto *name = current_menu->items[i].sub_menu->option_names
+                    [current_menu->items[i].sub_menu->selected_option]->c_str();
+                    canvas.print(name);
+                    canvas.getTextBounds(num_str, 0, start_y + i * h + 3, &x1, &y1, &w2, &h2);
+                    start_y += h + 3;
+                }
                 start_y += h + 3;
+                canvas.setCursor(0, start_y);
             }
-            start_y += h + 3;
-            canvas.setCursor(0, start_y);
+            canvas.setTextWrap(true);
+            delete[] num_str;
         }
-        canvas.setTextWrap(true);
-        delete[] num_str;
         draw_canvas();
     }
 
@@ -520,6 +522,29 @@ namespace display {
         free_menu(current_menu);
         current_menu = new menu_holder(*menu);
         draw_menu();
+    }
+
+    /**
+     * @detals Frees the memory allocated to a menu_holder and all of its associated pointers
+     * @param menu - A pointer to the menu_holder to free
+     * @bug It just doesn't work :(
+     */
+    void lcdDriver::free_menu(menu_holder *menu) {
+        if (menu != nullptr) {
+            for (unsigned int i = 0; i < menu->num_items; i++) {
+                delete[] menu->items[i].name;
+                if (menu->items[i].sub_menu != nullptr) {
+                    for (unsigned int j = 0; j < menu->items[i].sub_menu->num_options; j++) {
+                        delete[] menu->items[i].sub_menu->option_names[j];
+                    }
+                    delete[] menu->items[i].sub_menu->option_names;
+                    delete menu->items[i].sub_menu;
+                }
+            }
+            delete[] menu->items;
+            delete menu;
+        }
+        menu = nullptr;
     }
 
     /**
@@ -810,26 +835,6 @@ namespace display {
         }
     }
 
-    /**
-     * @detals Frees the memory allocated to a menu_holder and all of its associated pointers
-     * @param menu - A pointer to the menu_holder to free
-     * @bug It just doesn't work :(
-     */
-    void lcdDriver::free_menu(menu_holder *menu) {
-        if (menu != nullptr) {
-            for (unsigned int i = 0; i < menu->num_items; i++) {
-                delete[] menu->items[i].name;
-                if (menu->items[i].sub_menu != nullptr) {
-                    for (unsigned int j = 0; j < menu->items[i].sub_menu->num_options; j++) {
-                        delete[] menu->items[i].sub_menu->option_names[j];
-                    }
-                    delete[] menu->items[i].sub_menu->option_names;
-                    delete menu->items[i].sub_menu;
-                }
-            }
-            delete[] menu->items;
-            delete menu;
-        }
-    }
+
 
 } // display

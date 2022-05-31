@@ -39,11 +39,12 @@ Bounce mode_button = Bounce(IO_MODE, 5);
 Bounce select_button = Bounce(IO_SELECT, 5);
 
 struct button_methods {
-  void (*trigger_method)(bool state) = nullptr;
-  void (*shot_check_method)(Bounce* passthrough) = nullptr;
-  void (*reload_method)()  = nullptr;
-  void (*mode_method)()  = nullptr;
-  void (*select_method)()  = nullptr;
+  void (*trigger_method)(bool state) = nullptr; //!< The method to call when the trigger button is pressed.
+  void (*shot_check_method)(Bounce* passthrough) = nullptr; //!< The method to call when the trigger button is pressed.
+  void (*reload_method)()  = nullptr; //!< method to call when reload button is pressed
+  void (*mode_method)()  = nullptr; //!< method to call when mode button is pressed
+  void (*mode_method_secondary)()  = nullptr; //!< secondary mode method for when the mode button is depressed
+  void (*select_method)(bool state) = nullptr; //!< method to call when select button is pressed
 };
 
 button_methods io_actions;
@@ -104,6 +105,19 @@ void io_refresh(){
   if (mode_button.fallingEdge()){
       if (io_actions.mode_method != nullptr){
         io_actions.mode_method();
+      }
+      if (io_actions.mode_method_secondary != nullptr){
+        io_actions.mode_method_secondary();
+      }
+  }
+  if (select_button.fallingEdge()){
+      if (io_actions.select_method != nullptr){
+        io_actions.select_method(true);
+      }
+  }
+if (select_button.risingEdge()){
+      if (io_actions.select_method != nullptr){
+        io_actions.select_method(false);
       }
   }
 }
@@ -169,6 +183,8 @@ void boot_mode_game(){
     io_actions.shot_check_method = &shot_check;
     io_actions.reload_method =  &on_reload;
     io_actions.mode_method =  &display::lcdDriver::toggle_backlight;
+    io_actions.mode_method_secondary = &on_mode_select;
+    io_actions.select_method = &on_fire_select;
 
     hud.pass_data_ptr(get_tagger_data_ptr(), get_score_data_ptr()); // pass the tagger data pointer to the lcd driver
     tagger_events = get_event_handler_ptr(); // get the tagger event pointer

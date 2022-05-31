@@ -11,7 +11,11 @@
 #include "WProgram.h"
 #endif
 
-
+/**
+ * @brief The eventTimer class is used to track when an event should be fired.
+ * @details To use set the class value to the time from now in milliseconds when the event should be fired.
+ *         The class will return true once if the event should be fired.
+ */
 class eventTimer {
 private:
     unsigned long event_time;

@@ -142,6 +142,8 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
     display::lcdDriver::add_submenu_item(menu, "Single shot");
     display::lcdDriver::add_submenu_item(menu, "Burst fire");
     display::lcdDriver::add_submenu_item(menu, "Full Auto");
+    display::lcdDriver::add_submenu_item(menu, "Selector - Burst");
+    display::lcdDriver::add_submenu_item(menu, "Selector - Auto");
     display::lcdDriver::submenu_set_selected(menu, clone->fire_selector);
 
 

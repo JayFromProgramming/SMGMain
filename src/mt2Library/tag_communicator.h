@@ -20,6 +20,7 @@ struct event_handlers {
     void (*on_full_ammo)() = nullptr; //!< Called when a full ammo signal is received.
     void (*on_admin_kill)() = nullptr;  //!< Called when an admin kill signal is received.
     void (*on_start_game)() = nullptr; //!< Called when a start game signal is received.
+    void (*on_instant_new_game)() = nullptr; //!< Called when a new game signal is received.
     void (*on_new_game)() = nullptr; //!< Called when a new game signal is received.
     void (*on_end_game)() = nullptr; //!< Called when an end game signal is received.
     void (*on_stun)() = nullptr; //!< Called when a stun signal is received.
@@ -49,6 +50,8 @@ void sendCommand(mt2::system_commands command);
 void sendShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg);
 
 bool shoot();
+
+void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg);
 
 void sendClone(mt2::clone *clone);
 

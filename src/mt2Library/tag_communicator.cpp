@@ -116,7 +116,7 @@ void process_sys_command(const unsigned char command) {
             if (handlers->on_respawn != nullptr) handlers->on_respawn();
             break;
         case INSTANT_NEW_GAME:
-            if (handlers->on_new_game != nullptr) handlers->on_new_game();
+            if (handlers->on_instant_new_game != nullptr) handlers->on_instant_new_game();
             break;
         case FULL_AMMO:
             if (handlers->on_full_ammo != nullptr) handlers->on_full_ammo();

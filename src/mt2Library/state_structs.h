@@ -25,7 +25,8 @@ struct tagger_state_struct {
     volatile bool reloading = false; //!< Whether the tagger is currently reloading
     volatile uint32_t reload_time = 0.0; //!< If reloading, the time the reload will be completed, in milliseconds
     volatile bool paused = false; //!< Whether the tagger is paused
-    volatile bool started = true; //!< Whether the tagger game has started
+    volatile bool started = false; //!< Whether the tagger game has started
+    volatile bool starting = false; //!< Whether game start is in progress
     volatile bool disarmed = false; //!< Whether the tagger is disarmed (triggered by admin)
     volatile uint8_t respawns_remaining = 0; //!< The number of respawns the tagger has remaining
     eventTimer auto_respawn_time; //!< The time the tagger will respawn, in milliseconds (if auto-respawn is enabled)

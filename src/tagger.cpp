@@ -74,6 +74,7 @@ void configure_from_clone(mt2::clone* newClone){
     game_state.started = false;
     game_state.team = game_state.currentConfig->team_id;
     game_state.max_barrel_temp = game_state.currentConfig->overheat_limit;
+    buildShot(game_state.player_id, game_state.team, game_state.currentConfig->damage_per_shot);
 
     if (game_state.max_barrel_temp == 0) {
         temp_increase_per_shot = 0;
@@ -612,6 +613,7 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr, display::l
     handles.on_full_health =       full_health;
     handles.on_clear_scores =      clear_scores;
     handles.on_start_game =        start_game;
+    handles.on_instant_new_game =  new_game;
     handles.on_new_game =          new_game;
     handles.on_end_game =          end_game;
     handles.on_pause_unpause =     pause_unpause;
@@ -629,7 +631,6 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr, display::l
     handles.on_stun =              stun_player;
     handles.on_explode =           explode_player;
     handles.on_restore_defaults =  restore_defaults;
-
 
     pinMode(HIT_LED_PIN_NUMBER, HIT_LED_PIN_MODE);
 

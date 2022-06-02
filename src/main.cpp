@@ -2,6 +2,10 @@
 // This is to function as a programmable IR gun cloner for game admins.
 
 #include <Arduino.h>
+#include "debug/TeensyDebug.h"
+#pragma GCC optimize ("O0")
+
+
 #include <tagger.h>
 #include <Bounce.h>
 
@@ -13,6 +17,7 @@
 #include <lcdDisplay/lcdDriver.h>
 //#include <radio/radioInterface.h>
 #include "settings_configurer.h"
+
 
 #include <pinout.h>
 
@@ -376,10 +381,10 @@ void boot_mode_sys_info() { // Display system information, does not override cur
 }
 
 void setup() {
-#ifdef DEBUG_MODE
-    Serial.begin(9600);
-    Serial.println("Starting...");
-#endif
+
+    debug.begin();
+//    debug.begin(SerialUSB);
+    digitalWriteFast(LED_BUILTIN, HIGH);
     init_eeprom();
     pinMode(IO_TRIGGER, INPUT_PULLUP);
     pinMode(IO_MODE, INPUT_PULLUP);
@@ -395,11 +400,12 @@ void setup() {
 
     InternalTemperatureClass::attachHighTempInterruptCelsius(70.f, overheat_method);
 
-    boot_mode = static_cast<boot_modes>(get_boot_mode());
+//    boot_mode = static_cast<boot_modes>(get_boot_mode());
 
 //    boot_mode = BOOT_MODE_UNKNOWN;
+//    boot_mode = BOOT_MODE_UNKNOWN;
 
-//    boot_mode = BOOT_MODE_GAME;
+    boot_mode = BOOT_MODE_GAME;
 
     // If the trigger is held down on startup, display the boot menu
     if (digitalReadFast(IO_TRIGGER) == LOW) {
@@ -413,7 +419,6 @@ void setup() {
     }
 
     // Else check the eeprom to see what the last boot mode was and run the appropriate boot mode
-
     switch (boot_mode) { // Run the appropriate boot mode initializer
         case BOOT_MODE_GAME:
             boot_mode_game();
@@ -443,21 +448,22 @@ void setup() {
             boot_menu();
             break;
     }
+    digitalWriteFast(LED_BUILTIN, LOW);
 }
 
 // This method will be removed in the future, currently only used for testing
-int split(const String& command, String pString[4], int i, char delimiter, int max_length) {
-    int pos = command.indexOf(delimiter, 0);
-    if (pos == -1) {
-        pString[i] = command;
-        return i + 1;
-    }
-    if (i > max_length) {
-        return i;
-    }
-    pString[i] = command.substring(0, pos);
-    return split(command.substring(pos + 1, command.length()), pString, i + 1, delimiter, max_length);
-}
+//int split(const String& command, String pString[4], int i, char delimiter, int max_length) {
+//    int pos = command.indexOf(delimiter, 0);
+//    if (pos == -1) {
+//        pString[i] = command;
+//        return i + 1;
+//    }
+//    if (i > max_length) {
+//        return i;
+//    }
+//    pString[i] = command.substring(0, pos);
+//    return split(command.substring(pos + 1, command.length()), pString, i + 1, delimiter, max_length);
+//}
 
 // Main loop this runs once every 20ms or 50Hz while the tagger and hud updates run audio interrupts are disabled
 void loop() {
@@ -478,30 +484,29 @@ void loop() {
             break;
     }
 
-
-    if (Serial.available()) {
-        String command = Serial.readStringUntil('\n');
-        // Split the command string into an array of strings delimited by spaces
-        String command_array[4];
-        int command_array_length = split(command, command_array, 0, ' ', 4);
-
-        if (command_array[0] == "hit") {
-
-            tagger_events->on_hit(0, mt2::TEAM_BLUE, mt2::DAMAGE_25);
-            delayMicroseconds(2500);
-            tagger_events->on_hit(1, mt2::TEAM_BLUE, mt2::DAMAGE_25);
-            Serial.printf("hit! Remaining health: %d\n", get_tagger_data_ptr()->health);
-        } else if (command_array[0] == "test_sensors") {
-            Serial.println("sensor test");
-            tagger_events->on_test_sensors();
-            Serial.println("sensor test complete");
-        } else if (command_array[0] == "respawn") {
-            Serial.println("RESPAWN");
-            tagger_events->on_respawn();
-        } else if (command_array[0] == "backlight") {
-            display::lcdDriver::toggle_backlight();
-        }
-    }
+//    if (Serial.available()) {
+//        String command = Serial.readStringUntil('\n');
+//        // Split the command string into an array of strings delimited by spaces
+//        String command_array[4];
+////        int command_array_length = split(command, command_array, 0, ' ', 4);
+//
+//        if (command_array[0] == "hit") {
+//
+//            tagger_events->on_hit(0, mt2::TEAM_BLUE, mt2::DAMAGE_25);
+//            delayMicroseconds(2500);
+//            tagger_events->on_hit(1, mt2::TEAM_BLUE, mt2::DAMAGE_25);
+//            Serial.printf("hit! Remaining health: %d\n", get_tagger_data_ptr()->health);
+//        } else if (command_array[0] == "test_sensors") {
+//            Serial.println("sensor test");
+//            tagger_events->on_test_sensors();
+//            Serial.println("sensor test complete");
+//        } else if (command_array[0] == "respawn") {
+//            Serial.println("RESPAWN");
+//            tagger_events->on_respawn();
+//        } else if (command_array[0] == "backlight") {
+//            display::lcdDriver::toggle_backlight();
+//        }
+//    }
     io_refresh();
     while (micros() < next_loop_time) io_refresh(); // Just check IO while waiting for next loop
 }

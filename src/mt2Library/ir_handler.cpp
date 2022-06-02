@@ -49,7 +49,7 @@ void receiver_detach(){
 }
 
 FLASHMEM void receiver_init() {
-    pinMode(IR_IN, INPUT);
+    pinMode(IR_IN, INPUT_PULLUP);
     receiver_attach();
 }
 

@@ -23,6 +23,12 @@ eventTimer hit_led_timer; //!< The timer for the hit led (used to indicate when 
 uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH; //!< The current flash bulb pin (used to indicate which flash bulb should be turned on)
 float_t temp_increase_per_shot = 0; //!< The temperature increase per shot
 
+enum trigger_states : uint8_t {
+    TRIGGER_RELEASED, //!< The trigger is released
+    TRIGGER_PRESSED, //!< The trigger is pressed
+    TRIGGER_HELD //!< The trigger is held
+};
+
 void move_life_scores();
 
 void add_health(uint8_t value);
@@ -41,15 +47,13 @@ void full_armor();
 
 void disarm_player();
 
-void stun_player();
-
 void explode_player();
 
 void restore_defaults();
 
 void respawn();
 
-int8_t trigger_down = 0; //!< The current state of the trigger [1 = Just pulled, 0 = Released,
+trigger_states trigger_down = TRIGGER_RELEASED; //!< The current state of the trigger [1 = Just pulled, 0 = Released,
 //!< -1 = Not released but is being held]
 
 /**
@@ -167,11 +171,11 @@ void on_reload(){
 void shot_check(Bounce *bounce_ptr){
 
     if (bounce_ptr->fallingEdge()) {
-        trigger_down = 1;
+        trigger_down = TRIGGER_PRESSED;
     } else if (bounce_ptr->risingEdge()) {
-        trigger_down = 0; // Reset the trigger_down flag
+        trigger_down = TRIGGER_RELEASED; // Reset the trigger_down flag
     } else {
-        if (trigger_down == 1) trigger_down = -1;
+        if (trigger_down == TRIGGER_PRESSED) trigger_down = TRIGGER_HELD;
     }
 
 //    game_state.currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
@@ -180,7 +184,7 @@ void shot_check(Bounce *bounce_ptr){
             // Check what fire mode we are in
             switch (game_state.fire_selector) {
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
-                    if (trigger_down == 1) {
+                    if (trigger_down == TRIGGER_PRESSED) {
                         if (shoot()) {
                             audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                             game_state.last_shot = 0;
@@ -193,7 +197,7 @@ void shot_check(Bounce *bounce_ptr){
                     }
                     break;
                 case mt2::FIRE_MODE_BURST:
-                    if (trigger_down == 1) {
+                    if (trigger_down == TRIGGER_PRESSED) {
                         if (shoot()) {
                             game_state.current_burst_count = game_state.currentConfig->burst_size;
                             audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
@@ -204,7 +208,7 @@ void shot_check(Bounce *bounce_ptr){
                             score_data.rounds_fired_life++;
                             game_state.barrel_temp += temp_increase_per_shot;
                         }
-                    } else if (trigger_down == -1) {
+                    } else if (trigger_down == TRIGGER_HELD) {
                         if (game_state.current_burst_count > 0) {
                             if (shoot()) {
                                 game_state.current_burst_count--;
@@ -220,7 +224,7 @@ void shot_check(Bounce *bounce_ptr){
                     }
                     break;
                 case mt2::FIRE_MODE_AUTO:
-                    if (trigger_down != 0) {
+                    if (trigger_down != TRIGGER_RELEASED) {
                         if (shoot()) { // If the IR transmitter is not busy preform shot actions
 //                            audio_ptr.play_sound(audio_interface::SOUND_SHOOT);
                             game_state.last_shot = 0;
@@ -235,7 +239,7 @@ void shot_check(Bounce *bounce_ptr){
                 default:
                     break;
             }
-        } else if (trigger_down == 1) {
+        } else if (trigger_down == TRIGGER_PRESSED) {
             audio_ptr->play_sound(audio_interface::SOUND_EMPTY);
         }
     }
@@ -483,7 +487,7 @@ void pause_unpause(){
 }
 
 void stunned(){
-    game_state.last_shot = millis() + 3000; // Set the last shot time to 3 seconds in the future to prevent shooting
+    game_state.last_shot = -3000; // Set the last shot time to a time in the past to prevent the player from shooting
 }
 
 void test_sensors(){
@@ -600,10 +604,9 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr, display::l
     IR_init();
     audio_ptr = audioPtr;
     display_ptr = lcdPtr;
-    game_state.started = true;
     clear_scores();
 
-    trigger_down = 0;
+    trigger_down = TRIGGER_RELEASED;
 
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
     handles.on_hit =               on_hit;
@@ -628,14 +631,13 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr, display::l
     handles.on_reset_clock =       reset_clock;
     handles.on_full_armor =        full_armor;
     handles.on_disarm_player =     disarm_player;
-    handles.on_stun =              stun_player;
     handles.on_explode =           explode_player;
     handles.on_restore_defaults =  restore_defaults;
 
     pinMode(HIT_LED_PIN_NUMBER, HIT_LED_PIN_MODE);
 
     // Load the current configuration
-    configure_from_clone(load_preset(0));
+    configure_from_clone(load_preset(get_device_configs()->current_preset));
 }
 
 void restore_defaults() {
@@ -649,12 +651,9 @@ void explode_player() {
 
 }
 
-void stun_player() {
-
-}
-
 void disarm_player() {
-    game_state.disarmed = !game_state.disarmed;
+    game_state.ammo_count = 0; // Remove all ammo
+    game_state.clip_count = 0;
 }
 
 void full_armor() {

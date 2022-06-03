@@ -17,6 +17,8 @@
 #include <SPI.h>
 #include <gfxfont.h>
 
+//#define DEBUG_MODE
+
 #define LCD_HEIGHT    240
 
 #define HEALTH_BAR_START_X  7
@@ -54,7 +56,7 @@
 #define MAX_OPTION_MENU_OPTIONS  300
 #define MAX_OPTION_LENGTH   32
 
-Adafruit_ST7789 lcd = Adafruit_ST7789(DISPLAY_CHIP_SELECT, DISPLAY_DC, -1);
+Adafruit_ST7789 lcd = Adafruit_ST7789(DISPLAY_CHIP_SELECT, DISPLAY_DC, DISPLAY_RST);
 
 // Define a canvas
 GFXcanvas16 canvas(240, 240);
@@ -110,6 +112,24 @@ namespace display {
     void lcdDriver::update_hud() {
         // Check if any game state values have changed to determine if we need to update the screen
 
+#ifdef DEBUG_MODE
+        if (Serial) {
+            Serial.println("Updating HUD...");
+            // Dump certain values to the serial port
+            Serial.printf("Displaying alert: %d\n"
+                          "Displaying progress circle: %d\n"
+                          "\tProgress: %d\n"
+                          "Game state: %d\n\tHealth: %d\n\tShield: %d\n\tClips: %d\n\tAmmo: %d\n"
+                          "\tReload: %d\n",
+                          displaying_alert,
+                          display_progress_circle,
+                          progress_circle_total_time - progress_circle_timer,
+                          game_state, game_state->health, game_state->shield_health,
+                          game_state->clip_count, game_state->ammo_count);
+            // Dump the serial buffer before continuing so we get complete data before it crashes
+            Serial.flush();
+        }
+#endif
         if (displaying_alert) return; // Don't display the hud if an alert is being displayed
 
         if (display_progress_circle){
@@ -134,7 +154,7 @@ namespace display {
             this->draw_ammo_count();
             this->last_ammo_count = this->game_state->ammo_count;
         }
-        this->draw_system_elements();
+//        this->draw_system_elements();
 
     }
 
@@ -156,6 +176,7 @@ namespace display {
         this->progress_circle_timer = 0;
         this->clear_clip_count();
         this->clear_ammo_count();
+        this->reset_angle = true;
         if (header != nullptr) {
             clear_screen();
             lcd.setCursor(RELOAD_CENTER_X - RELOAD_RADIUS, RELOAD_CENTER_Y - RELOAD_RADIUS);
@@ -170,7 +191,7 @@ namespace display {
 
     void lcdDriver::cancel_progress_circle() {
         display_progress_circle = false;
-        last_angle = -90.0f;
+
         lcdDriver::clear_screen();
         this->last_health = -1;
         this->last_clip_count = -1;
@@ -180,9 +201,13 @@ namespace display {
 
     void lcdDriver::progress_circle() {
         float remaining_time = ((float) progress_circle_total_time - (float) progress_circle_timer) / 1000.0f;
-        float remaining_reload_percent =  (float) progress_circle_timer / (float) progress_circle_total_time;
-        if (remaining_reload_percent > 1.0f) remaining_reload_percent = 1.0f;
-        float remaining_angle = ((1 - remaining_reload_percent) * 360.0f) - 90.0f;
+        float remaining_reload_percent =  (float) progress_circle_timer.operator unsigned long() /
+                (float) progress_circle_total_time;
+//        if (remaining_reload_percent > 1.0f) remaining_reload_percent = 1.0f;
+        float remaining_angle = -((1 - remaining_reload_percent) * 360.0f) - 90.0f;
+        if (reset_angle) last_angle = remaining_angle;
+        reset_angle = false;
+//        Serial.printf("Rem angle: %f\n", remaining_angle);
         // Sweep the circle with a line based on the remaining reload time to make a full circle
         // The line starts from the outer edge of the inner circle and ends at the outer edge of the outer circle
         for (float angle = last_angle; angle < remaining_angle; angle += 0.1f) {
@@ -398,13 +423,13 @@ namespace display {
 
     void lcdDriver::force_backlight(bool value, bool force) {
         backlight_forced = force;
-        digitalWriteFast(DISPLAY_BACKLIGHT, value ? LOW : HIGH);
+        digitalWriteFast(DISPLAY_BACKLIGHT, value ? HIGH : LOW);
         if (!force) backlight = value;
     }
 
     void lcdDriver::force_backlight(bool force) {
         if (backlight_forced){
-            digitalWriteFast(DISPLAY_BACKLIGHT, backlight ? LOW : HIGH);
+            digitalWriteFast(DISPLAY_BACKLIGHT, backlight ? HIGH : LOW);
         }
         backlight_forced = force;
     }
@@ -417,7 +442,7 @@ namespace display {
             return;
         }
         backlight = !backlight;
-        digitalWriteFast(DISPLAY_BACKLIGHT, backlight ? LOW : HIGH);
+        digitalWriteFast(DISPLAY_BACKLIGHT, backlight ? HIGH : LOW);
     }
 
     void lcdDriver::display_alert(String* title, String* info){

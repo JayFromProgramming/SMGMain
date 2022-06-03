@@ -29,7 +29,7 @@ struct tagger_state_struct {
     volatile bool starting = false; //!< Whether game start is in progress
     volatile bool disarmed = false; //!< Whether the tagger is disarmed (triggered by admin)
     volatile uint8_t respawns_remaining = 0; //!< The number of respawns the tagger has remaining
-    eventTimer auto_respawn_time; //!< The time the tagger will respawn, in milliseconds (if auto-respawn is enabled)
+    elapsedMillis auto_respawn_time; //!< The time the tagger will respawn, in milliseconds (if auto-respawn is enabled)
     volatile bool jammed = false; //!< Whether the tagger is jammed (reload to clear jam)
     volatile uint8_t fire_selector = 0; //!< The current fire selector position
     volatile bool is_zombie = false; //!< Whether the tagger is a zombie (only used in zombie mode)

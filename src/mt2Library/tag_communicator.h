@@ -42,6 +42,7 @@ struct event_handlers {
 void IR_init();
 
 event_handlers* get_handlers();
+void pass_handlers(event_handlers* passed_handlers);
 
 void signalScan();
 

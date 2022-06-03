@@ -29,7 +29,7 @@
 #define IO_SELECT 17
 #define HIT_LED 16
 #define DISPLAY_RST 15
-// 14 UNUSED
+// unused 14
 #define SPI_CLK 13
 
 #endif //SMGMAIN_PINOUT_H

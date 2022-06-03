@@ -21,6 +21,10 @@ event_handlers* get_handlers(){
     return handlers;
 }
 
+void pass_handlers(event_handlers* passed_handlers){
+    handlers = passed_handlers;
+}
+
 /**
  *  This is a method called by the main loop to check for new data from the IR receiver.
  */
@@ -52,7 +56,7 @@ void sendShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
     unsigned char shot[2];
     shot[0] = B01111111 & playerID;
     shot[1] = teamID << 6 | dmg << 2;
-    send(shot, (uint32_t) 14);
+    send(shot, (uint32_t) 15);
 }
 
 /**
@@ -62,8 +66,9 @@ void sendShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
  * @param dmg - The amount of damage to be dealt
  */
 void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
-    pre_shot[0] = B01111111 & playerID;
-    pre_shot[1] = teamID << 6 | dmg << 2;
+    uint16_t shot = (B01111111 & playerID) << 9 | teamID << 6 | dmg << 2;
+    pre_shot[0] = shot >> 8;
+    pre_shot[1] = shot & 0xFF;
 }
 
 /**
@@ -72,7 +77,7 @@ void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
  */
 bool shoot(){
     noInterrupts();
-    return send(pre_shot, (uint32_t) 14);
+    return send(pre_shot, (uint32_t) 15);
     interrupts();
 }
 
@@ -171,12 +176,13 @@ void decodeMT2Data(uint8_t* data){
         uint_least8_t player_id = messageByte & B01111111;
         uint_least8_t team_id = (data[1] & B11000000) >> 6;
         uint_least8_t damage = (data[1] & B00111100) >> 2;
+//        Serial.printf("Handlers: %p\non_hit->%p\n", handlers, handlers->on_hit);
         if (handlers->on_hit != nullptr) handlers->on_hit(player_id, static_cast<teams>(team_id),
                                                           static_cast<damage_table>(damage));
-        Serial.printf("Received shot packet\n"
-                      "Player ID: %d\n"
-                      "Team ID: %d\n"
-                      "Damage: %d\n", player_id, team_id, damage);
+//        Serial.printf("Received shot packet\n"
+//                      "Player ID: %d\n"
+//                      "Team ID: %d\n"
+//                      "Damage: %d\n", player_id, team_id, damage);
     } else { // This is where system packets are processed
         switch (messageByte){
             case ADD_HEALTH:

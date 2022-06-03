@@ -8,13 +8,14 @@
 #include "audio/audio_interface.h"
 #include "InternalTemperature.h"
 #include "eeprom_handler.h"
-//#include "mt2Library/tag_communicator.h"
 #include <mt2Library/clone_configurer.h>
 #include <lcdDisplay/lcdDriver.h>
 //#include <radio/radioInterface.h>
 #include "settings_configurer.h"
 
 #include <pinout.h>
+
+#define DEBUG_MODE
 
 extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype for cpu throttling
 
@@ -28,8 +29,9 @@ void boot_menu();
 display::lcdDriver hud = display::lcdDriver();
 //wireless::radioInterface radio = wireless::radioInterface();
 audio_interface::audio_interface audio = audio_interface::audio_interface();
-uint16_t next_loop_time = 0;
+uint32_t next_loop_time = 0;
 event_handlers* tagger_events = nullptr;
+
 
 //IntervalTimer io_refresh_timer;
 
@@ -376,10 +378,24 @@ void boot_mode_sys_info() { // Display system information, does not override cur
 }
 
 void setup() {
+
+    pinMode(MUZZLE_IR_FLASH, OUTPUT);
+    pinMode(MUZZLE_BLU_FLASH, OUTPUT);
+    pinMode(MUZZLE_RED_FLASH, OUTPUT);
+    pinMode(HIT_LED, OUTPUT);
+
+    digitalWriteFast(MUZZLE_IR_FLASH, HIGH);
+    digitalWriteFast(MUZZLE_BLU_FLASH, HIGH);
+    digitalWriteFast(MUZZLE_RED_FLASH, HIGH);
+    digitalWriteFast(HIT_LED, HIGH);
+
 #ifdef DEBUG_MODE
     Serial.begin(9600);
+    while (!Serial) {
+    }
     Serial.println("Starting...");
 #endif
+    delayMicroseconds(1000); // Wait for all board components to initialize
     init_eeprom();
     pinMode(IO_TRIGGER, INPUT_PULLUP);
     pinMode(IO_MODE, INPUT_PULLUP);
@@ -411,8 +427,17 @@ void setup() {
     if (digitalReadFast(IO_TRIGGER) == LOW && digitalReadFast(IO_RELOAD) == LOW ) {
         boot_mode = BOOT_MODE_SET_DEFAULTS;
     }
-
     // Else check the eeprom to see what the last boot mode was and run the appropriate boot mode
+
+#ifdef DEBUG_MODE
+    Serial.println("Setup complete");
+    Serial.printf("Boot mode: %s\n", boot_mode_names[boot_mode].c_str());
+#endif
+
+    digitalWriteFast(MUZZLE_IR_FLASH, LOW);
+    digitalWriteFast(MUZZLE_BLU_FLASH, LOW);
+    digitalWriteFast(MUZZLE_RED_FLASH, LOW);
+    digitalWriteFast(HIT_LED, LOW);
 
     switch (boot_mode) { // Run the appropriate boot mode initializer
         case BOOT_MODE_GAME:
@@ -445,23 +470,10 @@ void setup() {
     }
 }
 
-// This method will be removed in the future, currently only used for testing
-int split(const String& command, String pString[4], int i, char delimiter, int max_length) {
-    int pos = command.indexOf(delimiter, 0);
-    if (pos == -1) {
-        pString[i] = command;
-        return i + 1;
-    }
-    if (i > max_length) {
-        return i;
-    }
-    pString[i] = command.substring(0, pos);
-    return split(command.substring(pos + 1, command.length()), pString, i + 1, delimiter, max_length);
-}
-
 // Main loop this runs once every 20ms or 50Hz while the tagger and hud updates run audio interrupts are disabled
 void loop() {
-    next_loop_time = micros() + (20 * 1000);
+
+    next_loop_time = micros() + 20000;
 
     switch (boot_mode){
         case BOOT_MODE_GAME:
@@ -478,30 +490,12 @@ void loop() {
             break;
     }
 
-
-    if (Serial.available()) {
-        String command = Serial.readStringUntil('\n');
-        // Split the command string into an array of strings delimited by spaces
-        String command_array[4];
-        int command_array_length = split(command, command_array, 0, ' ', 4);
-
-        if (command_array[0] == "hit") {
-
-            tagger_events->on_hit(0, mt2::TEAM_BLUE, mt2::DAMAGE_25);
-            delayMicroseconds(2500);
-            tagger_events->on_hit(1, mt2::TEAM_BLUE, mt2::DAMAGE_25);
-            Serial.printf("hit! Remaining health: %d\n", get_tagger_data_ptr()->health);
-        } else if (command_array[0] == "test_sensors") {
-            Serial.println("sensor test");
-            tagger_events->on_test_sensors();
-            Serial.println("sensor test complete");
-        } else if (command_array[0] == "respawn") {
-            Serial.println("RESPAWN");
-            tagger_events->on_respawn();
-        } else if (command_array[0] == "backlight") {
-            display::lcdDriver::toggle_backlight();
-        }
-    }
     io_refresh();
+#ifdef DEBUG_MODE
+    if (micros() > next_loop_time) {
+        Serial.printf("Loop took too long: %f ms\n", (float) micros() - (float) next_loop_time / 1000.f);
+    }
+#endif
     while (micros() < next_loop_time) io_refresh(); // Just check IO while waiting for next loop
+
 }

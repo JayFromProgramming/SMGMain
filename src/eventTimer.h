@@ -20,19 +20,22 @@
  */
 class eventTimer {
 private:
-    unsigned long event_time;
+    unsigned long _time;
+    elapsedMillis timer;
     bool event_active;
     bool always_active;
 public:
 
     explicit eventTimer(unsigned long time) {
-        event_time = time;
+        timer = 0;
+        _time = 0;
         event_active = false;
         always_active = false;
     }
 
     eventTimer() {
-        event_time = 0;
+        timer = 0;
+        _time = 0;
         event_active = true; // Event has already happened and also never happened
         always_active = false;
     }
@@ -48,7 +51,8 @@ public:
      * @return A reference to this eventTimer object.
      */
     eventTimer & operator = (unsigned long time) {
-        event_time = micros() + time;
+        _time = time;
+        timer = 0;
         event_active = false;
         return *this;
     }
@@ -58,7 +62,8 @@ public:
      * @return A reference to this eventTimer object.
      */
     eventTimer & operator = (const eventTimer & time) {
-        event_time = time.event_time;
+        _time = time._time;
+        timer = time.timer;
         event_active = time.event_active;
         return *this;
     }
@@ -68,11 +73,7 @@ public:
      * @return A reference to this eventTimer object.
      */
     eventTimer & operator += (unsigned long time) {
-        if (millis() - event_time > 0) {
-            event_time = millis() + time;
-        } else {
-            event_time += time;
-        }
+        _time += time;
         return *this;
     }
 
@@ -82,11 +83,7 @@ public:
      * @return A reference to this eventTimer object.
      */
     eventTimer & operator -= (unsigned long time) {
-        if (millis() - event_time > 0) {
-            event_time = 0;
-        } else {
-            event_time -= time;
-        }
+        _time -= time;
         return *this;
     }
 
@@ -95,7 +92,7 @@ public:
      * @return True if the event time has passed, false otherwise.
      */
     bool operator < (unsigned long time) const {
-        return (event_time - millis()) < time;
+        return (_time - timer) < time;
     }
 
     /**
@@ -103,7 +100,7 @@ public:
      * @return True if the event time has not passed, false otherwise.
      */
     bool operator > (unsigned long time) const {
-        return (event_time - millis()) > time;
+        return (_time - timer) > time;
     }
 
     /**
@@ -111,7 +108,7 @@ public:
      * @return True if the event time has not passed, false otherwise.
      */
     bool operator >= (unsigned long time) const {
-        return (event_time - millis()) >= time;
+        return (_time - timer) >= time;
     }
 
     /**
@@ -119,7 +116,7 @@ public:
      * @return True if the event time has passed, false otherwise.
      */
     bool operator <= (unsigned long time) const {
-        return (event_time - millis()) <= time;
+        return (_time - timer) <= time;
     }
 
     /**
@@ -128,7 +125,7 @@ public:
      * @return True if the remaining time is equal to the given time, false otherwise.
      */
     bool operator == (unsigned long time) const {
-        return (event_time - millis()) == time;
+        return (_time - timer) == time;
     }
 
     /**
@@ -137,7 +134,7 @@ public:
      * @return True if the event time does not equal the given time, false otherwise.
      */
     bool operator != (unsigned long time) const {
-        return (event_time - millis()) != time;
+        return (_time - timer) != time;
     }
 
     /**
@@ -146,7 +143,7 @@ public:
      * @return The remaining time in milliseconds. (zero if the event time has passed)
      */
     explicit operator unsigned long() const {
-        return (event_time - millis()) > 0 ? (event_time - millis()) : 0;
+        return _time - timer;
     }
 
     /**
@@ -155,10 +152,7 @@ public:
      * @return The remaining time in milliseconds.
      */
     explicit operator long() const{
-        if (event_time >= LONG_MAX){ // If the event time is greater than the max value of a long
-            // Subtract the max value of a long from the event time and subtract the max value of a long from the current time
-            return (event_time - LONG_MAX) - (millis() - LONG_MAX); // This way when the result is truncated it will still fit in a long
-        } else return (long) event_time - millis();
+        return _time - timer;
     }
 
     /**
@@ -169,12 +163,16 @@ public:
      */
     explicit operator bool() {
         if (always_active) {
-            return (event_time - millis()) <= 0;
-        } else {
-            if ((event_time - millis()) <= 0){
-                event_active = false;
+            if (timer >= _time) {
                 return true;
-            } else {
+            }
+        } else {
+            if (event_active) {
+                if (timer >= _time) {
+                    event_active = true;
+                    return true;
+                } else return false;
+            } else{
                 return false;
             }
         }
@@ -185,13 +183,17 @@ public:
      * @return True if the event time has not passed, false otherwise.
      */
     bool operator ! () {
-        if (always_active){
-            return (event_time - millis()) <= 0;
-        } else {
-            if ((event_time - millis()) <= 0){
-                event_active = false;
+        if (always_active) {
+            if (timer >= _time) {
                 return false;
-            } else {
+            }
+        } else {
+            if (event_active) {
+                if (timer >= _time) {
+                    event_active = true;
+                    return false;
+                } else return true;
+            } else{
                 return true;
             }
         }

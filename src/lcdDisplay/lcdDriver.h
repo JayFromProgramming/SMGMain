@@ -49,6 +49,7 @@ namespace display {
         uint8_t last_ammo_count = -1; //!< The last ammo count displayed on the LCD
         uint8_t last_clip_count = -1; //!< The last clip count displayed on the LCD
         float last_angle = -90.0f; //!< The last angle of the progress circle displayed on the LCD
+        bool reset_angle = false; //!< Whether the angle should be reset to 0.0f
         uint8_t last_progress_time = -1; //!< The last progress time displayed on the LCD
         bool display_progress_circle = false; //!< Whether the progress circle is currently being displayed on the LCD
         elapsedMillis progress_circle_timer; //!< The timer for the progress circle

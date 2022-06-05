@@ -55,6 +55,7 @@ public:
      */
     void set(uint32_t time) {
         _time = time;
+        timer = 0;
         event_active = false;
     }
 
@@ -64,6 +65,7 @@ public:
      */
     void set(const elapsedMillis& time) {
         _time = time;
+        timer = 0;
         event_active = false;
     }
 

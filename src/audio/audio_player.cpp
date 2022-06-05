@@ -43,6 +43,10 @@ namespace audio_player {
      * @warning Any value above 0.5 may blow up the speaker. Use with caution.
      */
     void AudioPlayer::set_volume(float volume) {
+        volume = volume * 0.27f; // Reduce the volume by 27% so we don't blow up the speaker.
+        if (volume > 0.3) {
+            volume = 0.3;
+        }
         amp.gain(volume);
     }
 

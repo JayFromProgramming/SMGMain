@@ -17,6 +17,8 @@
 
 #define DEBUG_MODE
 
+#define REBOOT SCB_AIRCR = 0x05FA0004
+
 extern "C" uint32_t set_arm_clock(uint32_t frequency); // required prototype for cpu throttling
 
 void boot_mode_game();
@@ -174,7 +176,7 @@ void boot_mode_game(){
 
     if (boot_mode != BOOT_MODE_GAME){
         set_boot_mode(BOOT_MODE_GAME);
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
     }
 
     tagger_init(&audio, &hud); // Initialize the tagger
@@ -204,7 +206,7 @@ void boot_mode_clone(){
 
     if (boot_mode != BOOT_MODE_CLONE_GUN) {
         set_boot_mode(BOOT_MODE_CLONE_GUN);
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
     }
 
     auto* clone_menu = display::lcdDriver::make_menu("Select\nClone Preset");
@@ -227,7 +229,7 @@ void boot_mode_ref(){
 
     if (boot_mode != BOOT_MODE_REF) {
         set_boot_mode(BOOT_MODE_REF);
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
     }
 
     auto* ref_menu = display::lcdDriver::make_menu("Ref Menu");
@@ -263,7 +265,7 @@ void boot_mode_clone_config(){
 
     if (boot_mode != BOOT_MODE_CLONE_CONFIG) {
         set_boot_mode(BOOT_MODE_CLONE_CONFIG);
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
     }
 
     auto* clone_menu = display::lcdDriver::make_menu("Select Preset\nto Edit");
@@ -285,7 +287,7 @@ void boot_mode_options(){
 
     if (boot_mode != BOOT_MODE_GUN_CONFIG){
         set_temp_boot_mode(BOOT_MODE_GUN_CONFIG);
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
         return;
     }
 
@@ -304,7 +306,7 @@ void boot_mode_set_defaults(){
 
     if (boot_mode != BOOT_MODE_SET_DEFAULTS){
         set_temp_boot_mode(BOOT_MODE_SET_DEFAULTS);
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
         return;
     }
 
@@ -324,7 +326,7 @@ void boot_menu(){
 
     if (boot_mode != BOOT_MODE_UNKNOWN){
         set_temp_boot_mode(BOOT_MODE_UNKNOWN);
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
         return;
     }
 
@@ -347,7 +349,7 @@ void boot_mode_sys_info() { // Display system information, does not override cur
 
     if (boot_mode != BOOT_MODE_SYS_INFO){
         set_temp_boot_mode(BOOT_MODE_SYS_INFO); // Because this is a temp boot mode set the temp boot mode
-        SCB_AIRCR = 0x05FA0004;
+        REBOOT;
         return;
     }
 
@@ -402,6 +404,7 @@ void setup() {
     pinMode(IO_RELOAD, INPUT_PULLUP);
     pinMode(IO_SELECT, INPUT_PULLUP);
     pinMode(BATT_VOLT, INPUT);
+
 //     Make sure all spi cs pins are high before initialization
     digitalWriteFast(DISPLAY_CHIP_SELECT, LOW);
     digitalWriteFast(RADIO_CHIP_SELECT, HIGH);

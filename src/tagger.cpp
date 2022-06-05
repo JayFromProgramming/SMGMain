@@ -8,6 +8,7 @@
 #include <pinout.h>
 #include <eventTimer.h>
 
+
 enum trigger_states{
     TRIGGER_DOWN,
     TRIGGER_HELD,
@@ -311,7 +312,7 @@ void on_killed(uint_least8_t killer_id) {
 
     if (game_state.currentConfig->respawn_delay > 0 && game_state.respawns_remaining > 0) {
         // Set the respawn timer to the current time + the respawn_delay (in ten second increments)
-        game_state.auto_respawn_time = game_state.currentConfig->respawn_delay * 10000;
+        game_state.auto_respawn_time.set(game_state.currentConfig->respawn_delay * 10000);
         display_ptr->start_progress_circle(game_state.currentConfig->respawn_delay * 10000,
                                            (String *) "Auto Respawning in");
     }
@@ -482,7 +483,7 @@ void admin_kill(){ // Called when an admin kills a player
 
     if (game_state.currentConfig->respawn_delay > 0 && game_state.respawns_remaining > 0) {
         // Set the respawn timer to the current time + the respawn_delay (in ten second increments)
-        game_state.auto_respawn_time = millis() + (game_state.currentConfig->respawn_delay * 10000);
+        game_state.auto_respawn_time.set(game_state.currentConfig->respawn_delay * 10000);
         display_ptr->start_progress_circle(game_state.currentConfig->respawn_delay * 10000,
                                            (String *) "Auto Respawning in");
     }
@@ -558,9 +559,9 @@ void tagger_loop(){
 //        game_state.jammed = true;
 //    }
 
-//    if (game_state.auto_respawn_time){
-//        respawn();
-//    }
+    if (game_state.auto_respawn_time.check()){
+        respawn();
+    }
 
     if (game_state.zombie_mode && game_state.health == 0) { // Flash the hit LED's at .5hz
         if (hit_led_timer.check()) {

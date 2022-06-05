@@ -8,6 +8,12 @@
 #include <pinout.h>
 #include <eventTimer.h>
 
+enum trigger_states{
+    TRIGGER_DOWN,
+    TRIGGER_HELD,
+    TRIGGER_RELEASED
+};
+
 tagger_state_struct game_state = tagger_state_struct(); //!< The current game state and all associated data
 
 event_handlers handles = event_handlers(); //!< The event handlers for the tagger (used by the tag_communicator)
@@ -17,11 +23,14 @@ score_data_struct score_data = score_data_struct(); //!< The score data for the 
 audio_interface::audio_interface *audio_ptr = nullptr; //!< The audio interface pointer
 display::lcdDriver *display_ptr = nullptr; //!< The display interface pointer
 
-uint32_t muzzle_flash_timer; //!< The timer for the muzzle flash (used to indicate when the muzzle flash should turn off)
-uint32_t hit_led_timer; //!< The timer for the hit led (used to indicate when the hit led should turn off)
+eventTimer muzzle_flash_timer; //!< The timer for the muzzle flash (used to indicate when the muzzle flash should turn off)
+eventTimer hit_led_timer; //!< The timer for the hit led (used to indicate when the hit led should turn off)
 
 uint8_t current_flash_bulb_pin = MUZZLE_RED_FLASH; //!< The current flash bulb pin (used to indicate which flash bulb should be turned on)
 float_t temp_increase_per_shot = 0; //!< The temperature increase per shot
+
+#define MUZZLE_FLASH_TIME_MS 100 //!< The time in milliseconds for the muzzle flash to be on
+#define HIT_LED_TIME_MS 250 //!< The time in milliseconds for the hit led to be on
 
 void move_life_scores();
 
@@ -51,10 +60,10 @@ void respawn();
 
 void hit_led_flash(){
     digitalWriteFast(HIT_LED, HIGH);
-    hit_led_timer = millis() + 250;
+    hit_led_timer.set(HIT_LED_TIME_MS);
 }
 
-int8_t trigger_down = 0; //!< The current state of the trigger [1 = Just pulled, 0 = Released,
+trigger_states trigger_state = TRIGGER_RELEASED; //!< The current state of the trigger [1 = Just pulled, 0 = Released,
 //!< -1 = Not released but is being held]
 
 /**
@@ -173,11 +182,11 @@ void shot_check(Bounce *bounce_ptr){
 
 
     if (bounce_ptr->fallingEdge()) {
-        trigger_down = 1;
+        trigger_state = TRIGGER_DOWN;
     } else if (bounce_ptr->risingEdge()) {
-        trigger_down = 0; // Reset the trigger_down flag
+        trigger_state = TRIGGER_RELEASED; // Reset the trigger_state flag
     } else {
-        if (trigger_down == 1) trigger_down = -1;
+        if (trigger_state == TRIGGER_DOWN) trigger_state = TRIGGER_HELD;
     }
 
 //    game_state.currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
@@ -186,32 +195,32 @@ void shot_check(Bounce *bounce_ptr){
 
             // Check what fire mode we are in
             switch (game_state.fire_selector) {
-                case mt2::FIRE_MODE_SINGLE: // Check if trigger_down is 1 and not -1
-                    if (trigger_down == 1) {
+                case mt2::FIRE_MODE_SINGLE: // Check if trigger_state is 1 and not -1
+                    if (trigger_state == TRIGGER_DOWN) {
                         if (shoot()) {
                             audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                             game_state.last_shot = 0;
                             game_state.ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                            muzzle_flash_timer = millis() + 100;
+                            muzzle_flash_timer.set(MUZZLE_FLASH_TIME_MS);
                             score_data.rounds_fired_life++;
                             game_state.barrel_temp += temp_increase_per_shot;
                         }
                     }
                     break;
                 case mt2::FIRE_MODE_BURST:
-                    if (trigger_down == 1) {
+                    if (trigger_state == TRIGGER_DOWN) {
                         if (shoot()) {
                             game_state.current_burst_count = game_state.currentConfig->burst_size;
                             audio_ptr->play_sound(audio_interface::SOUND_SHOOT);
                             game_state.last_shot = 0;
                             game_state.ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                            muzzle_flash_timer = millis() + 100;
+                            muzzle_flash_timer.set(MUZZLE_FLASH_TIME_MS);
                             score_data.rounds_fired_life++;
                             game_state.barrel_temp += temp_increase_per_shot;
                         }
-                    } else if (trigger_down == -1) {
+                    } else if (trigger_state == TRIGGER_HELD ) {
                         if (game_state.current_burst_count > 0) {
                             if (shoot()) {
                                 game_state.current_burst_count--;
@@ -219,7 +228,7 @@ void shot_check(Bounce *bounce_ptr){
                                 game_state.last_shot = 0;
                                 game_state.ammo_count--;
                                 digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                                muzzle_flash_timer = millis() + 100;
+                                muzzle_flash_timer.set(MUZZLE_FLASH_TIME_MS);
                                 score_data.rounds_fired_life++;
                                 game_state.barrel_temp += temp_increase_per_shot;
                             }
@@ -227,13 +236,13 @@ void shot_check(Bounce *bounce_ptr){
                     }
                     break;
                 case mt2::FIRE_MODE_AUTO:
-                    if (trigger_down != 0) {
+                    if (trigger_state != TRIGGER_RELEASED) {
                         if (shoot()) { // If the IR transmitter is not busy preform shot actions
 //                            audio_ptr.play_sound(audio_interface::SOUND_SHOOT);
                             game_state.last_shot = 0;
                             game_state.ammo_count--;
                             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-                            muzzle_flash_timer = millis() + 100;
+                            muzzle_flash_timer.set(MUZZLE_FLASH_TIME_MS);
                             score_data.rounds_fired_life++;
                             game_state.barrel_temp += temp_increase_per_shot;
                         }
@@ -242,7 +251,7 @@ void shot_check(Bounce *bounce_ptr){
                 default:
                     break;
             }
-        } else if (trigger_down == 1) {
+        } else if (trigger_state == 1) {
             audio_ptr->play_sound(audio_interface::SOUND_EMPTY);
         }
     }
@@ -270,7 +279,7 @@ void on_mode_select(){
             sendCommand(mt2::RESPAWN); // Send an admin respawn command
             game_state.last_shot = 0;
             digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_ACTIVE);
-            muzzle_flash_timer = millis() + 50;
+            muzzle_flash_timer.set(MUZZLE_FLASH_TIME_MS);
             audio_ptr->play_sound(audio_interface::SOUND_SHOOT); // Temp: Plays shot sound will be a different sound later
         }
     }
@@ -353,7 +362,7 @@ void on_hit(uint_least8_t playerID, mt2::teams teamID, mt2::damage_table dmg){
                 audio_ptr->play_sound(audio_interface::SOUND_HIT);
                 // Turn on the hit led
                 digitalWriteFast(HIT_LED, game_state.is_zombie ? HIT_LED_PIN_ACTIVE : HIT_LED_PIN_INACTIVE);
-                hit_led_timer = millis() + 250; // Set the hit led timer
+                hit_led_timer.set(HIT_LED_TIME_MS);
             }
         }
     }
@@ -505,7 +514,7 @@ void test_sensors(){
     digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
     digitalWriteFast(MUZZLE_RED_FLASH, MUZZLE_FLASH_INACTIVE);
     digitalWriteFast(MUZZLE_BLU_FLASH, MUZZLE_FLASH_INACTIVE);
-    hit_led_timer = 2000;
+    hit_led_timer.set(2000);
 }
 
 void restart_gun(){
@@ -554,24 +563,21 @@ void tagger_loop(){
 //    }
 
     if (game_state.zombie_mode && game_state.health == 0) { // Flash the hit LED's at .5hz
-        if (hit_led_timer <= millis()) {
+        if (hit_led_timer.check()) {
             digitalToggleFast(HIT_LED_PIN_NUMBER);
-            hit_led_timer = millis() + 500;
         }
     }
 
-    if (hit_led_timer <= millis() && game_state.health > 0 && hit_led_timer != 0) {
+    if (hit_led_timer.check() && game_state.health > 0) {
         if (game_state.is_zombie){ // If we are a zombie the hit LEDs are inverted
             digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_ACTIVE);
         } else {
             digitalWriteFast(HIT_LED_PIN_NUMBER, HIT_LED_PIN_INACTIVE);
         }
-        hit_led_timer = 0;
     }
 
-    if (muzzle_flash_timer <= millis() && muzzle_flash_timer != 0) {
+    if (muzzle_flash_timer.check()) {
         digitalWriteFast(current_flash_bulb_pin, MUZZLE_FLASH_INACTIVE);
-        muzzle_flash_timer = 0;
     }
 
     // Check for IR input
@@ -614,8 +620,6 @@ FLASHMEM void tagger_init(audio_interface::audio_interface* audioPtr, display::l
     display_ptr = lcdPtr;
     game_state.started = true;
     clear_scores();
-
-    trigger_down = 0;
 
     // Provide the method pointers of the event handlers, so they can get called by tag_communicator
     handles.on_hit =               on_hit;

@@ -12,6 +12,7 @@
 #include <lcdDisplay/lcdDriver.h>
 //#include <radio/radioInterface.h>
 #include "settings_configurer.h"
+#include "mt2Library/referee.h"
 
 #include <pinout.h>
 
@@ -37,10 +38,10 @@ event_handlers* tagger_events = nullptr;
 
 //IntervalTimer io_refresh_timer;
 
-Bounce trigger_button = Bounce(IO_TRIGGER, 5);
-Bounce reload_button = Bounce(IO_RELOAD, 5);
-Bounce mode_button = Bounce(IO_MODE, 5);
-Bounce select_button = Bounce(IO_SELECT, 5);
+Bounce trigger_button = Bounce(IO_TRIGGER, 10);
+Bounce reload_button = Bounce(IO_RELOAD, 10);
+Bounce mode_button = Bounce(IO_MODE, 10);
+Bounce select_button = Bounce(IO_SELECT, 10);
 
 struct button_methods {
   void (*trigger_method)(bool state) = nullptr; //!< The method to call when the trigger button is pressed.
@@ -232,15 +233,8 @@ void boot_mode_ref(){
         REBOOT;
     }
 
-    auto* ref_menu = display::lcdDriver::make_menu("Ref Menu");
-    display::lcdDriver::add_menu_item(ref_menu, "Admin Kill");
-    display::lcdDriver::add_menu_item(ref_menu, "Respawn Player");
-    display::lcdDriver::add_menu_item(ref_menu, "Reset Player");
-    display::lcdDriver::add_menu_item(ref_menu, "Explode Player");
-
-    display::lcdDriver::add_menu_item(ref_menu, "Enter Clone Mode",&boot_mode_clone);
-    display::lcdDriver::add_menu_item(ref_menu, "Edit Presets", &boot_mode_clone_config);
-    display::lcdDriver::add_menu_item(ref_menu, "Exit to boot", &boot_menu);
+    auto* ref_menu =
+            create_ref_menu(&boot_menu, &boot_mode_clone_config, &boot_mode_clone);
     hud.load_and_display_menu(ref_menu);
 
     clear_io_actions();
@@ -404,6 +398,11 @@ void setup() {
     pinMode(IO_RELOAD, INPUT_PULLUP);
     pinMode(IO_SELECT, INPUT_PULLUP);
     pinMode(BATT_VOLT, INPUT);
+    pinMode(DYNAMIC_IO, INPUT);
+    pinMode(RADIO_CHIP_SELECT, OUTPUT);
+    pinMode(RADIO_IRQ, INPUT);
+    pinMode(RADIO_ENABLE, OUTPUT);
+
 
 //     Make sure all spi cs pins are high before initialization
     digitalWriteFast(DISPLAY_CHIP_SELECT, LOW);
@@ -495,10 +494,11 @@ void loop() {
 
     io_refresh();
 #ifdef DEBUG_MODE
+//    Serial.printf("Loop complete: %f\n", ((float) micros() - (float) next_loop_time) / 1000.f);
     if (micros() > next_loop_time) {
-        Serial.printf("Loop took too long: %f ms\n", (float) micros() - (float) next_loop_time / 1000.f);
+        Serial.printf("Loop took too long: %f ms\n", ((float) micros() - (float) next_loop_time) / 1000.f);
     }
 #endif
-    while (micros() < next_loop_time) io_refresh(); // Just check IO while waiting for next loop
+//    while (micros() > next_loop_time) io_refresh(); // Just check IO while waiting for next loop
 
 }

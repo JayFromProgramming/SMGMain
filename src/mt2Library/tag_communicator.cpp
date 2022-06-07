@@ -39,11 +39,11 @@ void signalScan(){
  * @param command - the command to be sent
  */
 void sendCommand(system_commands command){
-    unsigned char command_data[2];
+    unsigned char command_data[3];
     command_data[0] = SYSTEM_COMMAND;
     command_data[1] = command;
-//    command_data[2] = TERMINATION_LITERAL;
-    send(command_data, (uint16_t) 2);
+    command_data[2] = TERMINATION_LITERAL;
+    send(command_data, (uint16_t) 3);
 }
 
 /**

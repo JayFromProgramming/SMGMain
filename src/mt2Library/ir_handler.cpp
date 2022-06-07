@@ -26,9 +26,13 @@ elapsedMicros received_pulse_timer; // Timer for receiving IR signals
 uint8_t received_bytes[1024];
 uint16_t received_length = 0;
 
+bool ir_receive_enabled = false;
+
 void transmit_start();
 void receive_pulse();
 
+
+void flush_pulse_buffer();
 
 FLASHMEM void transmitter_init() {
     pinMode(MUZZLE_IR_FLASH, OUTPUT);
@@ -40,12 +44,20 @@ FLASHMEM void transmitter_init() {
 }
 
 void receiver_attach(){
-    // Attach interrupts to the reception pin for falling and rising edges of the signal pulses
-    attachInterrupt(IR_IN, receive_pulse, CHANGE);
+    if (!ir_receive_enabled) {
+        Serial.println("Enabling IR receive");
+        flush_pulse_buffer();
+        ir_receive_enabled = true;
+        attachInterrupt(digitalPinToInterrupt(IR_IN), receive_pulse, CHANGE);
+    }
 }
 
 void receiver_detach(){
-    detachInterrupt(IR_IN);
+    if (ir_receive_enabled) {
+        Serial.println("Disabling IR receive");
+        ir_receive_enabled = false;
+        detachInterrupt(digitalPinToInterrupt(IR_IN));
+    }
 }
 
 FLASHMEM void receiver_init() {
@@ -59,7 +71,7 @@ FLASHMEM void receiver_init() {
  * @return True if a valid mt2 signal was received false if signal was invalid
  */
 FASTRUN bool decode_pulse_duration(uint16_t total_pulses) {
-//    Serial.println("Decoding possible MT2 signal"); // decodePulseWidthData might work if this doesn't
+    Serial.println("Decoding possible MT2 signal"); // decodePulseWidthData might work if this doesn't
 
 //    int header_mark = 0;
 //    for (int i = 0; i < total_pulses; i++){ // Look for header
@@ -211,20 +223,23 @@ bool send(const uint8_t *data, uint16_t bytes){
  */
 bool send(const uint8_t *data, uint32_t bits){
     // Flush the transmission buffer
-    if (transmission_in_progress || received_pulse_position != -1){
-        return false; // If the transmitter is busy or the receiver is receiving, return false
-    }
+//    if (transmission_in_progress || received_pulse_position != -1){
+//        return false; // If the transmitter is busy or the receiver is receiving, return false
+//    }
     encodeMT2(data, bits); // Encode the data into the transmission buffer
     transmit_start();
     return true;
 }
 
 void transmit_finished(){
+    cli();
     noTone(MUZZLE_IR_FLASH);
 //    digitalWriteFast(MUZZLE_IR_FLASH, HIGH); // Due to the MOSFET the output is inverted
     transmission_in_progress = false;
     if (on_transmission_complete != nullptr) on_transmission_complete();
     receiver_attach(); // Reattach the receiver
+    transmission_timer.end();
+    sei();
 }
 
 // Custom IR transmitter method using interval timer
@@ -239,6 +254,7 @@ void transmit_method(){
     if (transmission_position >= transmission_length){
         transmission_timer.end();
         transmit_finished();
+        return;
     }
     transmission_timer.update(transmission_buffer[transmission_position]);
     transmission_position++;
@@ -246,14 +262,16 @@ void transmit_method(){
 }
 
 void transmit_start(){
+    cli(); // Prevent interrupts while we are changing output state of the IR transmitter
     // Set IR_PIN to generate a PWM frequency modulated to IR_FREQ
-    tone(MUZZLE_IR_FLASH, IR_FREQ);
     receiver_detach(); // Detach the IR receiver during transmission
+    tone(MUZZLE_IR_FLASH, IR_FREQ);
     // Set the IR_PIN to output a high voltage
-    transmission_timer.priority(1); // Set the timer to the highest priority
+//    transmission_timer.priority(); // Set the timer to the highest priority
     transmission_in_progress = true;
     transmission_position = 1;
     transmission_timer.begin(transmit_method, transmission_buffer[0] / 2);
+    sei(); // Re-enable interrupts
 }
 
 void transmitter_test(){
@@ -296,6 +314,7 @@ FASTRUN void receive_pulse() {
 }
 
 void flush_pulse_buffer(){
+    received_pulse_timer = 0;
     for (uint_fast16_t & i : received_pulse_buffer){
         i = 0;
     }
@@ -312,7 +331,8 @@ void flush_pulse_buffer(){
  * @return true if the buffer contains a valid message
  */
 bool IR_available(){
-    if (((int) received_pulse_timer > 5000) && (received_pulse_position > 0)){
+    if (!ir_receive_enabled) return false;
+    if (((int) received_pulse_timer > 3000) && (received_pulse_position > 0)){
         Serial.printf("Received message with %d pulses, last pulse %d\n", received_pulse_position,
                       (int) received_pulse_timer);
         // We have received a message

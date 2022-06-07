@@ -220,10 +220,11 @@ FLASHMEM clone** load_presets(int* length){
  */
 FLASHMEM void set_defaults(){ // Set all memory settings to default values and restart
     auto* default_preset = new clone();
-
-    for (int i = 0; i < TOTAL_PRESETS; i++) {
-        char name[15];
-        sprintf(name, "Preset %2d", i + 1);
+    char name[15];
+    sprintf(name, "Loaded Preset");
+    save_preset(0, default_preset);
+    for (int i = 1; i < TOTAL_PRESETS; i++) {
+        sprintf(name, "Preset %2d", i);
         stpcpy(default_preset->name, name);
         save_preset(i, default_preset);
     }

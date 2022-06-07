@@ -193,7 +193,6 @@ void shot_check(Bounce *bounce_ptr){
 //    game_state.currentConfig->fire_selector = mt2::FIRE_MODE_AUTO;
     if ((int) game_state.last_shot > game_state.shot_interval && !game_state.reloading) {
         if (game_state.ammo_count > 0 && !game_state.jammed) {
-
             // Check what fire mode we are in
             switch (game_state.fire_selector) {
                 case mt2::FIRE_MODE_SINGLE: // Check if trigger_state is 1 and not -1

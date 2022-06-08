@@ -64,7 +64,7 @@ namespace mt2 {
         SILENCED = 0x02
     };
 
-    enum respawn_health : uint_least8_t {
+    enum respawn_health : uint8_t {
         HP_1 = 0x01, HP_2 = 0x02, HP_3 = 0x03,
         HP_4 = 0x04, HP_5 = 0x05, HP_6 = 0x06,
         HP_7 = 0x07, HP_8 = 0x08, HP_9 = 0x09,
@@ -203,36 +203,37 @@ namespace mt2 {
     };
 
     typedef struct clone { // Clone Structure, with default values set
-        char name[15] = "Default preset"; // Preset name used for display, max 14 characters
-        teams team_id = TEAM_NONE; // See section 2.3.1
-        unsigned char clips_from_ammo_box = 0x00;
-        unsigned char health_from_medic_box = 0x00;
-        unsigned char hit_led_timout_seconds = 0xFF;
-        sounds_set sound_set = MIL_SIM; // See section 2.3.2
-        unsigned char overheat_limit = 0x00; // Rounds per minute
-        damage_table damage_per_shot = DAMAGE_25; // See section 2.3.3
-        unsigned char clip_size = 0x1E; // 0xFF is unlimited
-        unsigned char number_of_clips = 0xCA; // 0xCA is unlimited
-        fire_mode fire_selector = FIRE_MODE_AUTO; // See section 2.3.4
-        unsigned char burst_size = 0x05; // Number of shots per burst
-        fire_rate_table cyclic_rpm = RPM_450; // See 2.3.5
-        unsigned char reload_time = 0x03; // In seconds
-        unsigned char ir_power = 0x00; // 0 is indoor, 1 is outdoor
-        ir_range_table ir_range = MAX; // See section 2.3.7
-        unsigned char tagger_bool_flags = B00000001; // See section 2.3.8
-        respawn_health respawn_health = mt2::HP_100; // See section 2.3.9 (default is 100 [0x24])
-        unsigned char respawn_delay = 0x00; // In ten second increments
-        unsigned char armour_value = 0x00;
-        unsigned char game_bool_flags_1 = B00001010; // See section 2.3.10
-        unsigned char game_bool_flags_2 = B01001100; // See section 2.3.11
-        hit_delays hit_delay = NO_DELAY; // See section 2.3.12
-        unsigned char start_delay = 0x00; // In seconds
-        unsigned char death_delay = 0x00; // In seconds
-        unsigned char time_limit = 0x00; // In minutes
-        unsigned char max_respawns = 0xFF;
-        char checksum_valid = 0x00; // Flag to indicate this clone passed parity
+        char name[15] = "Default preset"; //!< Preset name used for display, max 14 characters
+        uint8_t clone_slot_number = 0x00; //!< Clone slot number, 0 to 15 (Only present on new controllers)
+        teams team_id = TEAM_NONE; //!< See section 2.3.1
+        uint8_t clips_from_ammo_box = 0x00;
+        uint8_t health_from_medic_box = 0x00;
+        uint8_t hit_led_timout_seconds = 0xFF;
+        sounds_set sound_set = MIL_SIM; //!< See section 2.3.2
+        uint8_t overheat_limit = 0x00; //!< Rounds per minute
+        damage_table damage_per_shot = DAMAGE_25; //!< See section 2.3.3
+        uint8_t clip_size = 0x1E; //!< 0xFF is unlimited
+        uint8_t number_of_clips = 0xCA; //!< 0xCA is unlimited
+        fire_mode fire_selector = FIRE_MODE_AUTO; //!< See section 2.3.4
+        uint8_t burst_size = 0x05; //!< Number of shots per burst
+        fire_rate_table cyclic_rpm = RPM_450; //!< See 2.3.5
+        uint8_t reload_time = 0x03; //!< In seconds
+        uint8_t ir_power = 0x00; //!< 0 is indoor, 1 is outdoor
+        ir_range_table ir_range = MAX; //!< See section 2.3.7
+        uint8_t tagger_bool_flags = B00000001; //!< See section 2.3.8
+        respawn_health respawn_health = mt2::HP_100; //!< See section 2.3.9 (default is 100 [0x24])
+        uint8_t respawn_delay = 0x00; //!< In ten second increments
+        uint8_t armour_value = 0x00;
+        uint8_t game_bool_flags_1 = B00001010; //!< See section 2.3.10
+        uint8_t game_bool_flags_2 = B01001100; //!< See section 2.3.11
+        hit_delays hit_delay = NO_DELAY; //!< See section 2.3.12
+        uint8_t start_delay = 0x00; //!< In seconds
+        uint8_t death_delay = 0x00; //!< In seconds
+        uint8_t time_limit = 0x00; //!< In minutes
+        uint8_t max_respawns = 0xFF;
+        int8_t checksum_valid = 0x00; //!< Flag to indicate this clone_t passed parity
         // -1 is invalid, 0 is unchecked, 1 is checked and valid
-    } clone;
+    } clone_t;
 
     String* get_player_name(uint8_t player_id);
 

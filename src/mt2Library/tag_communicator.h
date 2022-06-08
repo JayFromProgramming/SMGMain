@@ -13,7 +13,7 @@
 // A struct for the tagger.cpp to pass its event handlers to the tag_communicator.cpp
 struct event_handlers {
     void (*on_hit)(uint_least8_t playerID, mt2::teams teamID, mt2::damage_table dmg) = nullptr;
-    void (*on_clone)(mt2::clone *clone) = nullptr; //!< This is the callback for when a clone is detected.
+    void (*on_clone)(mt2::clone_t *clone) = nullptr; //!< This is the callback for when a clone_t is detected.
     void (*on_pause_unpause)() = nullptr; //!< Called when a pause/unpause signal is received.
     void (*on_respawn)() = nullptr; //!< Called when a respawn signal is received.
     void (*on_full_health)() = nullptr; //!< Called when a full health signal is received.
@@ -54,15 +54,15 @@ bool shoot();
 
 void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg);
 
-void sendClone(mt2::clone *clone);
+void sendClone(mt2::clone_t *clone);
 
-mt2::clone * buildClone(String json);
+mt2::clone_t * buildClone(String json);
 
-void printClone(mt2::clone *clone);
+void printClone(mt2::clone_t *clone);
 
 void decodeMT2Data(uint_least8_t* data);
 
-void set_game_flag(mt2::clone* preset, unsigned char flag, unsigned char val,
+void set_game_flag(mt2::clone_t* preset, unsigned char flag, unsigned char val,
                    unsigned char flag_select);
 
 

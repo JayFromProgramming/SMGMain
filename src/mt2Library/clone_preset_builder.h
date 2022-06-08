@@ -15,78 +15,90 @@ void calcCheckSum(unsigned char *clone){
     for(int i = 4; i < 38; i++){
         sum += clone[i];
     }
-    clone[39] = sum % 0x100; // Modulo 256
+    clone[38] = sum % 0x100; // Modulo 256
 }
 
-clone* array_to_clone(const unsigned char *data) {
-    auto* c = new clone;
-    c->team_id = (teams) data[4];
-    c->clips_from_ammo_box = data[9];
-    c->health_from_medic_box = data[10];
-    c->hit_led_timout_seconds = data[12];
-    c->sound_set = (sounds_set) data[13];
-    c->overheat_limit = data[14];
-    c->damage_per_shot = (damage_table) data[17];
-    c->clip_size = data[18];
-    c->number_of_clips = data[19];
-    c->fire_selector = (fire_mode) data[20];
-    c->burst_size = data[21];
-    c->cyclic_rpm = (fire_rate_table) data[22];
-    c->reload_time = data[23];
-    c->ir_power = data[24];
-    c->ir_range = (ir_range_table) data[25];
-    c->tagger_bool_flags = data[26];
-    c->respawn_health = (respawn_health) data[27];
-    c->respawn_delay = data[29];
-    c->armour_value = data[30];
-    c->game_bool_flags_1 = data[31];
-    c->game_bool_flags_2 = data[32];
-    c->hit_delay = (hit_delays) data[33];
-    c->start_delay = data[34];
-    c->death_delay = data[35];
-    c->time_limit = data[36];
-    c->max_respawns = data[37];
+int8_t confirmCheckSum(const unsigned char *clone) {
+    unsigned char sum = 0;
+    for (int i = 4; i < 38; i++) {
+        sum += clone[i];
+    }
+    if (sum % 0x100 != clone[38]) {
+        return -1;
+    }
+    return 1;
+}
 
+clone_t* array_to_clone(const unsigned char *data) {
+    auto* c = new clone_t;
+    c->team_id                  = (teams) data[6];
+    c->clips_from_ammo_box      = data[8];
+    c->health_from_medic_box    = data[9];
+    c->hit_led_timout_seconds   = data[11];
+    c->sound_set                = (sounds_set) data[12];
+    c->overheat_limit           = data[13];
+    c->damage_per_shot          = (damage_table) data[14];
+    c->clip_size                = data[17];
+    c->number_of_clips          = data[18];
+    c->fire_selector            = (fire_mode) data[19];
+    c->burst_size               = data[20];
+    c->cyclic_rpm               = (fire_rate_table) data[21];
+    c->reload_time              = data[22];
+    c->ir_power                 = data[23];
+    c->ir_range                 = (ir_range_table) data[24];
+    c->tagger_bool_flags        = data[25];
+    c->respawn_health           = (respawn_health) data[26];
+    c->respawn_delay            = data[28];
+    c->armour_value             = data[29];
+    c->game_bool_flags_1        = data[30];
+    c->game_bool_flags_2        = data[31];
+    c->hit_delay                = (hit_delays) data[32];
+    c->start_delay              = data[33];
+    c->death_delay              = data[34];
+    c->time_limit               = data[35];
+    c->max_respawns             = data[36];
+    c->checksum_valid           = confirmCheckSum(data);
     return c;
 }
 
 
-unsigned char * build_clone_array(clone* clone_preset){ // Copy the clone structure into the clone array
-    auto* clone_array = new unsigned char[40];
-    // Initialize the clone array
+unsigned char * build_clone_array(clone_t* clone_preset){ // Copy the clone_t structure into the clone_t array
+    auto* clone_array = new uint8_t [40];
+    // Initialize the clone_t array
     for(int i = 0; i < 40; i++){
         clone_array[i] = 0;
     }
     clone_array[0]  = SYSTEM_DATA; // Start by indicating that this is a system data packet
-    clone_array[1]  = CLONE; // Then indicate that this is a clone packet
-    clone_array[3]  = TERMINATION_LITERAL; // Then indicate the start of the clone data
-    clone_array[4]  = clone_preset->team_id;
-    clone_array[9]  = clone_preset->clips_from_ammo_box;
-    clone_array[10] = clone_preset->health_from_medic_box;
-    clone_array[12] = clone_preset->hit_led_timout_seconds;
-    clone_array[13] = clone_preset->sound_set;
-    clone_array[14] = clone_preset->overheat_limit;
-    clone_array[17] = clone_preset->damage_per_shot;
-    clone_array[18] = clone_preset->clip_size;
-    clone_array[19] = clone_preset->number_of_clips;
-    clone_array[20] = clone_preset->fire_selector;
-    clone_array[21] = clone_preset->burst_size;
-    clone_array[22] = clone_preset->cyclic_rpm;
-    clone_array[23] = clone_preset->reload_time;
-    clone_array[24] = clone_preset->ir_power;
-    clone_array[25] = clone_preset->ir_range;
-    clone_array[26] = clone_preset->tagger_bool_flags;
-    clone_array[27] = clone_preset->respawn_health;
-    clone_array[29] = clone_preset->respawn_delay;
-    clone_array[30] = clone_preset->armour_value;
-    clone_array[31] = clone_preset->game_bool_flags_1;
-    clone_array[32] = clone_preset->game_bool_flags_2;
-    clone_array[33] = clone_preset->hit_delay;
-    clone_array[34] = clone_preset->start_delay;
-    clone_array[35] = clone_preset->death_delay;
-    clone_array[36] = clone_preset->time_limit;
-    clone_array[37] = clone_preset->max_respawns;
-    clone_array[38] = 0xFF; // End of data
+    clone_array[1]  = CLONE; // Then indicate that this is a clone_t packet
+    clone_array[2]  = TERMINATION_LITERAL; // Then indicate the start of the clone_t data
+    clone_array[5]  = clone_preset->clone_slot_number;
+    clone_array[6]  = clone_preset->team_id;
+    clone_array[8]  = clone_preset->clips_from_ammo_box;
+    clone_array[9]  = clone_preset->health_from_medic_box;
+    clone_array[11] = clone_preset->hit_led_timout_seconds;
+    clone_array[12] = clone_preset->sound_set;
+    clone_array[13] = clone_preset->overheat_limit;
+    clone_array[16] = clone_preset->damage_per_shot;
+    clone_array[17] = clone_preset->clip_size;
+    clone_array[18] = clone_preset->number_of_clips;
+    clone_array[19] = clone_preset->fire_selector;
+    clone_array[20] = clone_preset->burst_size;
+    clone_array[21] = clone_preset->cyclic_rpm;
+    clone_array[22] = clone_preset->reload_time;
+    clone_array[23] = clone_preset->ir_power;
+    clone_array[24] = clone_preset->ir_range;
+    clone_array[25] = clone_preset->tagger_bool_flags;
+    clone_array[26] = clone_preset->respawn_health;
+    clone_array[28] = clone_preset->respawn_delay;
+    clone_array[29] = clone_preset->armour_value;
+    clone_array[30] = clone_preset->game_bool_flags_1;
+    clone_array[31] = clone_preset->game_bool_flags_2;
+    clone_array[32] = clone_preset->hit_delay;
+    clone_array[33] = clone_preset->start_delay;
+    clone_array[34] = clone_preset->death_delay;
+    clone_array[35] = clone_preset->time_limit;
+    clone_array[36] = clone_preset->max_respawns;
+    clone_array[37] = 0xFF; // End of data
     calcCheckSum(clone_array);
     return clone_array;
 }
@@ -288,7 +300,7 @@ FLASHMEM char* get_game_flags(unsigned char flags1, unsigned char flags2){
     return buffer;
 }
 
-void game_flag_setter(clone* preset, unsigned char flag, unsigned char val,
+void game_flag_setter(clone_t* preset, unsigned char flag, unsigned char val,
                       unsigned char flag_select){
     // Or the values of flags and flag
     if (flag_select == 0){
@@ -361,7 +373,7 @@ FLASHMEM String* hitdelay_string(hit_delays delay){
     return (String *) F("Unknown");
 }
 
-void print_clone_values(clone* preset) {
+void print_clone_values(clone_t* preset) {
     Serial.printf(F("Clone Values:\n"));
     Serial.printf(F("Name: %s\n"), preset->name);
     Serial.printf(F("Team ID: %s\n"), get_team_name(preset->team_id));

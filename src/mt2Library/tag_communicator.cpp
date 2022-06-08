@@ -82,10 +82,10 @@ bool shoot(){
 }
 
 /**
- * Sends a clone config over IR to any device that is listening
- * @param clone - the clone to be sent
+ * Sends a clone_t config over IR to any device that is listening
+ * @param clone - the clone_t to be sent
  */
-void sendClone(clone *clone){
+void sendClone(clone_t *clone){
     unsigned char* array = build_clone_array(clone);
     send(array, (unsigned short) 40);
     delete array; // Array is no longer needed, release memory allocated to it
@@ -94,7 +94,7 @@ void sendClone(clone *clone){
  * @deprecated
  * @param clone
  */
-void printClone(clone *clone){
+void printClone(clone_t *clone){
     print_clone_values(clone);
 }
 
@@ -194,7 +194,7 @@ void decodeMT2Data(uint8_t* data){
             case SYSTEM_DATA:
                 switch(data[1]){
                     case CLONE: {
-                        clone *new_clone = array_to_clone(data);
+                        clone_t *new_clone = array_to_clone(data);
                         if (handlers->on_clone != nullptr) handlers->on_clone(new_clone);
                         delete new_clone;
                         break;
@@ -223,12 +223,12 @@ void decodeMT2Data(uint8_t* data){
 
 /**
  * Helper function, sets game boolean flags
- * @param preset - The clone struct to have its flags set
+ * @param preset - The clone_t struct to have its flags set
  * @param flag -   The flag bitmask to use
  * @param val -    The value to set the flag to
  * @flag_select -  Which flag byte to set
  */
-void set_game_flag(clone* preset, unsigned char flag, unsigned char val,
+void set_game_flag(clone_t* preset, unsigned char flag, unsigned char val,
                    unsigned char flag_select){
     game_flag_setter(preset, flag, val, flag_select);
 }

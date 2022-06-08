@@ -73,7 +73,7 @@ trigger_states trigger_state = TRIGGER_RELEASED; //!< The current state of the t
  * @usage This function is called when the tagger is first initialized, and when the gun gets cloned by a referee
  * @param newClone - The new config to set the tagger to
  */
-void configure_from_clone(mt2::clone* newClone){
+void configure_from_clone(mt2::clone_t* newClone){
     game_state.currentConfig = newClone;
 
     // The config firerate is stored as Rounds per minute, so we need to calculate the delay in milliseconds
@@ -321,7 +321,7 @@ void on_killed(uint_least8_t killer_id) {
 
 // This section contains the event handlers for the game
 
-void on_clone(mt2::clone* clone){
+void on_clone(mt2::clone_t* clone){
     if (clone->checksum_valid){
         save_preset(0, clone);
         configure_from_clone(clone);

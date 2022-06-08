@@ -82,6 +82,13 @@ public:
         }
         return false;
     }
+
+    /**
+     *
+     */
+     void stop() {
+        event_active = true;
+     }
 };
 
 #endif //SMGMAIN_EVENTTIMER_H

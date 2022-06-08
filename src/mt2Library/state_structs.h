@@ -25,6 +25,7 @@ struct tagger_state_struct {
     volatile bool reloading = false; //!< Whether the tagger is currently reloading
     volatile uint32_t reload_time = 0.0; //!< If reloading, the time the reload will be completed, in milliseconds
     volatile bool paused = false; //!< Whether the tagger is paused
+    volatile bool keyed  = false; //!< Whether the tagger has held trigger down to start the game
     volatile bool started = false; //!< Whether the tagger game has started
     volatile bool starting = false; //!< Whether game start is in progress
     volatile bool disarmed = false; //!< Whether the tagger is disarmed (triggered by admin)
@@ -35,7 +36,7 @@ struct tagger_state_struct {
     volatile bool is_zombie = false; //!< Whether the tagger is a zombie (only used in zombie mode)
 
     // Below are static values not updated during game play
-    mt2::clone *currentConfig = nullptr; //!< The current clone configuration
+    mt2::clone_t *currentConfig = nullptr; //!< The current clone_t configuration
     uint16_t max_health = 0; //!< The maximum health the tagger can have
     uint8_t max_shield_health = 0; //!< The maximum shield health the tagger can have
     uint8_t max_respawns = 0; //!< The maximum number of respawns the tagger can have

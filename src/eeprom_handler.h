@@ -11,11 +11,11 @@ using namespace mt2;
 
 int eepromPresetSize();
 
-clone* load_preset(uint8_t preset_num);
+clone_t* load_preset(uint8_t preset_num);
 
-void save_preset(uint8_t preset_num, clone* preset);
+void save_preset(uint8_t preset_num, clone_t* preset);
 
-clone** load_presets(int* length);
+clone_t** load_presets(int* length);
 
 void set_defaults();
 

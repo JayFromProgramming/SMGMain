@@ -48,7 +48,7 @@ namespace wireless {
     };
 
      struct game_event_handlers {
-        void (*on_clone_raw)(mt2::clone* clone) = nullptr;
+        void (*on_clone_raw)(mt2::clone_t* clone) = nullptr;
         void (*on_pause_unpause)() = nullptr;
         void (*on_respawn)() = nullptr;
         void (*on_full_health)() = nullptr;

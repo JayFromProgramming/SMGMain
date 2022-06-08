@@ -7,7 +7,7 @@
 #include <lcdDisplay/lcdDriver.h>
 #include <eeprom_handler.h>
 
-mt2::clone* temp_clone;
+mt2::clone_t* temp_clone;
 uint8_t temp_clone_id;
 
 void (*temp_callback)();
@@ -86,7 +86,7 @@ void edit_friendly_fire(int value) { // TODO: Fix
 //    set_game_flag(temp_clone, GAME_FRIENDLY_FIRE, value, 0);
 }
 
-display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id, void (*config_menu_callback)()) {
+display::menu_holder *create_clone_config_menu(mt2::clone_t *clone, uint8_t clone_id, void (*config_menu_callback)()) {
     // Due to the nature of adding a bunch of different items to a menu this method is very large
 
     temp_clone = clone;
@@ -226,7 +226,7 @@ display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_
 //        float delay = mt2::hit_delay_to_seconds(static_cast<mt2::hit_delays>(i));
 //        String delay_str = String(delay) + " Seconds";
 //        display::lcdDriver::add_submenu_item(menu, delay_str.c_str());
-//        if (i == clone->hit_delay)
+//        if (i == clone_t->hit_delay)
 //            display::lcdDriver::submenu_set_selected(menu, i);
 //    }
 

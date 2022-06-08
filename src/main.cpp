@@ -13,10 +13,15 @@
 //#include <radio/radioInterface.h>
 #include "settings_configurer.h"
 #include "mt2Library/referee.h"
+#include "eventTimer.h"
 
 #include <pinout.h>
 
 #define DEBUG_MODE
+
+
+#define VERSION "0.1.0"
+
 
 #define REBOOT SCB_AIRCR = 0x05FA0004
 
@@ -42,10 +47,12 @@ Bounce trigger_button = Bounce(IO_TRIGGER, 10);
 Bounce reload_button = Bounce(IO_RELOAD, 10);
 Bounce mode_button = Bounce(IO_MODE, 10);
 Bounce select_button = Bounce(IO_SELECT, 10);
+eventTimer trigger_held_timer;
 
 struct button_methods {
   void (*trigger_method)(bool state) = nullptr; //!< The method to call when the trigger button is pressed.
   void (*shot_check_method)(Bounce* passthrough) = nullptr; //!< The method to call when the trigger button is pressed.
+  void (*trigger_held_method)() = nullptr; //!< The method to call when the trigger has been held for 1 second.
   void (*reload_method)()  = nullptr; //!< method to call when reload button is pressed
   void (*mode_method)()  = nullptr; //!< method to call when mode button is pressed
   void (*mode_method_secondary)()  = nullptr; //!< secondary mode method for when the mode button is depressed
@@ -96,10 +103,17 @@ void io_refresh(){
       if (io_actions.trigger_method != nullptr) {
           io_actions.trigger_method(true);
       }
+      trigger_held_timer.set(1000);
   }
   if (trigger_button.risingEdge()){
       if (io_actions.trigger_method != nullptr){
         io_actions.trigger_method(false);
+      }
+      trigger_held_timer.stop();
+  }
+  if (trigger_held_timer.check()){
+      if (io_actions.trigger_held_method != nullptr){
+        io_actions.trigger_held_method();
       }
   }
   if (reload_button.fallingEdge()){
@@ -212,7 +226,7 @@ void boot_mode_clone(){
 
     auto* clone_menu = display::lcdDriver::make_menu("Select\nClone Preset");
     int presets;
-    clone** presets_ptr = load_presets(&presets);
+    clone_t** presets_ptr = load_presets(&presets);
     for (int i = 0; i < presets; i++){
         display::lcdDriver::add_menu_item(clone_menu, presets_ptr[i]->name, transmit_clone, i);
     }
@@ -264,7 +278,7 @@ void boot_mode_clone_config(){
 
     auto* clone_menu = display::lcdDriver::make_menu("Select Preset\nto Edit");
     int presets;
-    clone** presets_ptr = load_presets(&presets);
+    clone_t** presets_ptr = load_presets(&presets);
     for (int i = 0; i < presets; i++){
         display::lcdDriver::add_menu_item(clone_menu, presets_ptr[i]->name, launch_clone_config_menu, i);
     }
@@ -348,7 +362,8 @@ void boot_mode_sys_info() { // Display system information, does not override cur
     }
 
     auto* sys_info_menu = display::lcdDriver::make_menu("System Info");
-    display::lcdDriver::add_menu_item(sys_info_menu, "Gun OS Version:\n" __TIME__ " " __DATE__);
+    display::lcdDriver::add_menu_item(sys_info_menu, "Gun OS Version:\n" VERSION "\n Build:\n"
+            __DATE__ " " __TIME__, &boot_menu);
     char* format_string = new char[100];
     sprintf(format_string, "Device ID:\nTagger-%d", get_device_id());
     display::lcdDriver::add_menu_item(sys_info_menu, format_string);
@@ -361,7 +376,7 @@ void boot_mode_sys_info() { // Display system information, does not override cur
     display::lcdDriver::add_menu_item(sys_info_menu, "Radio Status:\nNo Radio Module");
     sprintf(format_string, "Remaining EEPROM:\n%d bytes", get_remaining_space());
     display::lcdDriver::add_menu_item(sys_info_menu, format_string);
-    display::lcdDriver::add_menu_item(sys_info_menu, "Copyright(c) 2022\nLOAFCLAN TACTICAL\nEQUIPMENT, LLC\n"
+    display::lcdDriver::add_menu_item(sys_info_menu, "Copyright(c) 2022\nEMBEDDED\nENTERTAINMENT\nLLC\n"
                                                                  "All rights reserved.");
     display::lcdDriver::add_menu_item(sys_info_menu, "Exit", &boot_menu);
     hud.load_and_display_menu(sys_info_menu);

@@ -8,6 +8,6 @@
 #include "mt2_protocol.h"
 #include "lcdDisplay/lcdDriver.h"
 
-display::menu_holder *create_clone_config_menu(mt2::clone *clone, uint8_t clone_id, void(*config_callback)());
+display::menu_holder *create_clone_config_menu(mt2::clone_t *clone, uint8_t clone_id, void(*config_callback)());
 
 #endif //SMGMAIN_CLONE_CONFIGURER_H

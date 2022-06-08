@@ -15,34 +15,34 @@ device_configs* device_config = nullptr;
 
 
 /**
- * @brief A more compressed and optimized version of clone for storage in EEPROM
+ * @brief A more compressed and optimized version of clone_t for storage in EEPROM
  */
 typedef struct eeprom_preset {
     char name[14]{"Unnamed Clone"}; // Preset name used for display, max 14 characters
     teams team_id = mt2::TEAM_NONE; // Team ID
-    unsigned char clips_from_ammo_box = 0x00;
-    unsigned char health_from_medic_box = 0x00;
-    unsigned char hit_led_timout_seconds = 0xFF;
-    unsigned char soundset_fireselect_irrange = 0; // See section 2.3.2
-    unsigned char overheat_limit = 0x00; // Rounds per minute
-    unsigned char dps_rpm = 0; // Combination of damage and RPM
-    unsigned char clip_size = 0x1E; // 0xFF is unlimited
-    unsigned char number_of_clips = 0xCA; // 0xCA is unlimited
-    unsigned char burst_size = 0x05; // Number of shots per burst
-    unsigned char reload_time = 0x03; // In seconds
-    unsigned char ir_power = 0x00; // 0 is indoor, 1 is outdoor
-    unsigned char tagger_bool_flags = B00000001; // See section 2.3.8
+    uint8_t clips_from_ammo_box = 0x00;
+    uint8_t  health_from_medic_box = 0x00;
+    uint8_t  hit_led_timout_seconds = 0xFF;
+    uint8_t  soundset_fireselect_irrange = 0; // See section 2.3.2
+    uint8_t  overheat_limit = 0x00; // Rounds per minute
+    uint8_t  dps_rpm = 0; // Combination of damage and RPM
+    uint8_t  clip_size = 0x1E; // 0xFF is unlimited
+    uint8_t  number_of_clips = 0xCA; // 0xCA is unlimited
+    uint8_t  burst_size = 0x05; // Number of shots per burst
+    uint8_t  reload_time = 0x03; // In seconds
+    uint8_t  ir_power = 0x00; // 0 is indoor, 1 is outdoor
+    uint8_t  tagger_bool_flags = B00000001; // See section 2.3.8
     respawn_health respawn_health = HP_100; // See section 2.3.9 (default is 100 [0x24])
-    unsigned char respawn_delay = 0x00; // In ten second increments
-    unsigned char armour_value = 0x00;
-    unsigned char game_bool_flags_1 = B00000001; // See section 2.3.10
-    unsigned char game_bool_flags_2 = B00000001; // See section 2.3.11
-    unsigned char start_delay = 0x00; // In seconds
-    unsigned char death_delay = 0x00; // In seconds
-    unsigned char time_limit = 0x00; // In minutes
-    unsigned char max_respawns = 0x00;
-    unsigned char parity_hit_delay = 0x00; // 3 bits of parity data plus the hit delay data
-} eeprom_preset;
+    uint8_t respawn_delay = 0x00; // In ten second increments
+    uint8_t armour_value = 0x00;
+    uint8_t game_bool_flags_1 = B00000001; // See section 2.3.10
+    uint8_t game_bool_flags_2 = B00000001; // See section 2.3.11
+    uint8_t start_delay = 0x00; // In seconds
+    uint8_t death_delay = 0x00; // In seconds
+    uint8_t time_limit = 0x00; // In minutes
+    uint8_t max_respawns = 0x00;
+    uint8_t parity_hit_delay = 0x00; // 3 bits of parity data plus the hit delay data
+} eeprom_preset_t;
 
 /**
  * @brief Calculates the position of a given preset in EEPROM
@@ -50,8 +50,8 @@ typedef struct eeprom_preset {
  * @return The EEPROM address of the preset
  */
 FLASHMEM int calculate_preset_index(int index) {
-    unsigned short addr = index * (int) sizeof(clone) + PRESET_START_ADDRESS;
-    if (addr + sizeof(clone) > EEPROM.length()) {
+    unsigned short addr = index * (int) sizeof(clone_t) + PRESET_START_ADDRESS;
+    if (addr + sizeof(clone_t) > EEPROM.length()) {
         return -1;
     }
     return addr;
@@ -62,11 +62,11 @@ FLASHMEM int calculate_preset_index(int index) {
  * @param preset - The preset to calculate the checksum of
  * @return The checksum of the preset
  */
-FLASHMEM int calculate_checksum(eeprom_preset *preset) {
+FLASHMEM int calculate_checksum(eeprom_preset_t *preset) {
     int parity = 0;
-    for (int i = 0; i < sizeof(eeprom_preset); i++) {
+    for (int i = 0; i < sizeof(eeprom_preset_t); i++) {
         // Make sure we don't count the parity byte
-        if (i != sizeof(eeprom_preset) - 1) {
+        if (i != sizeof(eeprom_preset_t) - 1) {
             parity += (int) ((unsigned char *) preset)[i];
         }
     }
@@ -78,7 +78,7 @@ FLASHMEM int calculate_checksum(eeprom_preset *preset) {
  * @param preset - The preset to check the checksum of
  * @return True if the checksum is valid, false otherwise
  */
-FLASHMEM bool check_checksum(eeprom_preset *preset) {
+FLASHMEM bool check_checksum(eeprom_preset_t *preset) {
     int parity = calculate_checksum(preset);
     return (char) (((preset->parity_hit_delay & B11100000) == parity) ? 1 : -1);
 }
@@ -88,10 +88,10 @@ FLASHMEM bool check_checksum(eeprom_preset *preset) {
  * @param raw - The raw EEPROM preset to convert
  * @return A pointer to the full preset
  * @warning The returned pointer must be freed by the caller
- * @warning The passed eeprom_preset* is freed by this method
+ * @warning The passed eeprom_preset_t* is freed by this method
  */
-FLASHMEM clone* eeprom_to_preset(eeprom_preset* raw){
-    auto* preset = new clone();
+FLASHMEM clone_t* eeprom_to_preset(eeprom_preset_t* raw){
+    auto* preset = new clone_t();
     stpcpy(preset->name, raw->name);
     preset->team_id = raw->team_id;
     preset->clips_from_ammo_box = raw->clips_from_ammo_box;
@@ -123,7 +123,7 @@ FLASHMEM clone* eeprom_to_preset(eeprom_preset* raw){
     preset->max_respawns = raw->max_respawns;
     preset->hit_delay = static_cast<hit_delays>(raw->parity_hit_delay & B00011111);
     preset->checksum_valid = check_checksum(raw);
-    delete raw; // Free the eeprom_preset struct as it is no longer needed
+    delete raw; // Free the eeprom_preset_t struct as it is no longer needed
     return preset;
 }
 
@@ -133,8 +133,8 @@ FLASHMEM clone* eeprom_to_preset(eeprom_preset* raw){
  * @return A pointer to the compressed EEPROM preset
  * @warning The returned pointer must be freed by the caller
  */
-FLASHMEM eeprom_preset* preset_to_eeprom(clone* preset){
-    auto* raw = new eeprom_preset();
+FLASHMEM eeprom_preset_t* preset_to_eeprom(clone_t* preset){
+    auto* raw = new eeprom_preset_t();
     stpcpy(raw->name, preset->name);
     raw->team_id = preset->team_id;
     raw->clips_from_ammo_box = preset->clips_from_ammo_box;
@@ -172,8 +172,8 @@ FLASHMEM eeprom_preset* preset_to_eeprom(clone* preset){
  * @return A pointer to the loaded preset
  * @warning The returned pointer must be freed by the caller
  */
-FLASHMEM clone* load_preset(uint8_t preset_num){
-    auto* raw_preset = new eeprom_preset();
+FLASHMEM clone_t* load_preset(uint8_t preset_num){
+    auto* raw_preset = new eeprom_preset_t();
     EEPROM.get(calculate_preset_index(preset_num), *raw_preset);
     auto* preset = eeprom_to_preset(raw_preset);
     if (preset->checksum_valid == -1) {
@@ -189,7 +189,7 @@ FLASHMEM clone* load_preset(uint8_t preset_num){
  * @param preset_num - The preset number to save
  * @param preset* - A pointer to the preset to save
  */
-FLASHMEM void save_preset(uint8_t preset_num, clone* preset){
+FLASHMEM void save_preset(uint8_t preset_num, clone_t* preset){
     auto* raw_preset = preset_to_eeprom(preset);
     if (check_checksum(raw_preset) == 1){
         EEPROM.put(calculate_preset_index(preset_num), *raw_preset);
@@ -206,8 +206,8 @@ FLASHMEM void save_preset(uint8_t preset_num, clone* preset){
  * @return A pointer to an array of preset pointers
  * @warning The returned presets must be freed by the caller, and the array must be freed by the caller
  */
-FLASHMEM clone** load_presets(int* length){
-    auto* presets = new clone*[TOTAL_PRESETS];
+FLASHMEM clone_t** load_presets(int* length){
+    auto* presets = new clone_t*[TOTAL_PRESETS];
     for (int i = 0; i < TOTAL_PRESETS; i++) {
         presets[i] = load_preset(i);
     }
@@ -219,7 +219,7 @@ FLASHMEM clone** load_presets(int* length){
  * @brief Sets all presets and system settings to their default values
  */
 FLASHMEM void set_defaults(){ // Set all memory settings to default values and restart
-    auto* default_preset = new clone();
+    auto* default_preset = new clone_t();
     char name[15];
     sprintf(name, "Loaded Preset");
     save_preset(0, default_preset);

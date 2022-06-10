@@ -16,8 +16,8 @@ namespace display {
 
     struct menu_option_item {
         String** option_names = nullptr;
-        uint16_t num_options = 0; // The number of options for the menu
-        uint16_t selected_option = 0; // The index of the selected option
+        int16_t num_options = 0; // The number of options for the menu
+        int16_t selected_option = 0; // The index of the selected option
         bool is_active = false; // Whether the menu is active
     };
 
@@ -32,8 +32,8 @@ namespace display {
     struct menu_holder {
         const char* name = nullptr;
         menu_item* items = nullptr;
-        uint16_t num_items = 0;
-        uint16_t selected_item = 0;
+        int16_t num_items = 0;
+        int16_t selected_item = 0;
         uint16_t background_color = 0;
         uint16_t text_color = 0;
     };
@@ -128,7 +128,7 @@ namespace display {
 
         static void add_submenu_values(menu_option_item *sub_menu, unsigned int range, unsigned int step);
 
-        static void submenu_set_selected(menu_option_item *menu, unsigned int selected);
+        static void submenu_set_selected(menu_option_item *menu, int16_t selected);
 
         static void free_menu(menu_holder *menu);
 

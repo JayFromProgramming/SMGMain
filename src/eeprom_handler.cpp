@@ -6,7 +6,7 @@
 
 #include <EEPROM.h>
 
-#define EEPROM_RESET_FLAG 0x1B // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
+#define EEPROM_RESET_FLAG 0x13 // Used to indicate if the struct sizes have changed and the EEPROM needs to be reset
 
 #define PRESET_START_ADDRESS 0x1F // EEPROM address where presets start ( 0x1F = 31 )
 #define TOTAL_PRESETS 12
@@ -18,7 +18,7 @@ device_configs* device_config = nullptr;
  * @brief A more compressed and optimized version of clone_t for storage in EEPROM
  */
 typedef struct eeprom_preset {
-    char name[14]{"Unnamed Clone"}; // Preset name used for display, max 14 characters
+    char name[15]{"Unnamed Clone"}; // Preset name used for display, max 14 characters
     teams team_id = mt2::TEAM_NONE; // Team ID
     uint8_t clips_from_ammo_box = 0x00;
     uint8_t  health_from_medic_box = 0x00;
@@ -222,7 +222,7 @@ FLASHMEM clone_t** load_presets(int* length){
 FLASHMEM void set_defaults(){ // Set all memory settings to default values and restart
     auto* default_preset = new clone_t();
     char name[15];
-    sprintf(name, "Loaded Preset");
+    strcpy(default_preset->name, "Loaded Preset");
     save_preset(0, default_preset);
     for (int i = 1; i < TOTAL_PRESETS; i++) {
         sprintf(name, "Preset %2d", i);
@@ -231,11 +231,13 @@ FLASHMEM void set_defaults(){ // Set all memory settings to default values and r
     }
     delete default_preset;
 
-    device_config->boot_mode = 0;
-    device_config->current_preset = 0;
-    device_config->current_team = mt2::TEAM_RED;
+    device_configs new_config = device_configs();
+    new_config.boot_mode = 0;
+    new_config.current_preset = 0;
+    new_config.current_team = mt2::TEAM_RED;
+    new_config.device_id = 0;
 
-    EEPROM.put(calculate_preset_index(1), *device_config);
+    EEPROM.put(1, &new_config);
 
     SCB_AIRCR = 0x05FA0004;
 }

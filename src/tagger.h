@@ -53,6 +53,8 @@ void on_fire_select(bool value);
 
 void on_mode_select();
 
+void on_held_trigger();
+
 void tagger_init(audio_interface::audio_interface* audio_interface, display::lcdDriver *lcdPtr);
 
 void tagger_loop();

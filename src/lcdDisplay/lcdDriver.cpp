@@ -579,13 +579,18 @@ namespace display {
      */
     void lcdDriver::free_menu(menu_holder *menu) {
         if (menu != nullptr) {
+//            Serial.printf("Freeing menu %s\n", menu->name);
             for (unsigned int i = 0; i < menu->num_items; i++) {
+//                Serial.println("\tFreeing item");
                 delete[] menu->items[i].name;
                 if (menu->items[i].sub_menu != nullptr) {
                     for (unsigned int j = 0; j < menu->items[i].sub_menu->num_options; j++) {
-                        delete[] menu->items[i].sub_menu->option_names[j];
+//                        Serial.println("\t\tFreeing option name");
+                        delete menu->items[i].sub_menu->option_names[j];
                     }
+//                    Serial.println("\t\tFreeing option name array");
                     delete[] menu->items[i].sub_menu->option_names;
+//                    Serial.println("\t\tFreeing sub menu pointer");
                     delete menu->items[i].sub_menu;
                 }
             }
@@ -712,6 +717,9 @@ namespace display {
             if (current_menu->selected_item >= current_menu->num_items) {
                 current_menu->selected_item = 0;
             }
+        }
+        if (current_menu->selected_item >= current_menu->num_items) {
+            current_menu->selected_item = 0;
         }
         clear_screen();
         draw_menu();
@@ -877,11 +885,12 @@ namespace display {
      * @param menu  - A pointer to the sub menu to set the default option for
      * @param selected - The index of the option to set as the default
      */
-    void lcdDriver::submenu_set_selected(menu_option_item *menu, unsigned int selected) {
+    void lcdDriver::submenu_set_selected(menu_option_item *menu, int16_t selected) {
         if (selected < menu->num_options) {
             menu->selected_option = selected;
         } else {
-            menu->selected_option = MAX_OPTION_MENU_OPTIONS - 1;
+            menu->selected_option = menu->num_options - 1;
+//            menu->selected_option = MAX_OPTION_MENU_OPTIONS - 1;
         }
     }
 

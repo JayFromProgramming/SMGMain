@@ -285,6 +285,15 @@ void on_mode_select(){
     }
 }
 
+/**
+ * @brief Called when the player holds the trigger for 1 second
+ */
+void on_held_trigger(){
+    if (!game_state.keyed){
+
+    }
+}
+
 void on_killed(uint_least8_t killer_id) {
     score_data.killed_by_game[killer_id]++; // Increment the kills by player
     score_data.last_killed_by = killer_id; // Set the killed by player

@@ -17,7 +17,7 @@
 
 #include <pinout.h>
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 
 #define VERSION "0.1.0"
@@ -204,6 +204,7 @@ void boot_mode_game(){
     io_actions.mode_method =  &display::lcdDriver::toggle_backlight;
     io_actions.mode_method_secondary = &on_mode_select;
     io_actions.select_method = &on_fire_select;
+    io_actions.trigger_held_method = &on_held_trigger;
 
     hud.pass_data_ptr(get_tagger_data_ptr(), get_score_data_ptr()); // pass the tagger data pointer to the lcd driver
     tagger_events = get_event_handler_ptr(); // get the tagger event pointer
@@ -213,8 +214,11 @@ void boot_mode_game(){
 
 void transmit_clone(int clone_id){
     auto* to_send = load_preset(clone_id);
+    digitalWriteFast(MUZZLE_RED_FLASH, HIGH);
     sendClone(to_send);
-    hud.clear();
+    digitalWriteFast(MUZZLE_RED_FLASH, LOW);
+    delete to_send;
+//    hud.clear();
 }
 
 void boot_mode_clone(){
@@ -362,7 +366,7 @@ void boot_mode_sys_info() { // Display system information, does not override cur
     }
 
     auto* sys_info_menu = display::lcdDriver::make_menu("System Info");
-    display::lcdDriver::add_menu_item(sys_info_menu, "Gun OS Version:\n" VERSION "\n Build:\n"
+    display::lcdDriver::add_menu_item(sys_info_menu, "Gun OS Version:\nV:" VERSION "\nBuild:\n"
             __DATE__ " " __TIME__, &boot_menu);
     char* format_string = new char[100];
     sprintf(format_string, "Device ID:\nTagger-%d", get_device_id());

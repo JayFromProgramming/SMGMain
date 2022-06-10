@@ -87,8 +87,13 @@ bool shoot(){
  */
 void sendClone(clone_t *clone){
     unsigned char* array = build_clone_array(clone);
-    send(array, (unsigned short) 40);
+    for (int i = 0; i < 39; i++) {
+        Serial.printf("%d: %#x\n", i + 1, array[i]);
+    }
+    send(array, (unsigned short) 39);
     delete array; // Array is no longer needed, release memory allocated to it
+    // Block until the clone is sent
+    while(is_transmitting());
 }
 /**
  * @deprecated

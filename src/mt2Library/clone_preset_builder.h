@@ -63,9 +63,9 @@ clone_t* array_to_clone(const unsigned char *data) {
 
 
 unsigned char * build_clone_array(clone_t* clone_preset){ // Copy the clone_t structure into the clone_t array
-    auto* clone_array = new uint8_t [40];
+    auto* clone_array = new uint8_t [39];
     // Initialize the clone_t array
-    for(int i = 0; i < 40; i++){
+    for(int i = 0; i < 39; i++){
         clone_array[i] = 0;
     }
     clone_array[0]  = SYSTEM_DATA; // Start by indicating that this is a system data packet

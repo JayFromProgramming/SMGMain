@@ -345,7 +345,7 @@ namespace display {
      * @brief Draws the ammo count
      */
     void lcdDriver::draw_ammo_count() {
-        sprintf(ammo_str, "%02d", game_state->ammo_count);
+        sprintf(ammo_str, "%02d", game_state->ammo_count < 99 ? game_state->ammo_count : 99);
         lcd.setCursor(AMMO_TEXT_START_X, AMMO_TEXT_START_Y);
         lcd.setTextSize(AMMO_TEXT_SIZE);
         if (game_state->ammo_count > 5) { // If ammo count is above 5 ammo count is green
@@ -589,9 +589,11 @@ namespace display {
                     delete menu->items[i].sub_menu;
                 }
             }
+//            Serial.println("\tFreeing item array");
             delete[] menu->items;
             delete menu;
         }
+//        Serial.println("Menu freed");
         menu = nullptr;
     }
 

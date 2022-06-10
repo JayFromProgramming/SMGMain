@@ -261,7 +261,7 @@ void boot_mode_ref(){
 void launch_clone_config_menu(int clone_id){
     auto* clone = load_preset(clone_id);
     auto* menu = create_clone_config_menu(clone, clone_id, &boot_mode_clone_config);
-    hud.load_and_display_menu(menu);
+    hud.load_free_display_menu(menu);
 
     clear_io_actions();
     io_actions.trigger_method = select_menu;
@@ -280,10 +280,10 @@ void boot_mode_clone_config(){
     int presets;
     clone_t** presets_ptr = load_presets(&presets);
     for (int i = 0; i < presets; i++){
-        display::lcdDriver::add_menu_item(clone_menu, presets_ptr[i]->name, launch_clone_config_menu, i);
+        display::lcdDriver::add_menu_item(clone_menu, presets_ptr[i]->name, &launch_clone_config_menu, i);
     }
     display::lcdDriver::add_menu_item(clone_menu, "Exit", &boot_menu);
-    hud.load_and_display_menu(clone_menu);
+    hud.load_free_display_menu(clone_menu);
     clear_io_actions();
     io_actions.trigger_method = select_menu;
     io_actions.reload_method = increment_menu;

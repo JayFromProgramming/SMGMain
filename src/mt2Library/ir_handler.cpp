@@ -31,7 +31,6 @@ bool ir_receive_enabled = false;
 void transmit_start();
 void receive_pulse();
 
-
 void flush_pulse_buffer();
 
 FLASHMEM void transmitter_init() {
@@ -63,6 +62,10 @@ void receiver_detach(){
 FLASHMEM void receiver_init() {
     pinMode(IR_IN, INPUT);
     receiver_attach();
+}
+
+bool is_transmitting() {
+    return transmission_in_progress;
 }
 
 /**

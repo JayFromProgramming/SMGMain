@@ -12,6 +12,8 @@ uint8_t* get_buffer();
 void transmitter_init();
 void receiver_init();
 
+bool is_transmitting();
+
 bool send(const uint8_t *data, uint32_t bits);
 
 bool send(const uint8_t *data, uint16_t bytes);

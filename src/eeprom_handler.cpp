@@ -23,6 +23,7 @@ typedef struct eeprom_preset {
     uint8_t clips_from_ammo_box = 0x00;
     uint8_t  health_from_medic_box = 0x00;
     uint8_t  hit_led_timout_seconds = 0xFF;
+    fire_mode fire_mode = mt2::FIRE_MODE_SINGLE;
     uint8_t  soundset_fireselect_irrange = 0; // See section 2.3.2
     uint8_t  overheat_limit = 0x00; // Rounds per minute
     uint8_t  dps_rpm = 0; // Combination of damage and RPM
@@ -101,8 +102,7 @@ FLASHMEM clone_t* eeprom_to_preset(eeprom_preset_t* raw){
             raw->soundset_fireselect_irrange & 0x03);
     preset->ir_range = static_cast<ir_range_table>(
             raw->soundset_fireselect_irrange & 0x04 >> 2);
-    preset->fire_selector = static_cast<fire_mode>(
-            raw->soundset_fireselect_irrange & 0x18 >> 3);
+    preset->fire_selector = raw->fire_mode;
     preset->damage_per_shot = static_cast<damage_table>(raw->dps_rpm & 0x0F);
     preset->cyclic_rpm = static_cast<fire_rate_table>((raw->dps_rpm & 0xF0) >> 4);
     preset->overheat_limit = raw->overheat_limit;
@@ -143,6 +143,7 @@ FLASHMEM eeprom_preset_t* preset_to_eeprom(clone_t* preset){
     // Combine the soundset, ir range and fire selector into a single byte for storage
     raw->soundset_fireselect_irrange = preset->sound_set | // Format is: 0b000FFISS
             preset->ir_range << 2 | preset->fire_selector << 3;
+    raw->fire_mode = preset->fire_selector;
     // Combine the damage and cyclic RPM into a single byte for storage
     raw->dps_rpm = preset->damage_per_shot | preset->cyclic_rpm << 4;
     raw->overheat_limit = preset->overheat_limit;

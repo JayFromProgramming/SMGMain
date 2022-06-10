@@ -7,6 +7,8 @@
 #include <lcdDisplay/lcdDriver.h>
 #include <eeprom_handler.h>
 
+#define REBOOT SCB_AIRCR = 0x05FA0004
+
 mt2::clone_t* temp_clone;
 uint8_t temp_clone_id;
 
@@ -59,7 +61,7 @@ void edit_clip_size(int size) {
 
 void save_config() {
     save_preset(temp_clone_id, temp_clone);
-    temp_callback();
+    REBOOT;
 }
 
 void edit_start_delay(int delay) {

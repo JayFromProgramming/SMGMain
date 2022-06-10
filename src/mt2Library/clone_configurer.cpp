@@ -12,6 +12,8 @@
 mt2::clone_t* temp_clone;
 uint8_t temp_clone_id;
 
+display::menu_holder* menu_ptr;
+
 void (*temp_callback)();
 
 void edit_health(int health) {
@@ -93,16 +95,17 @@ display::menu_holder *create_clone_config_menu(mt2::clone_t *clone, uint8_t clon
 
     temp_clone = clone;
     temp_clone_id = clone_id;
-    temp_callback = config_menu_callback;
+//    temp_callback = config_menu_callback;
 
     char *formatted_text_ptr = new char[100];
     sprintf(formatted_text_ptr, "Editing Clone\n%s", clone->name);
     auto *clone_menu = display::lcdDriver::make_menu(formatted_text_ptr);
+    menu_ptr = clone_menu;
     delete[] formatted_text_ptr;
     display::lcdDriver::add_menu_item(clone_menu, "Save & Return", save_config);
     display::lcdDriver::add_menu_item(clone_menu, "Exit without\nsaving", config_menu_callback);
-    display::menu_option_item *menu = nullptr;
 
+    display::menu_option_item *menu = nullptr;
     menu = display::lcdDriver::add_submenu(clone_menu, "Respawn Health", edit_health);
     // For value in the respawn_health table in the mt2_protocol.h
     for (int i = 0; i <= 0x48; i++) {

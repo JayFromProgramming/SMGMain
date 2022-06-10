@@ -76,9 +76,7 @@ void buildShot(uint_least8_t playerID, uint_least8_t teamID, uint_least8_t dmg){
  * @return true if shot was sent, false if shot was not sent
  */
 bool shoot(){
-    noInterrupts();
     return send(pre_shot, (uint32_t) 15);
-    interrupts();
 }
 
 /**

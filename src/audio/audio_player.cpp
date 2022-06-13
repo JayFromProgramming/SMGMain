@@ -4,14 +4,17 @@
 
 #include "audio_player.h"
 
-#include <Arduino.h>
 #include <Audio.h>
 #include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <SerialFlash.h>
+
 
 // GUItool: begin automatically generated code
 AudioPlayMemory          memPlayer;      //xy=621,376
 AudioAmplifier           amp;           //xy=802,374
-AudioOutputI2S           board_out;      //xy=995,375
+AudioOutputI2S2          board_out;         //xy=1012,371
 AudioConnection          patchCord1(memPlayer, amp);
 AudioConnection          patchCord2(amp, 0, board_out, 0);
 AudioConnection          patchCord3(amp, 0, board_out, 1);
@@ -20,21 +23,14 @@ AudioConnection          patchCord3(amp, 0, board_out, 1);
 #include "samples/index.h"
 
 // Each audio memory block stores 128 samples or approximately 2.9 ms of audio.
+// 2.9 * 32 = 96.8 ms of audio. Which should get through a shot cycle. (~20.2 ms)
 
 namespace audio_player {
 
     void AudioPlayer::init() {
         AudioStopUsingSPI();
-        AudioMemory(16);
+        AudioMemory(32);
         set_volume(0.5);
-//        sample_locations = static_cast<unsigned int *>
-//                (malloc(sizeof (unsigned int*) * total_samples));
-//        in_memory = static_cast<bool *>
-//                (malloc(sizeof(bool *) * total_samples));
-//        for (int i = 0; i < total_samples; i++) {
-//            sample_locations[i] = i;
-//        }
-//        load_sample_to_memory(0);
     }
 
     /**
@@ -59,14 +55,6 @@ namespace audio_player {
         }
         memPlayer.play(samples[index - 1]);
     }
-
-//    void AudioPlayer::load_sample_to_memory(u_int8_t sample_index) {
-//        auto* sample = static_cast<unsigned int *>
-//                (malloc(sample_sizes[sample_index] * sizeof(unsigned int)));
-//        memcpy(sample, samples[sample_index], sample_sizes[sample_index]);
-//        sample_locations[sample_index] = *sample;
-//        in_memory[sample_index] = sample;
-//    }
 
     AudioPlayer::AudioPlayer() = default;
 
